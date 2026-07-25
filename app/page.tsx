@@ -57,6 +57,104 @@ export default function Home() {
         to demonstrate websites available for local businesses.
       </div>
 
+      <section
+        id="website-demo"
+        className="scroll-mt-24 bg-slate-950 px-5 py-14 text-white sm:py-16"
+      >
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div>
+            <p className="font-bold uppercase tracking-widest text-amber-400">
+              WASCIK App Development
+            </p>
+            <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">
+              Your local business deserves a professional website.
+            </h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
+              We create polished, mobile-friendly websites customized with your
+              business name, services, photos, reviews, and contact information.
+              Scroll down to explore this fictional home-services website and
+              see what we could build for your business.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="#home"
+                className="flex min-h-12 items-center justify-center rounded-lg bg-amber-500 px-6 py-3 text-center font-bold text-slate-950 transition hover:bg-amber-400"
+              >
+                See the Sample Website ↓
+              </a>
+              <a
+                href="tel:+15015782259"
+                className="flex min-h-12 items-center justify-center rounded-lg border border-white/40 px-6 py-3 text-center font-bold text-white transition hover:bg-white hover:text-slate-950"
+              >
+                Call Michael: (501) 578-2259
+              </a>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white/10 p-7 shadow-xl ring-1 ring-white/15">
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-400">
+              Introductory pricing
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
+              <span className="text-4xl font-bold text-white">$324</span>
+              <span className="pb-1 text-slate-300">
+                starter website build
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-300">
+              Launch special—reduced $75 from the planned $399 price.
+            </p>
+
+            <div className="mt-5 rounded-xl border border-amber-400/50 bg-amber-400/10 p-4">
+              <p className="font-bold text-amber-300">
+                Testimonial Partner Price: $299
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-200">
+                Save another $25 when you agree to provide an honest testimonial
+                after your completed website is delivered and allow WASCIK to
+                feature the project in its portfolio.
+              </p>
+            </div>
+
+            <h2 className="mt-6 text-2xl font-bold">
+              A website built around your business
+            </h2>
+            <ul className="mt-5 space-y-3 text-slate-200">
+              <li>✓ One-page, mobile-friendly website</li>
+              <li>✓ Customized name, colors, photos, and business details</li>
+              <li>✓ Up to six services plus customer reviews</li>
+              <li>✓ Contact or estimate-request form</li>
+              <li>✓ Call and email buttons plus basic search setup</li>
+              <li>✓ Two rounds of revisions</li>
+            </ul>
+            <p className="mt-4 text-xs leading-5 text-slate-400">
+              Domain registration and optional ongoing hosting, maintenance, or
+              additional pages are priced separately.
+            </p>
+            <div className="mt-6 rounded-lg bg-black/20 p-4 text-sm leading-7 text-slate-200">
+              <p>
+                <span className="font-bold text-white">Contact:</span> Michael
+              </p>
+              <p>
+                <span className="font-bold text-white">Phone:</span>{" "}
+                <a className="underline underline-offset-2 hover:text-amber-300" href="tel:+15015782259">
+                  (501) 578-2259
+                </a>
+              </p>
+              <p>
+                <span className="font-bold text-white">Email:</span>{" "}
+                <a
+                  className="break-all underline underline-offset-2 hover:text-amber-300"
+                  href="mailto:LewisMike0435@gmail.com"
+                >
+                  LewisMike0435@gmail.com
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <a href="#home" className="flex items-center gap-3">
@@ -345,57 +443,6 @@ export default function Home() {
               Demonstration form only — no information is submitted.
             </p>
           </form>
-        </div>
-      </section>
-
-      <section
-        id="website-demo"
-        className="scroll-mt-24 bg-amber-500 px-5 py-16 text-slate-950"
-      >
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-          <div>
-            <p className="font-bold uppercase tracking-widest">
-              Built by WASCIK App Development
-            </p>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-              Want a professional website like this for your business?
-            </h2>
-            <p className="mt-5 max-w-3xl text-lg leading-8">
-              This sample shows how WASCIK App Development can turn a local
-              business&apos;s services, story, reviews, and contact information
-              into a polished, mobile-friendly website built to earn trust and
-              generate customer inquiries.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-slate-950 p-7 text-white shadow-xl">
-            <h3 className="text-2xl font-bold">Your business. Your website.</h3>
-            <ul className="mt-5 space-y-3 text-slate-200">
-              <li>✓ Customized name, logo, colors, and photos</li>
-              <li>✓ Services, reviews, and business information</li>
-              <li>✓ Mobile-friendly design</li>
-              <li>✓ Contact or estimate-request form</li>
-            </ul>
-            <div className="mt-6 rounded-lg bg-white/10 p-4 text-sm leading-7 text-slate-200">
-              <p>
-                <span className="font-bold text-white">Contact:</span> Michael
-              </p>
-              <p>
-                <span className="font-bold text-white">Phone:</span>{" "}
-                <a className="underline underline-offset-2 hover:text-amber-300" href="tel:+15015782259">
-                  (501) 578-2259
-                </a>
-              </p>
-              <p>
-                <span className="font-bold text-white">Email:</span>{" "}
-                <a
-                  className="break-all underline underline-offset-2 hover:text-amber-300"
-                  href="mailto:LewisMike0435@gmail.com"
-                >
-                  LewisMike0435@gmail.com
-                </a>
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 

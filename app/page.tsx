@@ -61,20 +61,44 @@ export default function Home() {
         id="website-demo"
         className="scroll-mt-24 bg-slate-950 px-5 py-14 text-white sm:py-16"
       >
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
           <div>
-            <p className="font-bold uppercase tracking-widest text-amber-400">
-              WASCIK App Development
-            </p>
-            <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">
-              Your local business deserves a professional website.
-            </h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-              We create polished, mobile-friendly websites customized with your
-              business name, services, photos, reviews, and contact information.
-              Scroll down to explore this fictional home-services website and
-              see what we could build for your business.
-            </p>
+            <div className="grid gap-7 sm:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.3fr)] sm:items-center">
+              <div className="mx-auto w-full max-w-sm sm:max-w-none">
+                <div className="overflow-hidden rounded-2xl border-2 border-amber-400/70 bg-slate-900 shadow-2xl shadow-black/40">
+                  <img
+                    src="/michael-wascik.jpg"
+                    alt="Michael of WASCIK App Development"
+                    className="aspect-[4/5] h-full w-full object-cover object-[center_22%]"
+                  />
+                </div>
+                <p className="mt-3 text-center text-sm font-semibold text-slate-300">
+                  Michael — Website Developer
+                </p>
+              </div>
+
+              <div>
+                <p className="font-bold uppercase tracking-[0.22em] text-amber-400">
+                  Local website design
+                </p>
+                <p className="mt-3 text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  WASCIK
+                  <span className="mt-2 block text-2xl font-bold leading-tight text-amber-400 sm:text-3xl lg:text-4xl">
+                    App Development
+                  </span>
+                </p>
+                <h1 className="mt-6 text-2xl font-bold leading-tight sm:text-3xl">
+                  Your local business deserves a professional website.
+                </h1>
+                <p className="mt-4 max-w-3xl leading-7 text-slate-300">
+                  We create polished, mobile-friendly websites customized with
+                  your business name, services, photos, reviews, and contact
+                  information. Scroll down to explore this fictional
+                  home-services website and see what we could build for you.
+                </p>
+              </div>
+            </div>
+
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <a
                 href="#home"

@@ -46,15 +46,15 @@ const reviews = [
   },
 ];
 
-export default function Home() {
+type PageMode = "portfolio" | "sample";
+
+export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      <div className="bg-amber-500 px-4 py-3 text-center text-sm font-semibold leading-6 text-slate-950">
-        DEMO WEBSITE — Summit Home Services is a fictional company. Created by{" "}
-        <a href="#website-demo" className="underline decoration-2 underline-offset-2">
-          WASCIK App Development
-        </a>{" "}
-        to demonstrate websites available for local businesses.
+      {mode === "portfolio" && (
+        <>
+      <div className="border-b border-yellow-300 bg-yellow-50 px-4 py-3 text-center text-sm font-semibold leading-6 text-blue-950">
+        WASCIK APP DEVELOPMENT — Professional websites for local businesses.
       </div>
 
       <section
@@ -65,7 +65,7 @@ export default function Home() {
           <div>
             <div className="grid gap-7 sm:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.3fr)] sm:items-center">
               <div className="mx-auto w-full max-w-sm sm:max-w-none">
-                <div className="overflow-hidden rounded-2xl border-2 border-amber-400/70 bg-slate-900 shadow-2xl shadow-black/40">
+                <div className="overflow-hidden rounded-2xl border-2 border-sky-100/80 bg-slate-900 shadow-2xl shadow-black/40">
                   <img
                     src="/michael-wascik.jpg"
                     alt="Michael of WASCIK App Development"
@@ -78,12 +78,12 @@ export default function Home() {
               </div>
 
               <div>
-                <p className="font-bold uppercase tracking-[0.22em] text-amber-400">
+                <p className="font-bold uppercase tracking-[0.22em] text-sky-200">
                   Local website design
                 </p>
                 <p className="mt-3 text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl">
                   WASCIK
-                  <span className="mt-2 block text-2xl font-bold leading-tight text-amber-400 sm:text-3xl lg:text-4xl">
+                  <span className="mt-2 block text-2xl font-bold leading-tight text-sky-200 sm:text-3xl lg:text-4xl">
                     App Development
                   </span>
                 </p>
@@ -93,18 +93,18 @@ export default function Home() {
                 <p className="mt-4 max-w-3xl leading-7 text-slate-300">
                   We create polished, mobile-friendly websites customized with
                   your business name, services, photos, reviews, and contact
-                  information. Scroll down to explore this fictional
-                  home-services website and see what we could build for you.
+                  information. Open our separate Summit Home Services sample
+                  project to see what we could build for you.
                 </p>
               </div>
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <a
-                href="#home"
-                className="flex min-h-12 items-center justify-center rounded-lg bg-amber-500 px-6 py-3 text-center font-bold text-slate-950 transition hover:bg-amber-400"
+                href="/sample-project"
+                className="flex min-h-12 items-center justify-center rounded-lg bg-white px-6 py-3 text-center font-bold text-blue-950 transition hover:bg-sky-100"
               >
-                See the Sample Website ↓
+                View Sample Project →
               </a>
               <a
                 href="tel:+15015782259"
@@ -116,28 +116,65 @@ export default function Home() {
           </div>
 
           <div className="rounded-2xl bg-white/10 p-7 shadow-xl ring-1 ring-white/15">
-            <p className="text-sm font-bold uppercase tracking-widest text-amber-400">
-              Introductory pricing
+            <p className="text-sm font-bold uppercase tracking-widest text-sky-200">
+              90-day promotional pricing
             </p>
-            <div className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
-              <span className="text-4xl font-bold text-white">$324</span>
-              <span className="pb-1 text-slate-300">
-                starter website build
-              </span>
+            <div className="mt-3 rounded-xl border border-sky-100/60 bg-sky-100/10 p-5">
+              <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+                <span className="text-4xl font-bold text-white">$324</span>
+                <span className="pb-1 text-slate-200">
+                  one-page website
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-200">
+                Promotional price available during the first 90 days. After the
+                promotion, the regular one-page website price is <strong>$399</strong>.
+              </p>
             </div>
-            <p className="mt-1 text-sm text-slate-300">
-              Launch special—reduced $75 from the planned $399 price.
-            </p>
 
-            <div className="mt-5 rounded-xl border border-amber-400/50 bg-amber-400/10 p-4">
-              <p className="font-bold text-amber-300">
-                Testimonial Partner Price: $299
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-200">
-                Save another $25 when you agree to provide an honest testimonial
-                after your completed website is delivered and allow WASCIK to
-                feature the project in its portfolio.
-              </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
+                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
+                  Extra pages
+                </p>
+                <p className="mt-2 text-lg font-bold text-white">
+                  $100 each during promotion
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  $125 per additional page after the 90-day promotional period.
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
+                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
+                  Domain
+                </p>
+                <p className="mt-2 text-lg font-bold text-white">$25 upfront</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Domain renewal is billed separately when due.
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
+                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
+                  Hosting &amp; security
+                </p>
+                <p className="mt-2 text-lg font-bold text-white">
+                  $20 monthly or $240 yearly
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Choose monthly billing or pay the full year.
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
+                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
+                  Maintenance &amp; updates
+                </p>
+                <p className="mt-2 text-lg font-bold text-white">
+                  $39.99/month first year
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Then $49.99 per month after the first year.
+                </p>
+              </div>
             </div>
 
             <h2 className="mt-6 text-2xl font-bold">
@@ -152,8 +189,8 @@ export default function Home() {
               <li>✓ Two rounds of revisions</li>
             </ul>
             <p className="mt-4 text-xs leading-5 text-slate-400">
-              Domain registration and optional ongoing hosting, maintenance, or
-              additional pages are priced separately.
+              Website-build and additional-page prices are one-time charges.
+              Domain, hosting and security, and maintenance are separate services.
             </p>
             <div className="mt-6 rounded-lg bg-black/20 p-4 text-sm leading-7 text-slate-200">
               <p>
@@ -161,14 +198,14 @@ export default function Home() {
               </p>
               <p>
                 <span className="font-bold text-white">Phone:</span>{" "}
-                <a className="underline underline-offset-2 hover:text-amber-300" href="tel:+15015782259">
+                <a className="underline underline-offset-2 hover:text-sky-200" href="tel:+15015782259">
                   (501) 578-2259
                 </a>
               </p>
               <p>
                 <span className="font-bold text-white">Email:</span>{" "}
                 <a
-                  className="break-all underline underline-offset-2 hover:text-amber-300"
+                  className="break-all underline underline-offset-2 hover:text-sky-200"
                   href="mailto:LewisMike0435@gmail.com"
                 >
                   LewisMike0435@gmail.com
@@ -178,11 +215,22 @@ export default function Home() {
           </div>
         </div>
       </section>
+        </>
+      )}
 
+      {mode === "sample" && (
+        <>
+      <div className="border-b border-sky-200 bg-white px-4 py-3 text-center text-sm font-semibold leading-6 text-blue-950">
+        DEMO WEBSITE — Summit Home Services is a fictional sample created by
+        WASCIK App Development.{" "}
+        <a href="/" className="underline decoration-2 underline-offset-2">
+          ← Back to the WASCIK Portfolio
+        </a>
+      </div>
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <a href="#home" className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-900 text-xl font-bold text-amber-400">
+            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-950 text-xl font-bold text-yellow-300">
               S
             </span>
             <span>
@@ -196,16 +244,16 @@ export default function Home() {
           </a>
 
           <nav aria-label="Main navigation" className="hidden items-center gap-6 lg:flex">
-            <a href="#home" className="font-medium hover:text-amber-600">Home</a>
-            <a href="#services" className="font-medium hover:text-amber-600">Services</a>
-            <a href="#about" className="font-medium hover:text-amber-600">About</a>
-            <a href="#reviews" className="font-medium hover:text-amber-600">Reviews</a>
-            <a href="#contact" className="font-medium hover:text-amber-600">Contact</a>
+            <a href="#home" className="font-medium hover:text-yellow-600">Home</a>
+            <a href="#services" className="font-medium hover:text-yellow-600">Services</a>
+            <a href="#about" className="font-medium hover:text-yellow-600">About</a>
+            <a href="#reviews" className="font-medium hover:text-yellow-600">Reviews</a>
+            <a href="#contact" className="font-medium hover:text-yellow-600">Contact</a>
           </nav>
 
           <a
             href="#contact"
-            className="hidden min-h-11 items-center justify-center rounded-lg bg-amber-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-amber-400 sm:flex"
+            className="hidden min-h-11 items-center justify-center rounded-lg bg-yellow-300 px-5 py-3 font-bold text-blue-950 transition hover:bg-yellow-400 sm:flex"
           >
             Free Estimate
           </a>
@@ -214,11 +262,11 @@ export default function Home() {
 
       <section
         id="home"
-        className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white"
+        className="bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white"
       >
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:px-8 lg:grid-cols-2 lg:items-center lg:py-24">
           <div>
-            <p className="mb-4 font-semibold uppercase tracking-widest text-amber-400">
+            <p className="mb-4 font-semibold uppercase tracking-widest text-yellow-300">
               Serving Central Arkansas
             </p>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
@@ -232,7 +280,7 @@ export default function Home() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
                 href="#contact"
-                className="flex min-h-12 items-center justify-center rounded-lg bg-amber-500 px-6 py-3 text-center font-bold text-slate-950 transition hover:bg-amber-400"
+                className="flex min-h-12 items-center justify-center rounded-lg bg-yellow-300 px-6 py-3 text-center font-bold text-blue-950 transition hover:bg-yellow-400"
               >
                 Request a Free Estimate
               </a>
@@ -251,7 +299,7 @@ export default function Home() {
           </div>
 
           <div className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl">
-            <div className="flex min-h-72 flex-col justify-end rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 p-7 text-slate-950 sm:min-h-96">
+            <div className="flex min-h-72 flex-col justify-end rounded-xl bg-gradient-to-br from-white via-yellow-100 to-yellow-300 p-7 text-blue-950 sm:min-h-96">
               <p className="text-sm font-bold uppercase tracking-widest">
                 Home improvement made simple
               </p>
@@ -266,7 +314,7 @@ export default function Home() {
       <section id="services" className="scroll-mt-24 px-5 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
-            <p className="font-semibold uppercase tracking-widest text-amber-600">
+            <p className="font-semibold uppercase tracking-widest text-yellow-600">
               Our services
             </p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -286,7 +334,7 @@ export default function Home() {
               >
                 <span
                   aria-hidden="true"
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-2xl font-bold text-amber-700"
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-2xl font-bold text-yellow-700"
                 >
                   {service.icon}
                 </span>
@@ -296,7 +344,7 @@ export default function Home() {
                 </p>
                 <a
                   href="#contact"
-                  className="mt-5 inline-block font-bold text-amber-700 hover:text-amber-800"
+                  className="mt-5 inline-block font-bold text-yellow-700 hover:text-yellow-900"
                 >
                   Ask about this service →
                 </a>
@@ -306,10 +354,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="about" className="scroll-mt-24 bg-slate-100 px-5 py-20">
+      <section id="about" className="scroll-mt-24 bg-yellow-50 px-5 py-20">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2 lg:items-center">
-          <div className="rounded-2xl bg-slate-900 p-8 text-white shadow-xl sm:p-10">
-            <p className="text-sm font-bold uppercase tracking-widest text-amber-400">
+          <div className="rounded-2xl bg-blue-950 p-8 text-white shadow-xl sm:p-10">
+            <p className="text-sm font-bold uppercase tracking-widest text-yellow-300">
               The Summit standard
             </p>
             <p className="mt-5 text-3xl font-bold leading-tight">
@@ -319,7 +367,7 @@ export default function Home() {
           </div>
 
           <div>
-            <p className="font-semibold uppercase tracking-widest text-amber-600">
+            <p className="font-semibold uppercase tracking-widest text-yellow-700">
               About us
             </p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -337,11 +385,11 @@ export default function Home() {
             </p>
             <div className="mt-7 grid grid-cols-2 gap-4">
               <div className="rounded-xl bg-white p-5 shadow-sm">
-                <p className="text-2xl font-bold text-amber-600">Clear</p>
+                <p className="text-2xl font-bold text-yellow-700">Clear</p>
                 <p className="mt-1 text-sm text-slate-600">Project communication</p>
               </div>
               <div className="rounded-xl bg-white p-5 shadow-sm">
-                <p className="text-2xl font-bold text-amber-600">Local</p>
+                <p className="text-2xl font-bold text-yellow-700">Local</p>
                 <p className="mt-1 text-sm text-slate-600">Central Arkansas focus</p>
               </div>
             </div>
@@ -352,7 +400,7 @@ export default function Home() {
       <section id="reviews" className="scroll-mt-24 px-5 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl">
-            <p className="font-semibold uppercase tracking-widest text-amber-600">
+            <p className="font-semibold uppercase tracking-widest text-yellow-700">
               Customer feedback
             </p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -369,7 +417,7 @@ export default function Home() {
                 key={review.name}
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
               >
-                <div aria-label="5 out of 5 stars" className="text-xl tracking-wider text-amber-500">
+                <div aria-label="5 out of 5 stars" className="text-xl tracking-wider text-yellow-500">
                   ★★★★★
                 </div>
                 <blockquote className="mt-4 leading-7 text-slate-700">
@@ -385,10 +433,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="contact" className="scroll-mt-24 bg-slate-900 px-5 py-20 text-white">
+      <section id="contact" className="scroll-mt-24 bg-blue-950 px-5 py-20 text-white">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
-            <p className="font-semibold uppercase tracking-widest text-amber-400">
+            <p className="font-semibold uppercase tracking-widest text-yellow-300">
               Let&apos;s talk
             </p>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -412,7 +460,7 @@ export default function Home() {
                 type="text"
                 name="name"
                 placeholder="Your name"
-                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </label>
             <label className="font-semibold">
@@ -421,7 +469,7 @@ export default function Home() {
                 type="tel"
                 name="phone"
                 placeholder="(501) 555-0123"
-                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </label>
             <label className="font-semibold sm:col-span-2">
@@ -430,7 +478,7 @@ export default function Home() {
                 type="email"
                 name="email"
                 placeholder="you@example.com"
-                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 px-4 font-normal outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </label>
             <label className="font-semibold sm:col-span-2">
@@ -438,7 +486,7 @@ export default function Home() {
               <select
                 name="service"
                 defaultValue=""
-                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-4 font-normal outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="mt-2 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-4 font-normal outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
                 <option value="" disabled>Select a service</option>
                 <option>Interior or exterior painting</option>
@@ -454,12 +502,12 @@ export default function Home() {
                 name="details"
                 rows={5}
                 placeholder="Tell us a little about the project..."
-                className="mt-2 w-full rounded-lg border border-slate-300 p-4 font-normal outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="mt-2 w-full rounded-lg border border-slate-300 p-4 font-normal outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </label>
             <button
               type="submit"
-              className="min-h-12 rounded-lg bg-amber-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-amber-400 sm:col-span-2"
+              className="min-h-12 rounded-lg bg-yellow-300 px-6 py-3 font-bold text-blue-950 ring-1 ring-yellow-200 transition hover:bg-yellow-400 sm:col-span-2"
             >
               Send Estimate Request
             </button>
@@ -470,23 +518,23 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-slate-950 px-5 py-10 text-slate-300">
+      <footer className="bg-blue-950 px-5 py-10 text-slate-300">
         <div className="mx-auto grid max-w-7xl gap-7 border-b border-white/10 pb-7 sm:grid-cols-2">
           <div>
             <p className="text-lg font-bold text-white">Summit Home Services</p>
             <p className="mt-1 text-sm">Reliable Work. Honest Service.</p>
           </div>
           <div className="text-sm sm:text-right">
-            <p className="font-bold text-amber-400">WASCIK App Development</p>
+            <p className="font-bold text-yellow-300">WASCIK App Development</p>
             <p className="mt-1">Professional websites for local businesses</p>
             <p className="mt-2">
               Michael ·{" "}
-              <a className="hover:text-amber-300" href="tel:+15015782259">
+              <a className="hover:text-yellow-300" href="tel:+15015782259">
                 (501) 578-2259
               </a>
             </p>
             <a
-              className="break-all hover:text-amber-300"
+              className="break-all hover:text-yellow-300"
               href="mailto:LewisMike0435@gmail.com"
             >
               LewisMike0435@gmail.com
@@ -501,6 +549,12 @@ export default function Home() {
           designed and developed by WASCIK App Development.
         </p>
       </footer>
+        </>
+      )}
     </main>
   );
+}
+
+export default function PortfolioPage() {
+  return <SummitSite mode="portfolio" />;
 }

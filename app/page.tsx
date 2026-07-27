@@ -223,7 +223,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
       </section>
         </>
       )}
-
+      
       {mode === "sample" && (
         <>
       <div className="border-b border-sky-200 bg-white px-4 py-3 text-center text-sm font-semibold leading-6 text-blue-950">
@@ -256,8 +256,9 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             <a href="#reviews" className="font-medium hover:text-yellow-600">Reviews</a>
             <a href="#contact" className="font-medium hover:text-yellow-600">Contact</a>
           </nav>
-
+          
           <a
+          
             href="#contact"
             className="hidden min-h-11 items-center justify-center rounded-lg bg-yellow-300 px-5 py-3 font-bold text-blue-950 transition hover:bg-yellow-400 sm:flex"
           >
@@ -303,6 +304,16 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <p>✓ Clear estimates</p>
             </div>
           </div>
+           className="portfolio-return-button"
+          <Link
+           
+           href="/"className="portfolio-return-button inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-950 px-5 py-2 font-bold text-white transition hover:bg-blue-800"
+           
+           >
+           
+           ← Back to WASCIK Portfolio
+
+          </Link>
 
           <div className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl">
             <div className="flex min-h-72 flex-col justify-end rounded-xl bg-gradient-to-br from-white via-yellow-100 to-yellow-300 p-7 text-blue-950 sm:min-h-96">
@@ -523,6 +534,14 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           </form>
         </div>
       </section>
+       <div className="portfolio-return-section">
+       <Link href="/" className="portfolio-return-button mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-300 px-6 py-3 font-bold text-blue-950 transition hover:bg-yellow-400"
+        >
+
+        ← Back to WASCIK Portfolio
+        
+       </Link>
+       </div>
 
       <footer className="bg-blue-950 px-5 py-10 text-slate-300">
         <div className="mx-auto grid max-w-7xl gap-7 border-b border-white/10 pb-7 sm:grid-cols-2">

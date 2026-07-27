@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #172b5b;
   --foreground: #171717;
 }
 
@@ -32,4 +32,46 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+.portfolio-return-button {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 18px 36px;
+
+  min-height: 66px;
+
+  font-size: 1.5rem;
+
+  font-weight: 800;
+
+  color: black;
+
+  background-color: red;
+
+  border-radius: 12px;
+
+  text-decoration: none;
+
+  transition: #172b5b;
+
+}
+
+.portfolio-return-button:hover {
+
+  background-color: #cc0000;
+
+}
+
+.portfolio-return-section {
+
+  background-color: #172b5b;
+
+  padding: 40px 0;
+
 }

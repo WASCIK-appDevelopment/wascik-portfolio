@@ -13,9 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Summit Home Services | Central Arkansas",
+  title: {
+    default: "WASCIK App Development",
+    template: "%s | WASCIK App Development",
+  },
   description:
-    "A portfolio demonstration website for Summit Home Services, built by WASCIK App Development.",
+    "Professional websites for local businesses, designed and developed by WASCIK App Development.",
 };
 
 export default function RootLayout({

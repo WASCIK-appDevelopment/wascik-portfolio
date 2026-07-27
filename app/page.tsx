@@ -1,3 +1,6 @@
+import Image from "next/image";
+import Link from "next/link";
+
 const services = [
   {
     icon: "🎨",
@@ -66,9 +69,12 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             <div className="grid gap-7 sm:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.3fr)] sm:items-center">
               <div className="mx-auto w-full max-w-sm sm:max-w-none">
                 <div className="overflow-hidden rounded-2xl border-2 border-sky-100/80 bg-slate-900 shadow-2xl shadow-black/40">
-                  <img
+                  <Image
                     src="/michael-wascik.jpg"
                     alt="Michael of WASCIK App Development"
+                    width={1152}
+                    height={1536}
+                    priority
                     className="aspect-[4/5] h-full w-full object-cover object-[center_22%]"
                   />
                 </div>
@@ -223,9 +229,9 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
       <div className="border-b border-sky-200 bg-white px-4 py-3 text-center text-sm font-semibold leading-6 text-blue-950">
         DEMO WEBSITE — Summit Home Services is a fictional sample created by
         WASCIK App Development.{" "}
-        <a href="/" className="underline decoration-2 underline-offset-2">
+        <Link href="/" className="underline decoration-2 underline-offset-2">
           ← Back to the WASCIK Portfolio
-        </a>
+        </Link>
       </div>
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">

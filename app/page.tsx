@@ -304,15 +304,9 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <p>✓ Clear estimates</p>
             </div>
           </div>
-           className="portfolio-return-button"
-          <Link
            
-           href="/"className="portfolio-return-button inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-950 px-5 py-2 font-bold text-white transition hover:bg-blue-800"
-           
-           >
-           
+          <Link href="/"className="portfolio-return-button inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-950 px-5 py-2 font-bold text-white transition hover:bg-blue-800">
            ← Back to WASCIK Portfolio
-
           </Link>
 
           <div className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl">
@@ -534,13 +528,11 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           </form>
         </div>
       </section>
+      
        <div className="portfolio-return-section">
-       <Link href="/" className="portfolio-return-button mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-yellow-300 px-6 py-3 font-bold text-blue-950 transition hover:bg-yellow-400"
-        >
-
-        ← Back to WASCIK Portfolio
-        
-       </Link>
+        <Link href="/" className="portfolio-return-button">
+         ← Back to WASCIK Portfolio
+        </Link>
        </div>
 
       <footer className="bg-blue-950 px-5 py-10 text-slate-300">

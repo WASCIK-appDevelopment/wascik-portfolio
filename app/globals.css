@@ -42,36 +42,44 @@ textarea {
 
   justify-content: center;
 
+  min-height: 66px;
+
   padding: 18px 36px;
 
-  min-height: 66px;
+  border-radius: 12px;
+
+  background-color: #dc0000;
+
+  color: #ffeb3b;
 
   font-size: 1.5rem;
 
   font-weight: 800;
 
-  color: black;
-
-  background-color: red;
-
-  border-radius: 12px;
+  text-align: center;
 
   text-decoration: none;
 
-  transition: #172b5b;
+  transition: background-color 0.2s ease;
 
 }
 
 .portfolio-return-button:hover {
 
-  background-color: #cc0000;
+  background-color: #b80000;
 
 }
 
 .portfolio-return-section {
 
-  background-color: #172b5b;
+  display: flex;
 
-  padding: 40px 0;
+  justify-content: center;
+
+  width: 100%;
+
+  padding: 40px 20px;
+
+  background-color: #172b5b;
 
 }

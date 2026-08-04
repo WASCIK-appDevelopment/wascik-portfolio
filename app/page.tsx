@@ -1,6 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 
+const portfolioServices = [
+  { icon: "▣", title: "Websites", copy: "Fast, responsive business websites with clear calls to action, polished layouts, and pages that work beautifully on phones." },
+  { icon: "◇", title: "Mobile Apps", copy: "Custom app experiences built around your customers, services, community, and long-term business goals." },
+  { icon: "🤖", title: "AI Solutions", copy: "Smart website assistants, customer guidance, lead support, and practical automation designed around your brand." },
+  { icon: "🛒", title: "E-Commerce", copy: "Online storefronts that present products clearly and make browsing, ordering, and checkout feel simple." },
+  { icon: "✦", title: "Design & Branding", copy: "Logos, colors, visual systems, advertisements, and digital materials that give your business a memorable identity." },
+  { icon: "☎", title: "Support", copy: "Real maintenance, updates, hosting guidance, and direct help from someone who understands your website." },
+];
+
 const services = [
   {
     icon: "🎨",
@@ -55,173 +64,106 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {mode === "portfolio" && (
-        <>
-      <div className="border-b border-yellow-300 bg-yellow-50 px-4 py-3 text-center text-sm font-semibold leading-6 text-blue-950">
-        WASCIK APP DEVELOPMENT — Professional websites for local businesses.
-      </div>
+        <div className="wascik-site">
+          <header className="wascik-nav">
+            <a href="#top" className="wascik-brand" aria-label="WASCIK home">
+              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png" alt="WASCIK" width={1812} height={868} priority />
+              <span className="brand-words">WASCIK <small>APP DEVELOPMENT</small></span>
+            </a>
+            <nav aria-label="Portfolio navigation">
+              <a href="#services">Services</a>
+              <a href="/sample-project">Our work</a>
+              <a href="#contact">Contact</a>
+            </nav>
+          </header>
 
-      <section
-        id="website-demo"
-        className="scroll-mt-24 bg-slate-950 px-5 py-14 text-white sm:py-16"
-      >
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
-          <div>
-            <div className="grid gap-7 sm:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.3fr)] sm:items-center">
-              <div className="mx-auto w-full max-w-sm sm:max-w-none">
-                <div className="overflow-hidden rounded-2xl border-2 border-sky-100/80 bg-slate-900 shadow-2xl shadow-black/40">
-                  <Image
-                    src="/michael-wascik.jpg"
-                    alt="Michael of WASCIK App Development"
-                    width={1152}
-                    height={1536}
-                    priority
-                    className="aspect-[4/5] h-full w-full object-cover object-[center_22%]"
-                  />
-                </div>
-                <p className="mt-3 text-center text-sm font-semibold text-slate-300">
-                  Michael — Website Developer
-                </p>
-              </div>
-
-              <div>
-                <p className="font-bold uppercase tracking-[0.22em] text-sky-200">
-                  Local website design
-                </p>
-                <p className="mt-3 text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  WASCIK
-                  <span className="mt-2 block text-2xl font-bold leading-tight text-sky-200 sm:text-3xl lg:text-4xl">
-                    App Development
-                  </span>
-                </p>
-                <h1 className="mt-6 text-2xl font-bold leading-tight sm:text-3xl">
-                  Your local business deserves a professional website.
-                </h1>
-                <p className="mt-4 max-w-3xl leading-7 text-slate-300">
-                  We create polished, mobile-friendly websites customized with
-                  your business name, services, photos, reviews, and contact
-                  information. Open our separate Summit Home Services sample
-                  project to see what we could build for you.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="/sample-project"
-                className="flex min-h-12 items-center justify-center rounded-lg bg-white px-6 py-3 text-center font-bold text-blue-950 transition hover:bg-sky-100"
-              >
-                View Sample Project →
-              </a>
-              <a
-                href="tel:+15015782259"
-                className="flex min-h-12 items-center justify-center rounded-lg border border-white/40 px-6 py-3 text-center font-bold text-white transition hover:bg-white hover:text-slate-950"
-              >
-                Call Michael: (501) 578-2259
-              </a>
-            </div>
-          </div>
-
-          <div className="rounded-2xl bg-white/10 p-7 shadow-xl ring-1 ring-white/15">
-            <p className="text-sm font-bold uppercase tracking-widest text-sky-200">
-              90-day promotional pricing
-            </p>
-            <div className="mt-3 rounded-xl border border-sky-100/60 bg-sky-100/10 p-5">
-              <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-                <span className="text-4xl font-bold text-white">$324</span>
-                <span className="pb-1 text-slate-200">
-                  one-page website
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-200">
-                Promotional price available during the first 90 days. After the
-                promotion, the regular one-page website price is <strong>$399</strong>.
+          <section id="top" className="wascik-hero">
+            <div className="circuit-glow circuit-one" />
+            <div className="circuit-glow circuit-two" />
+            <div className="wascik-hero-copy">
+              <p className="wascik-eyebrow">WE BUILD MORE THAN WEBSITES</p>
+              <h1><Image className="wascik-logo wascik-logo-hero" src="/wascik-logo-v2.png" alt="WASCIK" width={1812} height={868} priority /><em>App Development</em></h1>
+              <p className="wascik-tagline">Powerful digital solutions for local businesses.</p>
+              <p className="wascik-intro">
+                We help local businesses look professional, reach more customers, and
+                work smarter online. From websites and mobile apps to e-commerce,
+                branding, and upcoming AI assistants, we turn your ideas into useful
+                digital tools built around the way your business actually works.
               </p>
+              <div className="wascik-actions">
+                <a href="#contact" className="wascik-cta primary">Start My Project</a>
+                <a href="/sample-project" className="wascik-cta secondary">View Our Work</a>
+              </div>
+              <div className="wascik-trust"><span>✓ Mobile-first</span><span>✓ Custom-built</span><span>✓ Local support</span></div>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
-                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
-                  Extra pages
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  $100 each during promotion
-                </p>
-                <p className="mt-1 text-sm text-slate-300">
-                  $125 per additional page after the 90-day promotional period.
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
-                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
-                  Domain
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">$25 upfront</p>
-                <p className="mt-1 text-sm text-slate-300">
-                  Domain renewal is billed separately when due.
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
-                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
-                  Hosting &amp; security
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  $20 monthly or $240 yearly
-                </p>
-                <p className="mt-1 text-sm text-slate-300">
-                  Choose monthly billing or pay the full year.
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/15">
-                <p className="text-sm font-bold uppercase tracking-wide text-sky-200">
-                  Maintenance &amp; updates
-                </p>
-                <p className="mt-2 text-lg font-bold text-white">
-                  $39.99/month first year
-                </p>
-                <p className="mt-1 text-sm text-slate-300">
-                  Then $49.99 per month after the first year.
-                </p>
-              </div>
+            <div className="wascik-portrait-wrap">
+              <div className="portrait-halo" />
+              <Image
+                src="/michael-wascik-full-v2.png"
+                alt="Michael, founder and developer at WASCIK App Development"
+                width={910}
+                height={1728}
+                priority
+                className="wascik-portrait"
+              />
+              <div className="founder-card"><strong>Michael Lewis</strong><span>Founder &amp; Developer</span></div>
             </div>
 
-            <h2 className="mt-6 text-2xl font-bold">
-              A website built around your business
-            </h2>
-            <ul className="mt-5 space-y-3 text-slate-200">
-              <li>✓ One-page, mobile-friendly website</li>
-              <li>✓ Customized name, colors, photos, and business details</li>
-              <li>✓ Up to six services plus customer reviews</li>
-              <li>✓ Contact or estimate-request form</li>
-              <li>✓ Call and email buttons plus basic search setup</li>
-              <li>✓ Two rounds of revisions</li>
-            </ul>
-            <p className="mt-4 text-xs leading-5 text-slate-400">
-              Website-build and additional-page prices are one-time charges.
-              Domain, hosting and security, and maintenance are separate services.
-            </p>
-            <div className="mt-6 rounded-lg bg-black/20 p-4 text-sm leading-7 text-slate-200">
-              <p>
-                <span className="font-bold text-white">Contact:</span> Michael
-              </p>
-              <p>
-                <span className="font-bold text-white">Phone:</span>{" "}
-                <a className="underline underline-offset-2 hover:text-sky-200" href="tel:+15015782259">
-                  (501) 578-2259
-                </a>
-              </p>
-              <p>
-                <span className="font-bold text-white">Email:</span>{" "}
-                <a
-                  className="break-all underline underline-offset-2 hover:text-sky-200"
-                  href="mailto:LewisMike0435@gmail.com"
-                >
-                  LewisMike0435@gmail.com
-                </a>
-              </p>
+            <aside className="ai-card">
+              <div className="ai-orb">AI</div>
+              <div><strong>Need help getting started?</strong><p>Tell us what your business needs. We&apos;ll help shape the website, app, store, or AI solution that fits it.</p></div>
+              <a href="#contact">Let&apos;s talk →</a>
+            </aside>
+          </section>
+
+          <section id="services" className="wascik-services">
+            <p className="wascik-eyebrow">WHAT WE BUILD</p>
+            <h2>Your business. Upgraded.</h2>
+            <div className="service-grid">
+              {portfolioServices.map((service, index) => (
+                <article className="service-card" key={service.title}>
+                  <div className="service-visual"><span>{service.icon}</span><i>0{index + 1}</i></div>
+                  <h3>{service.title}</h3><p>{service.copy}</p>
+                </article>
+              ))}
             </div>
-          </div>
+          </section>
+
+          <section className="ai-preview">
+            <div className="ai-bot-lockup" aria-hidden="true">
+              <div className="ai-preview-bot">
+                <i className="bot-eye bot-eye-left" />
+                <i className="bot-eye bot-eye-right" />
+                <b className="bot-mouth" />
+              </div>
+              <span className="ai-side-label">AI</span>
+            </div>
+            <div className="ai-preview-copy">
+              <p className="wascik-eyebrow">COMING TO WASCIK</p>
+              <h2>An AI representative that feels like part of your business.</h2>
+              <p>We&apos;re developing a more personal kind of website assistant: a branded on-screen character that can welcome visitors, answer common questions, guide them toward the right service, collect leads, and help connect them with a real person when needed.</p>
+              <div className="ai-capabilities"><span>24/7 first response</span><span>Custom business knowledge</span><span>Human handoff</span></div>
+            </div>
+            <div className="ai-speech"><strong>Hi! What can I help you build today?</strong><span>Website</span><span>App</span><span>AI assistant</span></div>
+          </section>
+
+          <section className="promo-band">
+            <div><p>90-DAY WEBSITE SPECIAL</p><strong><sup>$</sup>324</strong><span>one-page business website</span></div>
+            <ul><li>Custom mobile-friendly design</li><li>Business information and services</li><li>Contact and call buttons</li><li>Two revision rounds</li></ul>
+            <a href="#contact" className="wascik-cta primary">Claim This Offer</a>
+          </section>
+
+          <section id="contact" className="wascik-contact">
+            <div><p className="wascik-eyebrow">READY WHEN YOU ARE</p><h2>Let&apos;s build something powerful.</h2><p>Serving Central Arkansas and businesses everywhere.</p></div>
+            <div className="contact-links">
+              <a href="tel:+15015782259">Call Michael<br/><strong>(501) 578-2259</strong></a>
+              <a href="mailto:LewisMike0435@gmail.com">Send an email<br/><strong>LewisMike0435@gmail.com</strong></a>
+            </div>
+          </section>
+
+          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
         </div>
-      </section>
-        </>
       )}
       
       {mode === "sample" && (

@@ -1,14 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
+import AIAssistantDemo from "./AIAssistantDemo";
 
 const portfolioServices = [
-  { icon: "▣", title: "Websites", copy: "Fast, responsive business websites with clear calls to action, polished layouts, and pages that work beautifully on phones." },
-  { icon: "◇", title: "Mobile Apps", copy: "Custom app experiences built around your customers, services, community, and long-term business goals." },
-  { icon: "🤖", title: "AI Solutions", copy: "Smart website assistants, customer guidance, lead support, and practical automation designed around your brand." },
-  { icon: "🛒", title: "E-Commerce", copy: "Online storefronts that present products clearly and make browsing, ordering, and checkout feel simple." },
-  { icon: "✦", title: "Design & Branding", copy: "Logos, colors, visual systems, advertisements, and digital materials that give your business a memorable identity." },
-  { icon: "☎", title: "Support", copy: "Real maintenance, updates, hosting guidance, and direct help from someone who understands your website." },
+  { icon: "web", title: "Websites", copy: "Fast, responsive business websites with clear calls to action, polished layouts, and pages that work beautifully on phones." },
+  { icon: "app", title: "Mobile Apps", copy: "Custom app experiences built around your customers, services, community, and long-term business goals." },
+  { icon: "ai", title: "AI Solutions", copy: "Smart website assistants, customer guidance, lead support, and practical automation designed around your brand." },
+  { icon: "shop", title: "E-Commerce", copy: "Online storefronts that present products clearly and make browsing, ordering, and checkout feel simple." },
+  { icon: "brand", title: "Design & Branding", copy: "Logos, colors, visual systems, advertisements, and digital materials that give your business a memorable identity." },
+  { icon: "support", title: "Support", copy: "Real maintenance, updates, hosting guidance, and direct help from someone who understands your website." },
 ];
+
+function ServiceIcon({ type }: { type: string }) {
+  return <span className={`tech-icon tech-icon-${type}`} aria-hidden="true"><i /><b /><em /></span>;
+}
+
+function CodeBackdrop() {
+  return (
+    <div className="code-backdrop" aria-hidden="true">
+      <div className="code-panel code-panel-one"><code><span>const</span> mission = <b>&quot;Build your future&quot;</b>;<br/><span>WASCIK</span>.create(&#123;<br/> vision: <b>&quot;powerful&quot;</b>,<br/> support: <b>&quot;personal&quot;</b><br/>&#125;);</code></div>
+      <div className="code-panel code-panel-two"><code>business.<span>connect</span>(&#123;<br/> websites: <b>true</b>,<br/> apps: <b>true</b>,<br/> ai: <b>&quot;coming&quot;</b><br/>&#125;);</code></div>
+      <div className="code-panel code-panel-three"><code><span>if</span> (idea) &#123;<br/> WASCIK.<b>build</b>(idea);<br/>&#125;<br/><i>Your vision. Built forward.</i></code></div>
+    </div>
+  );
+}
 
 const services = [
   {
@@ -65,6 +80,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
     <main className="min-h-screen bg-white text-slate-900">
       {mode === "portfolio" && (
         <div className="wascik-site">
+          <CodeBackdrop />
           <header className="wascik-nav">
             <a href="#top" className="wascik-brand" aria-label="WASCIK home">
               <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png" alt="WASCIK" width={1812} height={868} priority />
@@ -123,30 +139,15 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             <div className="service-grid">
               {portfolioServices.map((service, index) => (
                 <article className="service-card" key={service.title}>
-                  <div className="service-visual"><span>{service.icon}</span><i>0{index + 1}</i></div>
+                  <div className="card-circuit" aria-hidden="true"><i/><i/><i/><b/><b/></div>
+                  <div className="service-visual"><ServiceIcon type={service.icon} /><i>0{index + 1}</i></div>
                   <h3>{service.title}</h3><p>{service.copy}</p>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="ai-preview">
-            <div className="ai-bot-lockup" aria-hidden="true">
-              <div className="ai-preview-bot">
-                <i className="bot-eye bot-eye-left" />
-                <i className="bot-eye bot-eye-right" />
-                <b className="bot-mouth" />
-              </div>
-              <span className="ai-side-label">AI</span>
-            </div>
-            <div className="ai-preview-copy">
-              <p className="wascik-eyebrow">COMING TO WASCIK</p>
-              <h2>An AI representative that feels like part of your business.</h2>
-              <p>We&apos;re developing a more personal kind of website assistant: a branded on-screen character that can welcome visitors, answer common questions, guide them toward the right service, collect leads, and help connect them with a real person when needed.</p>
-              <div className="ai-capabilities"><span>24/7 first response</span><span>Custom business knowledge</span><span>Human handoff</span></div>
-            </div>
-            <div className="ai-speech"><strong>Hi! What can I help you build today?</strong><span>Website</span><span>App</span><span>AI assistant</span></div>
-          </section>
+          <AIAssistantDemo />
 
           <section className="promo-band">
             <div><p>90-DAY WEBSITE SPECIAL</p><strong><sup>$</sup>324</strong><span>one-page business website</span></div>

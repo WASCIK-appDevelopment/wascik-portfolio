@@ -22,6 +22,27 @@
   animation:wascik-code-breathe 6.5s ease-in-out infinite;
 }
 
+/* TOP HERO GAP — visible code between the small nav logo and the large hero logo */
+.wascik-nav {
+  overflow:visible !important;
+}
+
+.wascik-nav::after {
+  content:"const studio = WASCIK;\Astatus = 'building';\Astack = [web, app, ai];";
+  position:absolute;
+  pointer-events:none;
+  right:22px;
+  bottom:-92px;
+  width:300px;
+  color:rgba(119,232,162,.78);
+  font:700 .80rem/1.5 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  white-space:pre;
+  text-align:right;
+  text-shadow:0 0 10px rgba(119,232,162,.38);
+  z-index:7;
+  animation:wascik-code-breathe 6.5s ease-in-out infinite;
+}
+
 /* HERO — code beside logo and around portrait/shoulders */
 .wascik-hero-copy {
   isolation:isolate;
@@ -60,6 +81,42 @@
   font-size:.76rem;
 }
 
+/* Put shoulder code on an overlay that sits ABOVE the portrait image. */
+.wascik-portrait-wrap .portrait-halo {
+  z-index:3 !important;
+  pointer-events:none;
+}
+
+.wascik-portrait-wrap .portrait-halo::before,
+.wascik-portrait-wrap .portrait-halo::after {
+  position:absolute;
+  pointer-events:none;
+  z-index:4;
+  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-weight:800;
+  white-space:pre;
+  text-shadow:0 0 9px currentColor;
+  animation:wascik-code-breathe 6.8s ease-in-out infinite;
+}
+
+.wascik-portrait-wrap .portrait-halo::before {
+  content:"// human-built technology\Aconst vision = personal;";
+  top:37%;
+  right:4%;
+  color:rgba(255,230,0,.76);
+  font-size:.74rem;
+  line-height:1.5;
+  text-align:right;
+}
+
+.wascik-portrait-wrap .portrait-halo::after {
+  content:"deploy.success = true;";
+  right:5%;
+  top:59%;
+  color:rgba(255,112,112,.72);
+  font-size:.72rem;
+}
+
 /* SERVICES — additional code distributed between and behind cards */
 .service-grid {
   position:relative;
@@ -88,6 +145,44 @@
   color:rgba(255,112,112,.48);
   font-size:.80rem;
   line-height:1.5;
+}
+
+/* Make card #1 code a true in-card layer above the card background. */
+.service-card:first-child > * {
+  position:relative;
+  z-index:2;
+}
+
+.service-card:first-child::before,
+.service-card:first-child::after {
+  position:absolute;
+  pointer-events:none;
+  z-index:1;
+  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-weight:800;
+  white-space:pre;
+  text-shadow:0 0 10px currentColor;
+  animation:wascik-code-breathe 6.2s ease-in-out infinite;
+}
+
+.service-card:first-child::before {
+  content:"const business = await\AWASCIK.build({\A  websites: true,\A  support: direct\A});";
+  top:18%;
+  right:10px;
+  color:rgba(119,232,162,.80);
+  font-size:.76rem;
+  line-height:1.45;
+  text-align:right;
+}
+
+.service-card:first-child::after {
+  content:"// mobile-first\Alaunch.ready = true;";
+  right:14px;
+  bottom:12%;
+  color:rgba(255,230,0,.72);
+  font-size:.70rem;
+  line-height:1.45;
+  text-align:right;
 }
 
 /* Add more small code moments between specific cards */
@@ -205,8 +300,8 @@
 }
 
 @keyframes wascik-code-breathe {
-  0%,100% { opacity:.46; filter:brightness(.92); }
-  50% { opacity:.78; filter:brightness(1.14); }
+  0%,100% { opacity:.58; filter:brightness(.96); }
+  50% { opacity:.90; filter:brightness(1.18); }
 }
 
 /* Tablet */
@@ -231,32 +326,49 @@
     animation-duration:7.5s;
   }
 
-  /* Bring hero code fully inside the screen, next to the large WASCIK logo. */
+  /* Strong code in the open gap under the small logo. */
+  .wascik-nav::after {
+    right:18px;
+    bottom:-108px;
+    width:260px;
+    color:rgba(119,232,162,.84);
+    font-size:.72rem;
+    line-height:1.48;
+  }
+
+  /* Keep secondary hero-copy code in a different lane. */
   .wascik-hero-copy::before {
-    top:118px;
+    top:108px;
     left:auto;
-    right:10px;
-    width:205px;
-    color:rgba(119,232,162,.70);
-    font-size:.68rem;
-    line-height:1.45;
+    right:8px;
+    width:195px;
+    color:rgba(111,218,255,.74);
+    font-size:.67rem;
+    line-height:1.43;
     text-align:right;
   }
 
-  .wascik-portrait-wrap::before {
-    top:18%;
-    right:8px;
-    width:205px;
-    color:rgba(255,230,0,.66);
-    font-size:.69rem;
+  /* Disable the buried portrait-wrap pseudo code; overlay code above replaces it. */
+  .wascik-portrait-wrap::before,
+  .wascik-portrait-wrap::after {
+    content:none !important;
+    display:none !important;
   }
 
-  .wascik-portrait-wrap::after {
-    left:auto;
-    right:10px;
-    bottom:17%;
-    color:rgba(255,112,112,.62);
-    font-size:.67rem;
+  .wascik-portrait-wrap .portrait-halo::before {
+    top:34%;
+    right:12px;
+    width:220px;
+    color:rgba(255,230,0,.84);
+    font-size:.70rem;
+    line-height:1.46;
+  }
+
+  .wascik-portrait-wrap .portrait-halo::after {
+    top:56%;
+    right:12px;
+    color:rgba(255,112,112,.80);
+    font-size:.69rem;
   }
 
   /* Put main service code in the empty right gutter and repeat lower down. */
@@ -279,10 +391,26 @@
     line-height:1.45;
   }
 
+  /* Card #1 is intentionally stronger so it clearly reads through the panel. */
+  .service-card:first-child::before {
+    top:17%;
+    right:8px;
+    color:rgba(119,232,162,.88);
+    font-size:.72rem;
+    line-height:1.42;
+  }
+
+  .service-card:first-child::after {
+    right:10px;
+    bottom:10%;
+    color:rgba(255,230,0,.82);
+    font-size:.67rem;
+  }
+
   .service-card:nth-child(2)::before,
   .service-card:nth-child(4)::before,
   .service-card:nth-child(6)::before {
-    opacity:.58;
+    opacity:.64;
     font-size:.68rem;
   }
 
@@ -350,11 +478,16 @@
 }
 
 @media(prefers-reduced-motion:reduce) {
+  .wascik-nav::after,
   .wascik-hero-copy::before,
   .wascik-portrait-wrap::before,
   .wascik-portrait-wrap::after,
+  .wascik-portrait-wrap .portrait-halo::before,
+  .wascik-portrait-wrap .portrait-halo::after,
   .service-grid::before,
   .service-grid::after,
+  .service-card:first-child::before,
+  .service-card:first-child::after,
   .ai-preview .ai-preview-copy::before,
   .ai-preview .ai-preview-copy::after,
   .promo-band > div::before,

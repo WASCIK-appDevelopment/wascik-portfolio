@@ -1,4 +1,4 @@
-/* WASCIK technology background — static PCB circuits + real ambient code */
+/* WASCIK technology background — static PCB circuits + prominent ambient code */
 
 .wascik-site {
   position: relative;
@@ -45,7 +45,7 @@
     radial-gradient(circle at 78% 84%,rgba(18,192,255,.10),transparent 18%);
 }
 
-/* Full-height technology layer. */
+/* Full-height technology overlay. */
 .code-backdrop {
   position:absolute !important;
   inset:0 !important;
@@ -61,7 +61,6 @@
   position:absolute;
   inset:0;
   z-index:1;
-  opacity:.7;
   background-image:
     radial-gradient(circle at 72px 64px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.28) 7px, transparent 13px),
     radial-gradient(circle at 238px 188px, #ffe600 0 3px, rgba(255,230,0,.75) 4px, rgba(255,230,0,.20) 8px, transparent 14px),
@@ -72,18 +71,33 @@
   animation:signal-pulse 3.1s ease-in-out infinite;
 }
 
-/* Disable the failed SVG-text background on mobile Safari. */
+/* A repeating ambient comment gives the page more code density between the main clusters. */
 .code-backdrop::after {
-  content:none !important;
-  display:none !important;
+  content:"// WASCIK.build(vision)  •  digital solutions in progress";
+  display:block !important;
+  position:absolute;
+  z-index:2;
+  top:1120px;
+  left:6vw;
+  color:rgba(111,218,255,.58);
+  font:700 .90rem/1.4 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.03em;
+  white-space:nowrap;
+  text-shadow:
+    0 0 10px rgba(40,207,255,.30),
+    44vw 780px 0 rgba(255,230,0,.45),
+    -2vw 1540px 0 rgba(111,218,255,.52),
+    36vw 2310px 0 rgba(111,218,255,.50),
+    2vw 3080px 0 rgba(255,230,0,.38);
+  animation:code-glow 6.5s ease-in-out infinite;
 }
 
-/* Real HTML code fragments — guaranteed to render in Safari. */
+/* Real HTML code clusters. */
 .code-panel {
   display:block !important;
   position:absolute !important;
   z-index:3 !important;
-  width:auto !important;
+  width:min(390px,88vw) !important;
   max-width:88vw;
   padding:0 !important;
   border:0 !important;
@@ -91,49 +105,68 @@
   background:transparent !important;
   box-shadow:none !important;
   backdrop-filter:none !important;
-  opacity:.28 !important;
+  opacity:.72 !important;
   transform:none !important;
-  animation:code-breathe 6s ease-in-out infinite !important;
-  filter:drop-shadow(0 0 7px rgba(40,207,255,.22));
+  animation:code-glow 6s ease-in-out infinite !important;
+  filter:drop-shadow(0 0 9px rgba(40,207,255,.32));
 }
 
 .code-panel::before {
-  content:none !important;
-  display:none !important;
+  display:block !important;
+  position:absolute;
+  top:118px;
+  width:max-content;
+  max-width:82vw;
+  color:rgba(112,220,255,.68);
+  font:700 .88rem/1.5 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  white-space:pre;
+  text-shadow:0 0 9px rgba(40,207,255,.28);
 }
+
+.code-panel-one::before {
+  content:"// custom-built for your business\Aconst experience = responsive + personal;";
+  left:18vw;
+}
+.code-panel-two::before {
+  content:"const future = await launch();\Abrand.voice = \"personal\";";
+  right:2vw;
+}
+.code-panel-three::before {
+  content:"// connect people to possibilities\Abusiness.grow({ web, app, ai });";
+  left:14vw;
+}
+
+.code-panel::after {
+  display:block !important;
+  position:absolute;
+  top:245px;
+  color:rgba(255,230,0,.58);
+  font:700 .84rem/1.45 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  white-space:nowrap;
+  text-shadow:0 0 8px rgba(255,230,0,.20);
+}
+.code-panel-one::after { content:"WASCIK.create({ design, development, support });"; left:3vw; }
+.code-panel-two::after { content:"if (idea) WASCIK.build(idea);"; right:5vw; }
+.code-panel-three::after { content:"// Discovery. Design. Development."; left:5vw; }
 
 .code-panel code {
   display:block !important;
   overflow:visible !important;
-  color:#8fddf7 !important;
-  font:600 .78rem/1.65 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
+  color:rgba(150,229,255,.82) !important;
+  font:700 1rem/1.62 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
   white-space:nowrap !important;
   animation:none !important;
-  text-shadow:0 0 8px rgba(40,207,255,.24);
+  text-shadow:0 0 9px rgba(40,207,255,.34);
 }
 
-.code-panel code span { color:#ffe600 !important; }
-.code-panel code b { color:#dff8ff !important; font-weight:700 !important; }
-.code-panel code i { color:#58aeca !important; font-style:normal !important; }
+.code-panel code span { color:rgba(255,230,0,.86) !important; }
+.code-panel code b { color:rgba(240,251,255,.88) !important; font-weight:800 !important; }
+.code-panel code i { color:rgba(102,189,220,.78) !important; font-style:normal !important; }
 
-/* Desktop placements */
-.code-panel-one {
-  top:640px !important;
-  left:4vw !important;
-}
-
-.code-panel-two {
-  top:1710px !important;
-  right:4vw !important;
-  left:auto !important;
-  animation-delay:-2s !important;
-}
-
-.code-panel-three {
-  top:3020px !important;
-  left:6vw !important;
-  animation-delay:-4s !important;
-}
+/* Main placements. */
+.code-panel-one { top:610px !important; left:3vw !important; }
+.code-panel-two { top:1800px !important; right:3vw !important; left:auto !important; animation-delay:-2s !important; }
+.code-panel-three { top:3180px !important; left:5vw !important; animation-delay:-4s !important; }
 
 /* Remove the old hero grid and keep its overlay translucent. */
 .wascik-hero::after { display:none !important; }
@@ -152,84 +185,78 @@
 }
 
 @keyframes signal-pulse {
-  0%,100% { opacity:.22; filter:brightness(.7); }
-  45% { opacity:1; filter:brightness(1.8); }
-  60% { opacity:.55; filter:brightness(1.1); }
+  0%,100% { opacity:.30; filter:brightness(.75); }
+  45% { opacity:1; filter:brightness(1.85); }
+  60% { opacity:.62; filter:brightness(1.15); }
 }
 
-@keyframes code-breathe {
-  0%,100% { opacity:.18; }
-  50% { opacity:.42; }
+@keyframes code-glow {
+  0%,100% { opacity:.58; filter:brightness(.92); }
+  50% { opacity:.88; filter:brightness(1.22); }
 }
 
 @media(max-width:900px) {
-  .wascik-site::before {
-    opacity:.27;
-    background-size:720px 576px;
-  }
-
-  .code-backdrop::before {
-    background-size:430px 315px;
-  }
-
-  .code-panel code {
-    font-size:.70rem !important;
-  }
-
-  .code-panel-one {
-    top:720px !important;
-    left:18px !important;
-  }
-
-  .code-panel-two {
-    top:2050px !important;
-    right:16px !important;
-  }
-
-  .code-panel-three {
-    top:3550px !important;
-    left:20px !important;
-  }
+  .wascik-site::before { opacity:.27; background-size:720px 576px; }
+  .code-backdrop::before { background-size:430px 315px; }
+  .code-panel code { font-size:.90rem !important; }
+  .code-panel::before { font-size:.80rem; }
+  .code-panel::after { font-size:.76rem; }
+  .code-panel-one { top:770px !important; left:14px !important; }
+  .code-panel-two { top:2150px !important; right:12px !important; }
+  .code-panel-three { top:3650px !important; left:14px !important; }
 }
 
 @media(max-width:560px) {
-  .wascik-site::before {
-    opacity:.24;
-    background-size:620px 496px;
-  }
+  .wascik-site::before { opacity:.24; background-size:620px 496px; }
+  .code-backdrop::before { background-size:360px 264px; }
 
-  .code-backdrop::before {
-    opacity:.9;
-    background-size:360px 264px;
+  .code-backdrop::after {
+    top:1040px;
+    left:16px;
+    font-size:.76rem;
+    opacity:.75;
+    text-shadow:
+      0 0 8px rgba(40,207,255,.28),
+      25vw 820px 0 rgba(255,230,0,.48),
+      -3vw 1650px 0 rgba(111,218,255,.58),
+      18vw 2480px 0 rgba(111,218,255,.55),
+      0 3270px 0 rgba(255,230,0,.42);
   }
 
   .code-panel {
-    opacity:.34 !important;
+    width:310px !important;
+    max-width:86vw;
+    opacity:.78 !important;
   }
 
   .code-panel code {
-    font-size:.66rem !important;
-    line-height:1.58 !important;
+    font-size:.82rem !important;
+    line-height:1.55 !important;
   }
 
-  .code-panel-one {
-    top:705px !important;
-    left:16px !important;
+  .code-panel::before {
+    top:105px;
+    font-size:.73rem;
+    line-height:1.45;
   }
 
-  .code-panel-two {
-    top:1960px !important;
-    right:14px !important;
+  .code-panel::after {
+    top:215px;
+    font-size:.70rem;
   }
 
-  .code-panel-three {
-    top:3330px !important;
-    left:18px !important;
-  }
+  .code-panel-one { top:690px !important; left:12px !important; }
+  .code-panel-two { top:2030px !important; right:10px !important; }
+  .code-panel-three { top:3470px !important; left:12px !important; }
+
+  .code-panel-one::before { left:12vw; }
+  .code-panel-two::before { right:-8vw; }
+  .code-panel-three::before { left:7vw; }
 }
 
 @media(prefers-reduced-motion:reduce) {
   .code-backdrop::before,
+  .code-backdrop::after,
   .code-panel {
     animation:none !important;
   }

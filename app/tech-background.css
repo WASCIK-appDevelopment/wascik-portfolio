@@ -1,4 +1,4 @@
-/* WASCIK technology background — visible PCB circuits + ambient code */
+/* WASCIK technology background — static PCB circuits + ambient code */
 
 .wascik-site {
   position: relative;
@@ -17,18 +17,17 @@
   z-index: 3;
 }
 
-/* REAL PCB TRACE ART — no graph-paper grid. */
+/* REAL PCB TRACE ART — stationary like a physical circuit board. */
 .wascik-site::before {
   content:"";
   position:absolute;
   inset:0;
-  z-index:4;
+  z-index:1;
   pointer-events:none;
   opacity:.30;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='720' viewBox='0 0 900 720'%3E%3Cg fill='none' stroke='%2328cfff' stroke-width='2'%3E%3Cpath d='M0 92h150v58h92v82h120'/%3E%3Cpath d='M900 84H742v86h-94v76H520'/%3E%3Cpath d='M0 360h116v-72h84v130h126v74h118'/%3E%3Cpath d='M900 342H770v-84h-92v146H552v88H430'/%3E%3Cpath d='M0 612h178v-74h104v-86h98'/%3E%3Cpath d='M900 618H728v-66h-96v-102H516'/%3E%3Cpath d='M446 0v120h-72v92h-82'/%3E%3Cpath d='M512 720V596h76v-78h82'/%3E%3C/g%3E%3Cg fill='%2399ecff'%3E%3Ccircle cx='150' cy='92' r='5'/%3E%3Ccircle cx='242' cy='150' r='5'/%3E%3Ccircle cx='742' cy='84' r='5'/%3E%3Ccircle cx='648' cy='170' r='5'/%3E%3Ccircle cx='116' cy='360' r='5'/%3E%3Ccircle cx='200' cy='288' r='5'/%3E%3Ccircle cx='770' cy='342' r='5'/%3E%3Ccircle cx='678' cy='258' r='5'/%3E%3Ccircle cx='178' cy='612' r='5'/%3E%3Ccircle cx='728' cy='618' r='5'/%3E%3Ccircle cx='446' cy='120' r='5'/%3E%3Ccircle cx='512' cy='596' r='5'/%3E%3C/g%3E%3Cg fill='%23ffe600'%3E%3Ccircle cx='362' cy='232' r='4'/%3E%3Ccircle cx='552' cy='404' r='4'/%3E%3Ccircle cx='380' cy='452' r='4'/%3E%3C/g%3E%3C/svg%3E");
   background-size:900px 720px;
   background-repeat:repeat;
-  animation:pcb-drift 28s linear infinite;
   mix-blend-mode:screen;
 }
 
@@ -37,7 +36,7 @@
   content:"";
   position:absolute;
   inset:0;
-  z-index:1;
+  z-index:0;
   pointer-events:none;
   background:
     radial-gradient(circle at 10% 18%,rgba(18,192,255,.13),transparent 16%),
@@ -46,16 +45,17 @@
     radial-gradient(circle at 78% 84%,rgba(18,192,255,.10),transparent 18%);
 }
 
-/* Put the ambient code ABOVE section backgrounds but keep it subtle. */
+/* Code layer stays above the background circuitry but remains ambient. */
 .code-backdrop {
   position:absolute !important;
   inset:0 !important;
-  z-index:5 !important;
+  z-index:2 !important;
   pointer-events:none;
   overflow:hidden;
   background:none !important;
 }
 
+/* Only the electronic signal nodes pulse — the board itself stays still. */
 .code-backdrop::before {
   content:"";
   position:absolute;
@@ -72,14 +72,14 @@
   position:absolute !important;
   width:min(340px,76vw) !important;
   padding:15px 17px !important;
-  border:1px solid rgba(78,214,255,.42) !important;
+  border:1px solid rgba(78,214,255,.48) !important;
   border-radius:10px !important;
-  background:rgba(3,18,29,.48) !important;
-  box-shadow:0 0 24px rgba(0,188,255,.16), inset 0 0 20px rgba(0,153,220,.08) !important;
-  backdrop-filter:blur(2px);
-  opacity:.48 !important;
+  background:rgba(3,18,29,.30) !important;
+  box-shadow:0 0 24px rgba(0,188,255,.14), inset 0 0 20px rgba(0,153,220,.07) !important;
+  backdrop-filter:blur(1px);
+  opacity:.68 !important;
   transform:none !important;
-  animation:code-float 8s ease-in-out infinite !important;
+  animation:code-float 9s ease-in-out infinite !important;
 }
 
 .code-panel::before {
@@ -96,41 +96,35 @@
 
 .code-panel code {
   display:block;
-  color:#a9eaff !important;
-  font:600 .78rem/1.7 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
+  color:#b8efff !important;
+  font:600 .79rem/1.7 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
   white-space:nowrap;
-  text-shadow:0 0 7px rgba(60,206,255,.22);
+  text-shadow:0 0 7px rgba(60,206,255,.25);
 }
 
 .code-panel code span{color:#ffe600 !important;}
 .code-panel code b{color:#fff !important;font-weight:700;}
-.code-panel code i{color:#6aa7bd !important;font-style:normal;}
+.code-panel code i{color:#78b4ca !important;font-style:normal;}
 
-/* Deliberately place code in open visual areas. */
-.code-panel-one{top:240px !important;left:2.5vw !important;}
-.code-panel-two{top:1180px !important;right:2.5vw !important;animation-delay:-2.7s !important;}
-.code-panel-three{top:2280px !important;left:4vw !important;animation-delay:-5s !important;}
+/* Place code in open areas between major content blocks. */
+.code-panel-one{top:760px !important;left:2vw !important;}
+.code-panel-two{top:1830px !important;right:2vw !important;animation-delay:-2.7s !important;}
+.code-panel-three{top:3150px !important;left:3vw !important;animation-delay:-5s !important;}
 
-/* Stop the old hero grid from competing with the PCB art. */
+/* Remove the old hero grid. */
 .wascik-hero::after{display:none !important;}
 .wascik-hero::before{
-  opacity:.72 !important;
+  opacity:.68 !important;
   background:
-    radial-gradient(circle at 62% 45%,rgba(7,63,107,.72) 0,transparent 36%),
-    linear-gradient(115deg,rgba(2,9,19,.72) 42%,rgba(6,26,44,.66) 100%) !important;
+    radial-gradient(circle at 62% 45%,rgba(7,63,107,.68) 0,transparent 36%),
+    linear-gradient(115deg,rgba(2,9,19,.68) 42%,rgba(6,26,44,.62) 100%) !important;
 }
 
-/* Make section surfaces transparent enough for circuits/code to remain visible. */
 .wascik-services,
 .ai-preview,
 .promo-band,
 .wascik-contact{
   background-color:transparent !important;
-}
-
-@keyframes pcb-drift{
-  from{background-position:0 0;}
-  to{background-position:900px 720px;}
 }
 
 @keyframes node-pulse{
@@ -140,7 +134,7 @@
 
 @keyframes code-float{
   0%,100%{translate:0 0;}
-  50%{translate:0 -14px;}
+  50%{translate:0 -10px;}
 }
 
 @keyframes code-scan{
@@ -149,22 +143,21 @@
 }
 
 @media(max-width:900px){
-  .wascik-site::before{opacity:.26;background-size:720px 576px;}
-  .code-panel{width:min(275px,70vw) !important;opacity:.42 !important;}
-  .code-panel code{font-size:.68rem !important;}
-  .code-panel-one{top:430px !important;left:-26px !important;}
-  .code-panel-two{top:1560px !important;right:-36px !important;}
-  .code-panel-three{top:2720px !important;left:-22px !important;}
+  .wascik-site::before{opacity:.25;background-size:720px 576px;}
+  .code-panel{width:min(275px,72vw) !important;opacity:.62 !important;}
+  .code-panel code{font-size:.69rem !important;}
+  .code-panel-one{top:900px !important;left:-24px !important;}
+  .code-panel-two{top:2250px !important;right:-34px !important;}
+  .code-panel-three{top:3720px !important;left:-20px !important;}
 }
 
 @media(max-width:560px){
   .wascik-site::before{opacity:.22;background-size:620px 496px;}
-  .code-panel{width:245px !important;opacity:.38 !important;padding:12px 13px !important;}
-  .code-panel code{font-size:.61rem !important;}
+  .code-panel{width:250px !important;opacity:.58 !important;padding:12px 13px !important;}
+  .code-panel code{font-size:.63rem !important;}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .wascik-site::before,
   .code-backdrop::before,
   .code-panel,
   .code-panel::before{animation:none !important;}

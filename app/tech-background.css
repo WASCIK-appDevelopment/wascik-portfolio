@@ -1,4 +1,4 @@
-/* WASCIK technology background — static PCB circuits + ambient code */
+/* WASCIK technology background — static PCB circuits + visible ambient code */
 
 .wascik-site {
   position: relative;
@@ -14,24 +14,24 @@
 .wascik-site > section,
 .wascik-site > footer {
   position: relative;
-  z-index: 3;
+  z-index: 4;
 }
 
-/* REAL PCB TRACE ART — stationary like a physical circuit board. */
+/* Stationary PCB trace art. */
 .wascik-site::before {
   content:"";
   position:absolute;
   inset:0;
   z-index:1;
   pointer-events:none;
-  opacity:.30;
+  opacity:.32;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='720' viewBox='0 0 900 720'%3E%3Cg fill='none' stroke='%2328cfff' stroke-width='2'%3E%3Cpath d='M0 92h150v58h92v82h120'/%3E%3Cpath d='M900 84H742v86h-94v76H520'/%3E%3Cpath d='M0 360h116v-72h84v130h126v74h118'/%3E%3Cpath d='M900 342H770v-84h-92v146H552v88H430'/%3E%3Cpath d='M0 612h178v-74h104v-86h98'/%3E%3Cpath d='M900 618H728v-66h-96v-102H516'/%3E%3Cpath d='M446 0v120h-72v92h-82'/%3E%3Cpath d='M512 720V596h76v-78h82'/%3E%3C/g%3E%3Cg fill='%2399ecff'%3E%3Ccircle cx='150' cy='92' r='5'/%3E%3Ccircle cx='242' cy='150' r='5'/%3E%3Ccircle cx='742' cy='84' r='5'/%3E%3Ccircle cx='648' cy='170' r='5'/%3E%3Ccircle cx='116' cy='360' r='5'/%3E%3Ccircle cx='200' cy='288' r='5'/%3E%3Ccircle cx='770' cy='342' r='5'/%3E%3Ccircle cx='678' cy='258' r='5'/%3E%3Ccircle cx='178' cy='612' r='5'/%3E%3Ccircle cx='728' cy='618' r='5'/%3E%3Ccircle cx='446' cy='120' r='5'/%3E%3Ccircle cx='512' cy='596' r='5'/%3E%3C/g%3E%3Cg fill='%23ffe600'%3E%3Ccircle cx='362' cy='232' r='4'/%3E%3Ccircle cx='552' cy='404' r='4'/%3E%3Ccircle cx='380' cy='452' r='4'/%3E%3C/g%3E%3C/svg%3E");
   background-size:900px 720px;
   background-repeat:repeat;
   mix-blend-mode:screen;
 }
 
-/* Soft electric bloom behind the trace art. */
+/* Ambient electric bloom. */
 .wascik-site::after {
   content:"";
   position:absolute;
@@ -45,7 +45,7 @@
     radial-gradient(circle at 78% 84%,rgba(18,192,255,.10),transparent 18%);
 }
 
-/* Code layer stays above the background circuitry but remains ambient. */
+/* Full-height ambient technology layer. */
 .code-backdrop {
   position:absolute !important;
   inset:0 !important;
@@ -55,110 +55,105 @@
   background:none !important;
 }
 
-/* Only the electronic signal nodes pulse — the board itself stays still. */
+/* Repeating signal lights. These pulse; the circuit traces do not move. */
 .code-backdrop::before {
   content:"";
   position:absolute;
   inset:0;
-  background:
-    radial-gradient(circle at 8% 14%,#aef4ff 0 2px,#28cfff 3px,transparent 7px),
-    radial-gradient(circle at 86% 28%,#aef4ff 0 2px,#28cfff 3px,transparent 7px),
-    radial-gradient(circle at 18% 62%,#ffe600 0 2px,rgba(255,230,0,.45) 3px,transparent 7px),
-    radial-gradient(circle at 79% 79%,#aef4ff 0 2px,#28cfff 3px,transparent 7px);
-  animation:node-pulse 3.8s ease-in-out infinite;
+  z-index:1;
+  opacity:.7;
+  background-image:
+    radial-gradient(circle at 72px 64px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.28) 7px, transparent 13px),
+    radial-gradient(circle at 238px 188px, #ffe600 0 3px, rgba(255,230,0,.75) 4px, rgba(255,230,0,.20) 8px, transparent 14px),
+    radial-gradient(circle at 356px 98px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.24) 8px, transparent 14px),
+    radial-gradient(circle at 465px 292px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.22) 8px, transparent 14px);
+  background-size:520px 380px;
+  background-repeat:repeat;
+  animation:signal-pulse 3.1s ease-in-out infinite;
 }
 
-.code-panel {
-  position:absolute !important;
-  width:min(340px,76vw) !important;
-  padding:15px 17px !important;
-  border:1px solid rgba(78,214,255,.48) !important;
-  border-radius:10px !important;
-  background:rgba(3,18,29,.30) !important;
-  box-shadow:0 0 24px rgba(0,188,255,.14), inset 0 0 20px rgba(0,153,220,.07) !important;
-  backdrop-filter:blur(1px);
-  opacity:.68 !important;
-  transform:none !important;
-  animation:code-float 9s ease-in-out infinite !important;
-}
-
-.code-panel::before {
-  content:"" !important;
+/* Code is painted directly into the background so section stacking cannot hide it. */
+.code-backdrop::after {
+  content:"";
   position:absolute;
-  left:0;
-  top:0;
-  width:100%;
-  height:2px;
-  background:linear-gradient(90deg,transparent,#65ddff,transparent);
-  box-shadow:0 0 12px #28cfff;
-  animation:code-scan 3.6s linear infinite;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  opacity:.32;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1100' height='980' viewBox='0 0 1100 980'%3E%3Cg font-family='monospace' font-size='18' font-weight='600'%3E%3Ctext x='38' y='118' fill='%237fdcff'%3Econst%20vision%20=%20%22built%20forward%22;%3C/text%3E%3Ctext x='620' y='252' fill='%23ffe600'%3EWASCIK.build(%7B%3C/text%3E%3Ctext x='650' y='282' fill='%23a7eaff'%3Ewebsites:%20true,%3C/text%3E%3Ctext x='650' y='310' fill='%23a7eaff'%3Eapps:%20true,%3C/text%3E%3Ctext x='650' y='338' fill='%23a7eaff'%3Eai:%20%22personal%22%3C/text%3E%3Ctext x='620' y='366' fill='%23ffe600'%3E%7D);%3C/text%3E%3Ctext x='92' y='548' fill='%236ab6d0'%3E//%20Powerful%20digital%20solutions%3C/text%3E%3Ctext x='92' y='578' fill='%239be9ff'%3Ebusiness.connect(customers);%3C/text%3E%3Ctext x='575' y='720' fill='%239be9ff'%3Eif%20(idea)%20%7B%3C/text%3E%3Ctext x='605' y='750' fill='%23ffffff'%3EWASCIK.create(idea);%3C/text%3E%3Ctext x='575' y='780' fill='%239be9ff'%3E%7D%3C/text%3E%3Ctext x='125' y='900' fill='%23ffe600'%3E//%20Discovery.%20Design.%20Development.%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-size:1100px 980px;
+  background-repeat:repeat;
+  animation:code-breathe 7s ease-in-out infinite;
 }
 
-.code-panel code {
-  display:block;
-  color:#b8efff !important;
-  font:600 .79rem/1.7 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
-  white-space:nowrap;
-  text-shadow:0 0 7px rgba(60,206,255,.25);
+/* Disable the old three boxed HTML terminals; background code above replaces them. */
+.code-panel {
+  display:none !important;
 }
 
-.code-panel code span{color:#ffe600 !important;}
-.code-panel code b{color:#fff !important;font-weight:700;}
-.code-panel code i{color:#78b4ca !important;font-style:normal;}
-
-/* Place code in open areas between major content blocks. */
-.code-panel-one{top:760px !important;left:2vw !important;}
-.code-panel-two{top:1830px !important;right:2vw !important;animation-delay:-2.7s !important;}
-.code-panel-three{top:3150px !important;left:3vw !important;animation-delay:-5s !important;}
-
-/* Remove the old hero grid. */
-.wascik-hero::after{display:none !important;}
-.wascik-hero::before{
-  opacity:.68 !important;
+/* Remove the old hero grid and keep its overlay translucent. */
+.wascik-hero::after { display:none !important; }
+.wascik-hero::before {
+  opacity:.64 !important;
   background:
-    radial-gradient(circle at 62% 45%,rgba(7,63,107,.68) 0,transparent 36%),
-    linear-gradient(115deg,rgba(2,9,19,.68) 42%,rgba(6,26,44,.62) 100%) !important;
+    radial-gradient(circle at 62% 45%,rgba(7,63,107,.64) 0,transparent 36%),
+    linear-gradient(115deg,rgba(2,9,19,.64) 42%,rgba(6,26,44,.58) 100%) !important;
 }
 
 .wascik-services,
 .ai-preview,
 .promo-band,
-.wascik-contact{
+.wascik-contact {
   background-color:transparent !important;
 }
 
-@keyframes node-pulse{
-  0%,100%{opacity:.38;filter:brightness(.8);}
-  50%{opacity:.88;filter:brightness(1.35);}
+@keyframes signal-pulse {
+  0%,100% { opacity:.22; filter:brightness(.7); }
+  45% { opacity:1; filter:brightness(1.8); }
+  60% { opacity:.55; filter:brightness(1.1); }
 }
 
-@keyframes code-float{
-  0%,100%{translate:0 0;}
-  50%{translate:0 -10px;}
+@keyframes code-breathe {
+  0%,100% { opacity:.20; }
+  50% { opacity:.42; }
 }
 
-@keyframes code-scan{
-  from{transform:translateY(0);}
-  to{transform:translateY(150px);}
+@media(max-width:900px) {
+  .wascik-site::before {
+    opacity:.27;
+    background-size:720px 576px;
+  }
+
+  .code-backdrop::before {
+    background-size:430px 315px;
+  }
+
+  .code-backdrop::after {
+    opacity:.38;
+    background-size:760px 677px;
+  }
 }
 
-@media(max-width:900px){
-  .wascik-site::before{opacity:.25;background-size:720px 576px;}
-  .code-panel{width:min(275px,72vw) !important;opacity:.62 !important;}
-  .code-panel code{font-size:.69rem !important;}
-  .code-panel-one{top:900px !important;left:-24px !important;}
-  .code-panel-two{top:2250px !important;right:-34px !important;}
-  .code-panel-three{top:3720px !important;left:-20px !important;}
+@media(max-width:560px) {
+  .wascik-site::before {
+    opacity:.24;
+    background-size:620px 496px;
+  }
+
+  .code-backdrop::before {
+    opacity:.9;
+    background-size:360px 264px;
+  }
+
+  .code-backdrop::after {
+    opacity:.46;
+    background-size:620px 552px;
+  }
 }
 
-@media(max-width:560px){
-  .wascik-site::before{opacity:.22;background-size:620px 496px;}
-  .code-panel{width:250px !important;opacity:.58 !important;padding:12px 13px !important;}
-  .code-panel code{font-size:.63rem !important;}
-}
-
-@media(prefers-reduced-motion:reduce){
+@media(prefers-reduced-motion:reduce) {
   .code-backdrop::before,
-  .code-panel,
-  .code-panel::before{animation:none !important;}
+  .code-backdrop::after {
+    animation:none !important;
+  }
 }

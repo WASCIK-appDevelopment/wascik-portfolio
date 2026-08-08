@@ -1,0 +1,359 @@
+/* WASCIK Phase 1 — distributed multicolor ambient code placement */
+
+/* Shared code treatment */
+.wascik-hero-copy::before,
+.wascik-portrait-wrap::before,
+.wascik-portrait-wrap::after,
+.service-grid::before,
+.service-grid::after,
+.ai-preview .ai-preview-copy::before,
+.ai-preview .ai-preview-copy::after,
+.promo-band > div::before,
+.wascik-contact > div::before,
+.wascik-contact > div::after {
+  position:absolute;
+  pointer-events:none;
+  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-weight:700;
+  white-space:pre;
+  letter-spacing:.02em;
+  text-shadow:0 0 10px currentColor;
+  z-index:0;
+  animation:wascik-code-breathe 6.5s ease-in-out infinite;
+}
+
+/* HERO — code beside logo and around portrait/shoulders */
+.wascik-hero-copy {
+  isolation:isolate;
+}
+
+.wascik-hero-copy > * {
+  position:relative;
+  z-index:2;
+}
+
+.wascik-hero-copy::before {
+  content:"const company = WASCIK;\Acompany.build({ web, apps, ai });\Astatus = \"ready\";";
+  top:-28px;
+  right:-110px;
+  color:rgba(111,230,154,.58);
+  font-size:.84rem;
+  line-height:1.55;
+  text-align:left;
+}
+
+.wascik-portrait-wrap::before {
+  content:"// build forward\Aif (vision) launch(vision);";
+  top:17%;
+  right:3%;
+  color:rgba(255,230,0,.58);
+  font-size:.78rem;
+  line-height:1.5;
+  text-align:right;
+}
+
+.wascik-portrait-wrap::after {
+  content:"deploy.success = true;";
+  left:5%;
+  bottom:20%;
+  color:rgba(255,104,104,.52);
+  font-size:.76rem;
+}
+
+/* SERVICES — additional code distributed between and behind cards */
+.service-grid {
+  position:relative;
+  isolation:isolate;
+}
+
+.service-grid > * {
+  position:relative;
+  z-index:2;
+}
+
+.service-grid::before {
+  content:"function grow(business) {\A  return design + code + support;\A}\Aclient.experience = \"mobile-first\";";
+  top:22%;
+  right:-2%;
+  color:rgba(111,230,154,.56);
+  font-size:.82rem;
+  line-height:1.55;
+  text-align:left;
+}
+
+.service-grid::after {
+  content:"const secure = true;\Aconst responsive = true;\A// tested • refined • launched";
+  bottom:18%;
+  left:2%;
+  color:rgba(255,112,112,.48);
+  font-size:.80rem;
+  line-height:1.5;
+}
+
+/* Add more small code moments between specific cards */
+.service-card:nth-child(2)::before,
+.service-card:nth-child(4)::before,
+.service-card:nth-child(6)::before {
+  position:absolute;
+  pointer-events:none;
+  z-index:1;
+  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-weight:700;
+  white-space:nowrap;
+  text-shadow:0 0 9px currentColor;
+  opacity:.46;
+}
+
+.service-card:nth-child(2)::before {
+  content:"app.connect(user);";
+  right:14px;
+  bottom:18px;
+  color:#ffe600;
+  font-size:.72rem;
+}
+
+.service-card:nth-child(4)::before {
+  content:"checkout.ready = true;";
+  right:12px;
+  top:48%;
+  color:#77e8a2;
+  font-size:.70rem;
+}
+
+.service-card:nth-child(6)::before {
+  content:"support.direct();";
+  left:16px;
+  bottom:16px;
+  color:#ff7777;
+  font-size:.70rem;
+}
+
+/* AI section — keep code to right-hand open lane */
+.ai-preview .ai-preview-copy {
+  position:relative;
+  isolation:isolate;
+}
+
+.ai-preview .ai-preview-copy > * {
+  position:relative;
+  z-index:2;
+}
+
+.ai-preview .ai-preview-copy::before {
+  content:"assistant.listen();\Aassistant.answer();\Aassistant.handoff();";
+  top:0;
+  right:-28%;
+  color:rgba(119,232,162,.58);
+  font-size:.82rem;
+  line-height:1.55;
+}
+
+.ai-preview .ai-preview-copy::after {
+  content:"// human-centered AI";
+  right:-18%;
+  bottom:-26px;
+  color:rgba(255,119,119,.50);
+  font-size:.76rem;
+}
+
+/* Promo */
+.promo-band > div {
+  position:relative;
+  isolation:isolate;
+}
+
+.promo-band > div > * {
+  position:relative;
+  z-index:2;
+}
+
+.promo-band > div::before {
+  content:"price.locked = 324;\Alaunch.mobile = true;";
+  top:-18px;
+  right:-45%;
+  color:rgba(255,230,0,.52);
+  font-size:.78rem;
+  line-height:1.5;
+}
+
+/* Contact — code at right and bottom */
+.wascik-contact > div:first-child {
+  position:relative;
+  isolation:isolate;
+}
+
+.wascik-contact > div:first-child > * {
+  position:relative;
+  z-index:2;
+}
+
+.wascik-contact > div:first-child::before {
+  content:"const nextStep = connect();\Aproject.start();";
+  top:8px;
+  right:-42%;
+  color:rgba(119,232,162,.56);
+  font-size:.80rem;
+  line-height:1.5;
+}
+
+.wascik-contact > div:first-child::after {
+  content:"// WASCIK App Development";
+  left:4%;
+  bottom:-44px;
+  color:rgba(255,112,112,.46);
+  font-size:.74rem;
+}
+
+@keyframes wascik-code-breathe {
+  0%,100% { opacity:.46; filter:brightness(.92); }
+  50% { opacity:.78; filter:brightness(1.14); }
+}
+
+/* Tablet */
+@media(max-width:900px) {
+  .wascik-hero-copy::before { right:-40px; }
+  .service-grid::before { right:-20px; }
+  .ai-preview .ai-preview-copy::before { right:-12%; }
+}
+
+/* PHONE — intentionally favor the right side/open gutters */
+@media(max-width:560px) {
+  .wascik-hero-copy::before,
+  .wascik-portrait-wrap::before,
+  .wascik-portrait-wrap::after,
+  .service-grid::before,
+  .service-grid::after,
+  .ai-preview .ai-preview-copy::before,
+  .ai-preview .ai-preview-copy::after,
+  .promo-band > div::before,
+  .wascik-contact > div:first-child::before,
+  .wascik-contact > div:first-child::after {
+    animation-duration:7.5s;
+  }
+
+  .wascik-hero-copy::before {
+    top:18px;
+    left:auto;
+    right:-104px;
+    width:250px;
+    color:rgba(119,232,162,.66);
+    font-size:.72rem;
+    line-height:1.48;
+  }
+
+  .wascik-portrait-wrap::before {
+    top:18%;
+    right:-42px;
+    width:230px;
+    color:rgba(255,230,0,.64);
+    font-size:.70rem;
+  }
+
+  .wascik-portrait-wrap::after {
+    left:auto;
+    right:-24px;
+    bottom:17%;
+    color:rgba(255,112,112,.60);
+    font-size:.68rem;
+  }
+
+  /* Put main service code in the empty right gutter and repeat lower down */
+  .service-grid::before {
+    top:8%;
+    right:-118px;
+    width:300px;
+    color:rgba(119,232,162,.66);
+    font-size:.72rem;
+    line-height:1.48;
+  }
+
+  .service-grid::after {
+    bottom:10%;
+    left:auto;
+    right:-96px;
+    width:285px;
+    color:rgba(255,112,112,.56);
+    font-size:.70rem;
+    line-height:1.45;
+  }
+
+  .service-card:nth-child(2)::before,
+  .service-card:nth-child(4)::before,
+  .service-card:nth-child(6)::before {
+    opacity:.58;
+    font-size:.68rem;
+  }
+
+  /* AI: move code away from headline/body and into right side */
+  .ai-preview::before {
+    left:auto !important;
+    right:-102px !important;
+    top:16% !important;
+    width:300px !important;
+    text-align:left;
+    color:rgba(151,231,255,.64) !important;
+  }
+
+  .ai-preview .ai-preview-copy::before {
+    top:56%;
+    right:-118px;
+    width:285px;
+    color:rgba(119,232,162,.62);
+    font-size:.71rem;
+  }
+
+  .ai-preview .ai-preview-copy::after {
+    right:-72px;
+    bottom:-44px;
+    color:rgba(255,112,112,.56);
+    font-size:.68rem;
+  }
+
+  .promo-band::before {
+    right:-90px !important;
+    left:auto !important;
+    width:260px !important;
+  }
+
+  .promo-band > div::before {
+    top:52%;
+    right:-110px;
+    width:260px;
+    font-size:.70rem;
+  }
+
+  .wascik-contact::before {
+    right:-94px !important;
+    left:auto !important;
+    width:270px !important;
+  }
+
+  .wascik-contact > div:first-child::before {
+    top:55%;
+    right:-102px;
+    width:260px;
+    font-size:.70rem;
+  }
+
+  .wascik-contact > div:first-child::after {
+    left:auto;
+    right:-56px;
+    bottom:-56px;
+    font-size:.67rem;
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .wascik-hero-copy::before,
+  .wascik-portrait-wrap::before,
+  .wascik-portrait-wrap::after,
+  .service-grid::before,
+  .service-grid::after,
+  .ai-preview .ai-preview-copy::before,
+  .ai-preview .ai-preview-copy::after,
+  .promo-band > div::before,
+  .wascik-contact > div:first-child::before,
+  .wascik-contact > div:first-child::after {
+    animation:none !important;
+  }
+}

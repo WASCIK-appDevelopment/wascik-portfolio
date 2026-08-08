@@ -34,7 +34,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="min-h-full">
+     <head>
+       <meta name='impact-site-verification' 
+       value='b92be5b8-e61a-476b-a19c-8ff91bfc0e95'
+       />
+     </head>
+     <body className="min-h-full">
         {children}
         <HomepageAffiliateLink />
       </body>

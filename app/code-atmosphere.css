@@ -1,491 +1,374 @@
-/* WASCIK Phase 1 — distributed multicolor ambient code placement */
+/* WASCIK ambient code — deliberate coder-style placement */
 
-/* Shared code treatment */
-.wascik-hero-copy::before,
-.wascik-portrait-wrap::before,
-.wascik-portrait-wrap::after,
-.service-grid::before,
-.service-grid::after,
-.ai-preview .ai-preview-copy::before,
-.ai-preview .ai-preview-copy::after,
-.promo-band > div::before,
-.wascik-contact > div::before,
-.wascik-contact > div::after {
-  position:absolute;
-  pointer-events:none;
-  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-weight:700;
-  white-space:pre;
-  letter-spacing:.02em;
-  text-shadow:0 0 10px currentColor;
-  z-index:0;
-  animation:wascik-code-breathe 6.5s ease-in-out infinite;
+@keyframes wascik-code-breathe {
+  0%, 100% { opacity: .68; filter: brightness(.96); }
+  50% { opacity: .94; filter: brightness(1.16); }
 }
 
-/* TOP HERO GAP — visible code between the small nav logo and the large hero logo */
+/* --------------------------------------------------
+   TOP / HERO
+-------------------------------------------------- */
 .wascik-nav {
-  overflow:visible !important;
+  overflow: visible !important;
 }
 
+/* Green code in the open gap under the small WASCIK logo. */
 .wascik-nav::after {
-  content:"const studio = WASCIK;\Astatus = 'building';\Astack = [web, app, ai];";
-  position:absolute;
-  pointer-events:none;
-  right:22px;
-  bottom:-92px;
-  width:300px;
-  color:rgba(119,232,162,.78);
-  font:700 .80rem/1.5 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  white-space:pre;
-  text-align:right;
-  text-shadow:0 0 10px rgba(119,232,162,.38);
-  z-index:7;
-  animation:wascik-code-breathe 6.5s ease-in-out infinite;
+  content: "const studio = WASCIK;\Astack = [web, app, ai];\Astatus = 'building';";
+  position: absolute;
+  right: 18px;
+  bottom: -102px;
+  width: 260px;
+  z-index: 7;
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+  color: rgba(119, 232, 162, .84);
+  font: 800 .72rem/1.48 var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 10px rgba(119, 232, 162, .36);
+  animation: wascik-code-breathe 7s ease-in-out infinite;
 }
 
-/* HERO — code beside logo and around portrait/shoulders */
+/* Cyan secondary code near the large hero logo, but not over body copy. */
 .wascik-hero-copy {
-  isolation:isolate;
+  position: relative;
+  isolation: isolate;
 }
 
 .wascik-hero-copy > * {
-  position:relative;
-  z-index:2;
+  position: relative;
+  z-index: 2;
 }
 
 .wascik-hero-copy::before {
-  content:"const company = WASCIK;\Acompany.build({ web, apps, ai });\Astatus = \"ready\";";
-  top:-28px;
-  right:-110px;
-  color:rgba(111,230,154,.58);
-  font-size:.84rem;
-  line-height:1.55;
-  text-align:left;
+  content: "const company = WASCIK;\Acompany.build({ web: true });";
+  position: absolute;
+  top: 112px;
+  right: 10px;
+  width: 200px;
+  z-index: 1;
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+  color: rgba(111, 218, 255, .72);
+  font: 800 .67rem/1.44 var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 9px rgba(111, 218, 255, .30);
+  animation: wascik-code-breathe 8s ease-in-out infinite reverse;
 }
 
-.wascik-portrait-wrap::before {
-  content:"// build forward\Aif (vision) launch(vision);";
-  top:17%;
-  right:3%;
-  color:rgba(255,230,0,.58);
-  font-size:.78rem;
-  line-height:1.5;
-  text-align:right;
+/* Portrait code sits above the image so it actually reads. */
+.wascik-portrait-wrap {
+  position: relative;
+  isolation: isolate;
 }
 
-.wascik-portrait-wrap::after {
-  content:"deploy.success = true;";
-  left:5%;
-  bottom:20%;
-  color:rgba(255,104,104,.52);
-  font-size:.76rem;
-}
-
-/* Put shoulder code on an overlay that sits ABOVE the portrait image. */
 .wascik-portrait-wrap .portrait-halo {
-  z-index:3 !important;
-  pointer-events:none;
+  position: absolute;
+  inset: 0;
+  z-index: 3 !important;
+  pointer-events: none;
 }
 
 .wascik-portrait-wrap .portrait-halo::before,
 .wascik-portrait-wrap .portrait-halo::after {
-  position:absolute;
-  pointer-events:none;
-  z-index:4;
-  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-weight:800;
-  white-space:pre;
-  text-shadow:0 0 9px currentColor;
-  animation:wascik-code-breathe 6.8s ease-in-out infinite;
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  white-space: pre;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  text-shadow: 0 0 9px currentColor;
+  animation: wascik-code-breathe 7.2s ease-in-out infinite;
 }
 
+/* This is intentionally a real code block, not a slogan line. */
 .wascik-portrait-wrap .portrait-halo::before {
-  content:"// human-built technology\Aconst vision = personal;";
-  top:37%;
-  right:4%;
-  color:rgba(255,230,0,.76);
-  font-size:.74rem;
-  line-height:1.5;
-  text-align:right;
+  content: "const vision = 'personal';\Aif (business.needsGrowth) {\A  WASCIK.launch();\A}";
+  top: 31%;
+  right: 12px;
+  width: 230px;
+  color: rgba(255, 230, 0, .80);
+  font-size: .70rem;
+  line-height: 1.46;
+  text-align: right;
 }
 
 .wascik-portrait-wrap .portrait-halo::after {
-  content:"deploy.success = true;";
-  right:5%;
-  top:59%;
-  color:rgba(255,112,112,.72);
-  font-size:.72rem;
+  content: "deploy.success = true;";
+  top: 58%;
+  right: 14px;
+  color: rgba(255, 112, 112, .80);
+  font-size: .69rem;
 }
 
-/* SERVICES — additional code distributed between and behind cards */
+/* Disable older buried portrait pseudo-code from previous passes. */
+.wascik-portrait-wrap::before,
+.wascik-portrait-wrap::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* --------------------------------------------------
+   SERVICES
+-------------------------------------------------- */
 .service-grid {
-  position:relative;
-  isolation:isolate;
+  position: relative;
+  isolation: isolate;
 }
 
-.service-grid > * {
-  position:relative;
-  z-index:2;
-}
-
-.service-grid::before {
-  content:"function grow(business) {\A  return design + code + support;\A}\Aclient.experience = \"mobile-first\";";
-  top:22%;
-  right:-2%;
-  color:rgba(111,230,154,.56);
-  font-size:.82rem;
-  line-height:1.55;
-  text-align:left;
-}
-
+/* Remove the old section-wide piles of code. */
+.service-grid::before,
 .service-grid::after {
-  content:"const secure = true;\Aconst responsive = true;\A// tested • refined • launched";
-  bottom:18%;
-  left:2%;
-  color:rgba(255,112,112,.48);
-  font-size:.80rem;
-  line-height:1.5;
+  content: none !important;
+  display: none !important;
 }
 
-/* Make card #1 code a true in-card layer above the card background. */
-.service-card:first-child > * {
-  position:relative;
-  z-index:2;
+.service-card {
+  position: relative;
+  overflow: hidden;
 }
 
+.service-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Featured code in card 1 — visible above the card background, below content. */
 .service-card:first-child::before,
 .service-card:first-child::after {
-  position:absolute;
-  pointer-events:none;
-  z-index:1;
-  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-weight:800;
-  white-space:pre;
-  text-shadow:0 0 10px currentColor;
-  animation:wascik-code-breathe 6.2s ease-in-out infinite;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  text-shadow: 0 0 10px currentColor;
+  animation: wascik-code-breathe 6.5s ease-in-out infinite;
 }
 
 .service-card:first-child::before {
-  content:"const business = await\AWASCIK.build({\A  websites: true,\A  support: direct\A});";
-  top:18%;
-  right:10px;
-  color:rgba(119,232,162,.80);
-  font-size:.76rem;
-  line-height:1.45;
-  text-align:right;
+  content: "const business = await\AWASCIK.build({\A  websites: true,\A  support: 'direct'\A});";
+  top: 18%;
+  right: 10px;
+  width: 210px;
+  color: rgba(119, 232, 162, .88);
+  font-size: .72rem;
+  line-height: 1.43;
 }
 
 .service-card:first-child::after {
-  content:"// mobile-first\Alaunch.ready = true;";
-  right:14px;
-  bottom:12%;
-  color:rgba(255,230,0,.72);
-  font-size:.70rem;
-  line-height:1.45;
-  text-align:right;
+  content: "// mobile-first\Alaunch.ready = true;";
+  right: 12px;
+  bottom: 11%;
+  color: rgba(255, 230, 0, .82);
+  font-size: .67rem;
+  line-height: 1.44;
 }
 
-/* Add more small code moments between specific cards */
+/* Small intentional code accents on selected later cards. */
 .service-card:nth-child(2)::before,
 .service-card:nth-child(4)::before,
 .service-card:nth-child(6)::before {
-  position:absolute;
-  pointer-events:none;
-  z-index:1;
-  font-family:var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-weight:700;
-  white-space:nowrap;
-  text-shadow:0 0 9px currentColor;
-  opacity:.46;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  font: 800 .68rem/1.4 var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 8px currentColor;
+  opacity: .76;
 }
 
 .service-card:nth-child(2)::before {
-  content:"app.connect(user);";
-  right:14px;
-  bottom:18px;
-  color:#ffe600;
-  font-size:.72rem;
+  content: "app.connect(user);";
+  right: 14px;
+  bottom: 18px;
+  color: #ffe600;
 }
 
 .service-card:nth-child(4)::before {
-  content:"checkout.ready = true;";
-  right:12px;
-  top:48%;
-  color:#77e8a2;
-  font-size:.70rem;
+  content: "checkout.ready = true;";
+  right: 14px;
+  top: 48%;
+  color: #77e8a2;
 }
 
 .service-card:nth-child(6)::before {
-  content:"support.direct();";
-  left:16px;
-  bottom:16px;
-  color:#ff7777;
-  font-size:.70rem;
+  content: "support.direct();";
+  left: 16px;
+  bottom: 18px;
+  color: #ff7777;
 }
 
-/* AI section — a single compact right-hand code lane */
+/* --------------------------------------------------
+   AI SECTION
+-------------------------------------------------- */
+/* Disable older full-section AI code so it cannot compete with body copy. */
+.ai-preview::before {
+  content: none !important;
+  display: none !important;
+}
+
 .ai-preview .ai-preview-copy {
-  position:relative;
-  isolation:isolate;
+  position: relative;
+  isolation: isolate;
 }
 
 .ai-preview .ai-preview-copy > * {
-  position:relative;
-  z-index:2;
+  position: relative;
+  z-index: 2;
+}
+
+.ai-preview .ai-preview-copy::before,
+.ai-preview .ai-preview-copy::after {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  white-space: pre;
+  text-align: right;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  text-shadow: 0 0 9px currentColor;
+  animation: wascik-code-breathe 7s ease-in-out infinite;
 }
 
 .ai-preview .ai-preview-copy::before {
-  content:"assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
-  top:52%;
-  right:0;
-  color:rgba(119,232,162,.58);
-  font-size:.76rem;
-  line-height:1.5;
+  content: "assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
+  top: 68%;
+  right: 10px;
+  width: 175px;
+  color: rgba(119, 232, 162, .70);
+  font-size: .66rem;
+  line-height: 1.42;
 }
 
 .ai-preview .ai-preview-copy::after {
-  content:"// human-centered AI";
-  right:0;
-  bottom:-24px;
-  color:rgba(255,119,119,.50);
-  font-size:.72rem;
+  content: "// human-centered AI";
+  right: 10px;
+  bottom: -34px;
+  color: rgba(255, 112, 112, .62);
+  font-size: .64rem;
 }
 
-/* Promo */
+/* --------------------------------------------------
+   PROMO
+-------------------------------------------------- */
 .promo-band > div {
-  position:relative;
-  isolation:isolate;
+  position: relative;
+  isolation: isolate;
 }
 
 .promo-band > div > * {
-  position:relative;
-  z-index:2;
+  position: relative;
+  z-index: 2;
 }
 
 .promo-band > div::before {
-  content:"price.locked = 324;\Alaunch.mobile = true;";
-  top:-18px;
-  right:-45%;
-  color:rgba(255,230,0,.52);
-  font-size:.78rem;
-  line-height:1.5;
+  content: "price.locked = 324;\Alaunch.mobile = true;";
+  position: absolute;
+  top: 54%;
+  right: -100px;
+  width: 250px;
+  z-index: 1;
+  pointer-events: none;
+  white-space: pre;
+  color: rgba(255, 230, 0, .62);
+  font: 800 .69rem/1.44 var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 8px rgba(255, 230, 0, .22);
+  animation: wascik-code-breathe 8s ease-in-out infinite reverse;
 }
 
-/* Contact — code at right and bottom */
+/* --------------------------------------------------
+   CONTACT — preserve the treatment that already reads well
+-------------------------------------------------- */
 .wascik-contact > div:first-child {
-  position:relative;
-  isolation:isolate;
+  position: relative;
+  isolation: isolate;
 }
 
 .wascik-contact > div:first-child > * {
-  position:relative;
-  z-index:2;
+  position: relative;
+  z-index: 2;
+}
+
+.wascik-contact > div:first-child::before,
+.wascik-contact > div:first-child::after {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  white-space: pre;
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 800;
+  text-shadow: 0 0 9px currentColor;
+  animation: wascik-code-breathe 7s ease-in-out infinite;
 }
 
 .wascik-contact > div:first-child::before {
-  content:"const nextStep = connect();\Aproject.start();";
-  top:8px;
-  right:-42%;
-  color:rgba(119,232,162,.56);
-  font-size:.80rem;
-  line-height:1.5;
+  content: "const nextStep = connect();\Aproject.start();";
+  top: 54%;
+  right: -96px;
+  width: 260px;
+  color: rgba(119, 232, 162, .70);
+  font-size: .70rem;
+  line-height: 1.44;
 }
 
 .wascik-contact > div:first-child::after {
-  content:"// WASCIK App Development";
-  left:4%;
-  bottom:-44px;
-  color:rgba(255,112,112,.46);
-  font-size:.74rem;
+  content: "// WASCIK App Development";
+  right: -54px;
+  bottom: -54px;
+  color: rgba(255, 112, 112, .58);
+  font-size: .67rem;
 }
 
-@keyframes wascik-code-breathe {
-  0%,100% { opacity:.58; filter:brightness(.96); }
-  50% { opacity:.90; filter:brightness(1.18); }
-}
-
-/* Tablet */
-@media(max-width:900px) {
-  .wascik-hero-copy::before { right:10px; }
-  .service-grid::before { right:-20px; }
-  .ai-preview .ai-preview-copy::before { right:8px; }
-}
-
-/* PHONE — intentionally favor the right side/open gutters */
-@media(max-width:560px) {
-  .wascik-hero-copy::before,
-  .wascik-portrait-wrap::before,
-  .wascik-portrait-wrap::after,
-  .service-grid::before,
-  .service-grid::after,
-  .ai-preview .ai-preview-copy::before,
-  .ai-preview .ai-preview-copy::after,
-  .promo-band > div::before,
-  .wascik-contact > div:first-child::before,
-  .wascik-contact > div:first-child::after {
-    animation-duration:7.5s;
-  }
-
-  /* Strong code in the open gap under the small logo. */
+/* --------------------------------------------------
+   MOBILE REFINEMENTS
+-------------------------------------------------- */
+@media (max-width: 560px) {
   .wascik-nav::after {
-    right:18px;
-    bottom:-108px;
-    width:260px;
-    color:rgba(119,232,162,.84);
-    font-size:.72rem;
-    line-height:1.48;
+    right: 18px;
+    bottom: -104px;
+    width: 255px;
   }
 
-  /* Keep secondary hero-copy code in a different lane. */
   .wascik-hero-copy::before {
-    top:108px;
-    left:auto;
-    right:8px;
-    width:195px;
-    color:rgba(111,218,255,.74);
-    font-size:.67rem;
-    line-height:1.43;
-    text-align:right;
-  }
-
-  /* Disable the buried portrait-wrap pseudo code; overlay code above replaces it. */
-  .wascik-portrait-wrap::before,
-  .wascik-portrait-wrap::after {
-    content:none !important;
-    display:none !important;
+    top: 108px;
+    right: 8px;
+    width: 190px;
   }
 
   .wascik-portrait-wrap .portrait-halo::before {
-    top:34%;
-    right:12px;
-    width:220px;
-    color:rgba(255,230,0,.84);
-    font-size:.70rem;
-    line-height:1.46;
+    top: 30%;
+    right: 10px;
+    width: 225px;
+    font-size: .69rem;
   }
 
   .wascik-portrait-wrap .portrait-halo::after {
-    top:56%;
-    right:12px;
-    color:rgba(255,112,112,.80);
-    font-size:.69rem;
+    top: 57%;
+    right: 12px;
+    font-size: .68rem;
   }
 
-  /* Put main service code in the empty right gutter and repeat lower down. */
-  .service-grid::before {
-    top:8%;
-    right:-90px;
-    width:270px;
-    color:rgba(119,232,162,.66);
-    font-size:.72rem;
-    line-height:1.48;
-  }
-
-  .service-grid::after {
-    bottom:10%;
-    left:auto;
-    right:-78px;
-    width:265px;
-    color:rgba(255,112,112,.56);
-    font-size:.70rem;
-    line-height:1.45;
-  }
-
-  /* Card #1 is intentionally stronger so it clearly reads through the panel. */
   .service-card:first-child::before {
-    top:17%;
-    right:8px;
-    color:rgba(119,232,162,.88);
-    font-size:.72rem;
-    line-height:1.42;
+    top: 18%;
+    right: 8px;
+    width: 205px;
+    font-size: .71rem;
   }
 
   .service-card:first-child::after {
-    right:10px;
-    bottom:10%;
-    color:rgba(255,230,0,.82);
-    font-size:.67rem;
-  }
-
-  .service-card:nth-child(2)::before,
-  .service-card:nth-child(4)::before,
-  .service-card:nth-child(6)::before {
-    opacity:.64;
-    font-size:.68rem;
-  }
-
-  /* Disable the older full AI section code block from tech-background.css. */
-  .ai-preview::before {
-    content:none !important;
-    display:none !important;
-  }
-
-  /* Keep AI code compact and in the right-hand empty lane, below the main paragraph. */
-  .ai-preview .ai-preview-copy::before {
-    content:"assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
-    top:67%;
-    left:auto;
-    right:8px;
-    width:175px;
-    color:rgba(119,232,162,.66);
-    font-size:.66rem;
-    line-height:1.42;
-    text-align:right;
-  }
-
-  .ai-preview .ai-preview-copy::after {
-    content:"// human-centered AI";
-    left:auto;
-    right:8px;
-    bottom:-34px;
-    color:rgba(255,112,112,.58);
-    font-size:.64rem;
-    text-align:right;
-  }
-
-  .promo-band::before {
-    right:-90px !important;
-    left:auto !important;
-    width:260px !important;
-  }
-
-  .promo-band > div::before {
-    top:52%;
-    right:-110px;
-    width:260px;
-    font-size:.70rem;
-  }
-
-  .wascik-contact::before {
-    right:-94px !important;
-    left:auto !important;
-    width:270px !important;
-  }
-
-  .wascik-contact > div:first-child::before {
-    top:55%;
-    right:-102px;
-    width:260px;
-    font-size:.70rem;
-  }
-
-  .wascik-contact > div:first-child::after {
-    left:auto;
-    right:-56px;
-    bottom:-56px;
-    font-size:.67rem;
+    right: 10px;
+    bottom: 10%;
+    font-size: .66rem;
   }
 }
 
-@media(prefers-reduced-motion:reduce) {
+@media (prefers-reduced-motion: reduce) {
   .wascik-nav::after,
   .wascik-hero-copy::before,
-  .wascik-portrait-wrap::before,
-  .wascik-portrait-wrap::after,
   .wascik-portrait-wrap .portrait-halo::before,
   .wascik-portrait-wrap .portrait-halo::after,
-  .service-grid::before,
-  .service-grid::after,
   .service-card:first-child::before,
   .service-card:first-child::after,
   .ai-preview .ai-preview-copy::before,
@@ -493,6 +376,6 @@
   .promo-band > div::before,
   .wascik-contact > div:first-child::before,
   .wascik-contact > div:first-child::after {
-    animation:none !important;
+    animation: none !important;
   }
 }

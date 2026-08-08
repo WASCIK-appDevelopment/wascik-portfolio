@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./tech-background.css";
 import "./code-atmosphere.css";
+import HomepageAffiliateLink from "./HomepageAffiliateLink";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <HomepageAffiliateLink />
+      </body>
     </html>
   );
 }

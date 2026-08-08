@@ -1,4 +1,4 @@
-/* WASCIK technology background — static PCB circuits + prominent ambient code */
+/* WASCIK technology background — static PCB circuits + section-anchored code */
 
 .wascik-site {
   position: relative;
@@ -17,7 +17,7 @@
   z-index: 4;
 }
 
-/* Stationary PCB trace art. */
+/* Stationary circuit-board environment. */
 .wascik-site::before {
   content:"";
   position:absolute;
@@ -31,7 +31,6 @@
   mix-blend-mode:screen;
 }
 
-/* Ambient electric bloom. */
 .wascik-site::after {
   content:"";
   position:absolute;
@@ -45,143 +44,140 @@
     radial-gradient(circle at 78% 84%,rgba(18,192,255,.10),transparent 18%);
 }
 
-/* Full-height technology overlay. */
+/* Signal-light layer only. Old page-wide code fragments are disabled. */
 .code-backdrop {
   position:absolute !important;
   inset:0 !important;
-  z-index:5 !important;
+  z-index:2 !important;
   pointer-events:none;
   overflow:hidden;
   background:none !important;
 }
 
-/* Repeating signal lights. */
 .code-backdrop::before {
   content:"";
   position:absolute;
   inset:0;
-  z-index:1;
   background-image:
-    radial-gradient(circle at 72px 64px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.28) 7px, transparent 13px),
-    radial-gradient(circle at 238px 188px, #ffe600 0 3px, rgba(255,230,0,.75) 4px, rgba(255,230,0,.20) 8px, transparent 14px),
-    radial-gradient(circle at 356px 98px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.24) 8px, transparent 14px),
-    radial-gradient(circle at 465px 292px, #d7f9ff 0 3px, #28cfff 4px, rgba(40,207,255,.22) 8px, transparent 14px);
+    radial-gradient(circle at 72px 64px,#d7f9ff 0 3px,#28cfff 4px,rgba(40,207,255,.28) 7px,transparent 13px),
+    radial-gradient(circle at 238px 188px,#ffe600 0 3px,rgba(255,230,0,.75) 4px,rgba(255,230,0,.20) 8px,transparent 14px),
+    radial-gradient(circle at 356px 98px,#d7f9ff 0 3px,#28cfff 4px,rgba(40,207,255,.24) 8px,transparent 14px),
+    radial-gradient(circle at 465px 292px,#d7f9ff 0 3px,#28cfff 4px,rgba(40,207,255,.22) 8px,transparent 14px);
   background-size:520px 380px;
   background-repeat:repeat;
   animation:signal-pulse 3.1s ease-in-out infinite;
 }
 
-/* A repeating ambient comment gives the page more code density between the main clusters. */
-.code-backdrop::after {
-  content:"// WASCIK.build(vision)  •  digital solutions in progress";
-  display:block !important;
-  position:absolute;
+.code-backdrop::after,
+.code-panel { display:none !important; }
+
+/* Every major section owns its own readable ambient code. */
+.wascik-hero,
+.wascik-services,
+.ai-preview,
+.promo-band,
+.wascik-contact {
+  isolation:isolate;
+  background-color:transparent !important;
+}
+
+.wascik-hero > *,
+.wascik-services > *,
+.ai-preview > *,
+.promo-band > *,
+.wascik-contact > * {
+  position:relative;
   z-index:2;
-  top:1120px;
-  left:6vw;
-  color:rgba(111,218,255,.58);
-  font:700 .90rem/1.4 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  letter-spacing:.03em;
-  white-space:nowrap;
-  text-shadow:
-    0 0 10px rgba(40,207,255,.30),
-    44vw 780px 0 rgba(255,230,0,.45),
-    -2vw 1540px 0 rgba(111,218,255,.52),
-    36vw 2310px 0 rgba(111,218,255,.50),
-    2vw 3080px 0 rgba(255,230,0,.38);
-  animation:code-glow 6.5s ease-in-out infinite;
 }
 
-/* Real HTML code clusters. */
-.code-panel {
-  display:block !important;
-  position:absolute !important;
-  z-index:3 !important;
-  width:min(390px,88vw) !important;
-  max-width:88vw;
-  padding:0 !important;
-  border:0 !important;
-  border-radius:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-  opacity:.72 !important;
-  transform:none !important;
-  animation:code-glow 6s ease-in-out infinite !important;
-  filter:drop-shadow(0 0 9px rgba(40,207,255,.32));
-}
-
-.code-panel::before {
-  display:block !important;
+.wascik-services::before,
+.ai-preview::before,
+.promo-band::before,
+.wascik-contact::before {
   position:absolute;
-  top:118px;
-  width:max-content;
-  max-width:82vw;
-  color:rgba(112,220,255,.68);
-  font:700 .88rem/1.5 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
-  white-space:pre;
-  text-shadow:0 0 9px rgba(40,207,255,.28);
+  z-index:0;
+  pointer-events:none;
+  white-space:pre-wrap;
+  color:rgba(140,226,255,.62);
+  font:700 .98rem/1.55 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.02em;
+  text-shadow:0 0 10px rgba(40,207,255,.36);
+  animation:code-glow 5.5s ease-in-out infinite;
 }
 
-.code-panel-one::before {
-  content:"// custom-built for your business\Aconst experience = responsive + personal;";
-  left:18vw;
-}
-.code-panel-two::before {
-  content:"const future = await launch();\Abrand.voice = \"personal\";";
-  right:2vw;
-}
-.code-panel-three::before {
-  content:"// connect people to possibilities\Abusiness.grow({ web, app, ai });";
-  left:14vw;
+.wascik-services::before {
+  content:"const business = await WASCIK.build({\A  websites: true,\A  apps: true,\A  ai: \"personal\",\A  support: \"direct\"\A});\A\A// Your business. Upgraded.";
+  top:170px;
+  right:3vw;
+  width:360px;
+  text-align:left;
 }
 
-.code-panel::after {
-  display:block !important;
+.ai-preview::before {
+  content:"if (visitor.needsHelp) {\A  assistant.respond();\A  assistant.guide();\A  human.handoff();\A}\A\A// Technology that feels personal.";
+  top:44px;
+  left:3vw;
+  width:350px;
+}
+
+.promo-band::before {
+  content:"const launch = {\A  design: \"custom\",\A  mobile: true,\A  revisions: 2,\A  price: 324\A};";
+  top:24px;
+  right:4vw;
+  width:300px;
+}
+
+.wascik-contact::before {
+  content:"// Ready when you are\Aconst future = await connect();\AWASCIK.create(idea);\Abusiness.moveForward();";
+  top:70px;
+  right:4vw;
+  width:340px;
+}
+
+/* Secondary code comments add density without clutter. */
+.wascik-services::after,
+.ai-preview::after,
+.wascik-contact::after {
   position:absolute;
-  top:245px;
-  color:rgba(255,230,0,.58);
+  z-index:0;
+  pointer-events:none;
+  color:rgba(255,230,0,.50);
   font:700 .84rem/1.45 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace;
   white-space:nowrap;
-  text-shadow:0 0 8px rgba(255,230,0,.20);
-}
-.code-panel-one::after { content:"WASCIK.create({ design, development, support });"; left:3vw; }
-.code-panel-two::after { content:"if (idea) WASCIK.build(idea);"; right:5vw; }
-.code-panel-three::after { content:"// Discovery. Design. Development."; left:5vw; }
-
-.code-panel code {
-  display:block !important;
-  overflow:visible !important;
-  color:rgba(150,229,255,.82) !important;
-  font:700 1rem/1.62 var(--font-geist-mono),ui-monospace,SFMono-Regular,Menlo,monospace !important;
-  white-space:nowrap !important;
-  animation:none !important;
-  text-shadow:0 0 9px rgba(40,207,255,.34);
+  text-shadow:0 0 8px rgba(255,230,0,.22);
+  animation:code-glow 7s ease-in-out infinite reverse;
 }
 
-.code-panel code span { color:rgba(255,230,0,.86) !important; }
-.code-panel code b { color:rgba(240,251,255,.88) !important; font-weight:800 !important; }
-.code-panel code i { color:rgba(102,189,220,.78) !important; font-style:normal !important; }
+.wascik-services::after {
+  content:"// Discovery • Design • Development";
+  left:4vw;
+  bottom:34px;
+}
 
-/* Main placements. */
-.code-panel-one { top:610px !important; left:3vw !important; }
-.code-panel-two { top:1800px !important; right:3vw !important; left:auto !important; animation-delay:-2s !important; }
-.code-panel-three { top:3180px !important; left:5vw !important; animation-delay:-4s !important; }
+.ai-preview::after {
+  content:"business.connect(customers);";
+  right:4vw;
+  bottom:26px;
+}
 
-/* Remove the old hero grid and keep its overlay translucent. */
+.wascik-contact::after {
+  content:"// Built forward with WASCIK";
+  left:4vw;
+  bottom:30px;
+}
+
+/* Service cards need a little transparency so circuit/code atmosphere can read around them. */
+.service-card {
+  background:linear-gradient(145deg,rgba(9,40,59,.90),rgba(3,16,27,.88)) !important;
+}
+
+/* Remove the old hero grid. */
 .wascik-hero::after { display:none !important; }
 .wascik-hero::before {
   opacity:.64 !important;
   background:
     radial-gradient(circle at 62% 45%,rgba(7,63,107,.64) 0,transparent 36%),
     linear-gradient(115deg,rgba(2,9,19,.64) 42%,rgba(6,26,44,.58) 100%) !important;
-}
-
-.wascik-services,
-.ai-preview,
-.promo-band,
-.wascik-contact {
-  background-color:transparent !important;
 }
 
 @keyframes signal-pulse {
@@ -191,73 +187,74 @@
 }
 
 @keyframes code-glow {
-  0%,100% { opacity:.58; filter:brightness(.92); }
-  50% { opacity:.88; filter:brightness(1.22); }
+  0%,100% { opacity:.48; filter:brightness(.92); }
+  50% { opacity:.82; filter:brightness(1.18); }
 }
 
 @media(max-width:900px) {
   .wascik-site::before { opacity:.27; background-size:720px 576px; }
   .code-backdrop::before { background-size:430px 315px; }
-  .code-panel code { font-size:.90rem !important; }
-  .code-panel::before { font-size:.80rem; }
-  .code-panel::after { font-size:.76rem; }
-  .code-panel-one { top:770px !important; left:14px !important; }
-  .code-panel-two { top:2150px !important; right:12px !important; }
-  .code-panel-three { top:3650px !important; left:14px !important; }
 }
 
 @media(max-width:560px) {
   .wascik-site::before { opacity:.24; background-size:620px 496px; }
   .code-backdrop::before { background-size:360px 264px; }
 
-  .code-backdrop::after {
-    top:1040px;
-    left:16px;
-    font-size:.76rem;
-    opacity:.75;
-    text-shadow:
-      0 0 8px rgba(40,207,255,.28),
-      25vw 820px 0 rgba(255,230,0,.48),
-      -3vw 1650px 0 rgba(111,218,255,.58),
-      18vw 2480px 0 rgba(111,218,255,.55),
-      0 3270px 0 rgba(255,230,0,.42);
+  .wascik-services::before,
+  .ai-preview::before,
+  .promo-band::before,
+  .wascik-contact::before {
+    font-size:.82rem;
+    line-height:1.48;
+    color:rgba(151,231,255,.72);
+    text-shadow:0 0 9px rgba(40,207,255,.42);
   }
 
-  .code-panel {
-    width:310px !important;
-    max-width:86vw;
-    opacity:.78 !important;
+  .wascik-services::before {
+    top:235px;
+    right:-36px;
+    width:270px;
   }
 
-  .code-panel code {
-    font-size:.82rem !important;
-    line-height:1.55 !important;
+  .ai-preview::before {
+    top:34px;
+    left:-32px;
+    width:265px;
   }
 
-  .code-panel::before {
-    top:105px;
-    font-size:.73rem;
-    line-height:1.45;
+  .promo-band::before {
+    top:20px;
+    right:-28px;
+    width:235px;
   }
 
-  .code-panel::after {
-    top:215px;
-    font-size:.70rem;
+  .wascik-contact::before {
+    top:55px;
+    right:-34px;
+    width:265px;
   }
 
-  .code-panel-one { top:690px !important; left:12px !important; }
-  .code-panel-two { top:2030px !important; right:10px !important; }
-  .code-panel-three { top:3470px !important; left:12px !important; }
+  .wascik-services::after,
+  .ai-preview::after,
+  .wascik-contact::after {
+    font-size:.72rem;
+    opacity:.72;
+  }
 
-  .code-panel-one::before { left:12vw; }
-  .code-panel-two::before { right:-8vw; }
-  .code-panel-three::before { left:7vw; }
+  .service-card {
+    background:linear-gradient(145deg,rgba(9,40,59,.86),rgba(3,16,27,.84)) !important;
+  }
 }
 
 @media(prefers-reduced-motion:reduce) {
   .code-backdrop::before,
-  .code-backdrop::after,
-  .code-panel {
+  .wascik-services::before,
+  .wascik-services::after,
+  .ai-preview::before,
+  .ai-preview::after,
+  .promo-band::before,
+  .wascik-contact::before,
+  .wascik-contact::after {
     animation:none !important;
   }
 }

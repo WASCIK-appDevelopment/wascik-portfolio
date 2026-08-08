@@ -128,7 +128,7 @@
   font-size:.70rem;
 }
 
-/* AI section — keep code to right-hand open lane */
+/* AI section — a single compact right-hand code lane */
 .ai-preview .ai-preview-copy {
   position:relative;
   isolation:isolate;
@@ -140,20 +140,20 @@
 }
 
 .ai-preview .ai-preview-copy::before {
-  content:"assistant.listen();\Aassistant.answer();\Aassistant.handoff();";
-  top:0;
-  right:-28%;
+  content:"assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
+  top:52%;
+  right:0;
   color:rgba(119,232,162,.58);
-  font-size:.82rem;
-  line-height:1.55;
+  font-size:.76rem;
+  line-height:1.5;
 }
 
 .ai-preview .ai-preview-copy::after {
   content:"// human-centered AI";
-  right:-18%;
-  bottom:-26px;
+  right:0;
+  bottom:-24px;
   color:rgba(255,119,119,.50);
-  font-size:.76rem;
+  font-size:.72rem;
 }
 
 /* Promo */
@@ -211,9 +211,9 @@
 
 /* Tablet */
 @media(max-width:900px) {
-  .wascik-hero-copy::before { right:-40px; }
+  .wascik-hero-copy::before { right:10px; }
   .service-grid::before { right:-20px; }
-  .ai-preview .ai-preview-copy::before { right:-12%; }
+  .ai-preview .ai-preview-copy::before { right:8px; }
 }
 
 /* PHONE — intentionally favor the right side/open gutters */
@@ -231,37 +231,39 @@
     animation-duration:7.5s;
   }
 
+  /* Bring hero code fully inside the screen, next to the large WASCIK logo. */
   .wascik-hero-copy::before {
-    top:18px;
+    top:118px;
     left:auto;
-    right:-104px;
-    width:250px;
-    color:rgba(119,232,162,.66);
-    font-size:.72rem;
-    line-height:1.48;
+    right:10px;
+    width:205px;
+    color:rgba(119,232,162,.70);
+    font-size:.68rem;
+    line-height:1.45;
+    text-align:right;
   }
 
   .wascik-portrait-wrap::before {
     top:18%;
-    right:-42px;
-    width:230px;
-    color:rgba(255,230,0,.64);
-    font-size:.70rem;
+    right:8px;
+    width:205px;
+    color:rgba(255,230,0,.66);
+    font-size:.69rem;
   }
 
   .wascik-portrait-wrap::after {
     left:auto;
-    right:-24px;
+    right:10px;
     bottom:17%;
-    color:rgba(255,112,112,.60);
-    font-size:.68rem;
+    color:rgba(255,112,112,.62);
+    font-size:.67rem;
   }
 
-  /* Put main service code in the empty right gutter and repeat lower down */
+  /* Put main service code in the empty right gutter and repeat lower down. */
   .service-grid::before {
     top:8%;
-    right:-118px;
-    width:300px;
+    right:-90px;
+    width:270px;
     color:rgba(119,232,162,.66);
     font-size:.72rem;
     line-height:1.48;
@@ -270,8 +272,8 @@
   .service-grid::after {
     bottom:10%;
     left:auto;
-    right:-96px;
-    width:285px;
+    right:-78px;
+    width:265px;
     color:rgba(255,112,112,.56);
     font-size:.70rem;
     line-height:1.45;
@@ -284,29 +286,33 @@
     font-size:.68rem;
   }
 
-  /* AI: move code away from headline/body and into right side */
+  /* Disable the older full AI section code block from tech-background.css. */
   .ai-preview::before {
-    left:auto !important;
-    right:-102px !important;
-    top:16% !important;
-    width:300px !important;
-    text-align:left;
-    color:rgba(151,231,255,.64) !important;
+    content:none !important;
+    display:none !important;
   }
 
+  /* Keep AI code compact and in the right-hand empty lane, below the main paragraph. */
   .ai-preview .ai-preview-copy::before {
-    top:56%;
-    right:-118px;
-    width:285px;
-    color:rgba(119,232,162,.62);
-    font-size:.71rem;
+    content:"assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
+    top:67%;
+    left:auto;
+    right:8px;
+    width:175px;
+    color:rgba(119,232,162,.66);
+    font-size:.66rem;
+    line-height:1.42;
+    text-align:right;
   }
 
   .ai-preview .ai-preview-copy::after {
-    right:-72px;
-    bottom:-44px;
-    color:rgba(255,112,112,.56);
-    font-size:.68rem;
+    content:"// human-centered AI";
+    left:auto;
+    right:8px;
+    bottom:-34px;
+    color:rgba(255,112,112,.58);
+    font-size:.64rem;
+    text-align:right;
   }
 
   .promo-band::before {

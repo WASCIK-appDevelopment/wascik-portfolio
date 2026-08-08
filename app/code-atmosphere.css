@@ -1,8 +1,17 @@
 /* WASCIK ambient code — deliberate coder-style placement */
 
 @keyframes wascik-code-breathe {
-  0%, 100% { opacity: .68; filter: brightness(.96); }
-  50% { opacity: .94; filter: brightness(1.16); }
+
+  0%,
+  100% {
+    opacity: .68;
+    filter: brightness(.96);
+  }
+
+  50% {
+    opacity: .94;
+    filter: brightness(1.16);
+  }
 }
 
 /* --------------------------------------------------
@@ -16,8 +25,8 @@
 .wascik-nav::after {
   content: "const studio = WASCIK;\Astack = [web, app, ai];\Astatus = 'building';";
   position: absolute;
-  right: 18px;
-  bottom: -102px;
+  right: 50px;
+  bottom: -52px;
   width: 260px;
   z-index: 7;
   pointer-events: none;
@@ -35,7 +44,7 @@
   isolation: isolate;
 }
 
-.wascik-hero-copy > * {
+.wascik-hero-copy>* {
   position: relative;
   z-index: 2;
 }
@@ -84,7 +93,7 @@
 /* This is intentionally a real code block, not a slogan line. */
 .wascik-portrait-wrap .portrait-halo::before {
   content: "const vision = 'personal';\Aif (business.needsGrowth) {\A  WASCIK.launch();\A}";
-  top: 31%;
+  top: 18%;
   right: 12px;
   width: 230px;
   color: rgba(255, 230, 0, .80);
@@ -95,8 +104,8 @@
 
 .wascik-portrait-wrap .portrait-halo::after {
   content: "deploy.success = true;";
-  top: 58%;
-  right: 14px;
+  top: 46%;
+  right: 18px;
   color: rgba(255, 112, 112, .80);
   font-size: .69rem;
 }
@@ -128,7 +137,7 @@
   overflow: hidden;
 }
 
-.service-card > * {
+.service-card>* {
   position: relative;
   z-index: 2;
 }
@@ -214,7 +223,7 @@
   isolation: isolate;
 }
 
-.ai-preview .ai-preview-copy > * {
+.ai-preview .ai-preview-copy>* {
   position: relative;
   z-index: 2;
 }
@@ -234,7 +243,7 @@
 
 .ai-preview .ai-preview-copy::before {
   content: "assistant.listen();\Aassistant.guide();\Ahuman.handoff();";
-  top: 68%;
+  top: 95%;
   right: 10px;
   width: 175px;
   color: rgba(119, 232, 162, .70);
@@ -253,20 +262,20 @@
 /* --------------------------------------------------
    PROMO
 -------------------------------------------------- */
-.promo-band > div {
+.promo-band>div {
   position: relative;
   isolation: isolate;
 }
 
-.promo-band > div > * {
+.promo-band>div>* {
   position: relative;
   z-index: 2;
 }
 
-.promo-band > div::before {
+.promo-band>div::before {
   content: "price.locked = 324;\Alaunch.mobile = true;";
   position: absolute;
-  top: 54%;
+  top: 92%;
   right: -100px;
   width: 250px;
   z-index: 1;
@@ -281,18 +290,18 @@
 /* --------------------------------------------------
    CONTACT — preserve the treatment that already reads well
 -------------------------------------------------- */
-.wascik-contact > div:first-child {
+.wascik-contact>div:first-child {
   position: relative;
   isolation: isolate;
 }
 
-.wascik-contact > div:first-child > * {
+.wascik-contact>div:first-child>* {
   position: relative;
   z-index: 2;
 }
 
-.wascik-contact > div:first-child::before,
-.wascik-contact > div:first-child::after {
+.wascik-contact>div:first-child::before,
+.wascik-contact>div:first-child::after {
   position: absolute;
   z-index: 1;
   pointer-events: none;
@@ -303,9 +312,9 @@
   animation: wascik-code-breathe 7s ease-in-out infinite;
 }
 
-.wascik-contact > div:first-child::before {
+.wascik-contact>div:first-child::before {
   content: "const nextStep = connect();\Aproject.start();";
-  top: 54%;
+  top: 83%;
   right: -96px;
   width: 260px;
   color: rgba(119, 232, 162, .70);
@@ -313,9 +322,9 @@
   line-height: 1.44;
 }
 
-.wascik-contact > div:first-child::after {
+.wascik-contact>div:first-child::after {
   content: "// WASCIK App Development";
-  right: -54px;
+  right: -89px;
   bottom: -54px;
   color: rgba(255, 112, 112, .58);
   font-size: .67rem;
@@ -327,31 +336,31 @@
 @media (max-width: 560px) {
   .wascik-nav::after {
     right: 18px;
-    bottom: -104px;
+    bottom: -54px;
     width: 255px;
   }
 
   .wascik-hero-copy::before {
-    top: 108px;
+    top:px;
     right: 8px;
     width: 190px;
   }
 
   .wascik-portrait-wrap .portrait-halo::before {
-    top: 30%;
+    top: 10%;
     right: 10px;
     width: 225px;
     font-size: .69rem;
   }
 
   .wascik-portrait-wrap .portrait-halo::after {
-    top: 57%;
-    right: 12px;
+    top: 44%;
+    right: 18px;
     font-size: .68rem;
   }
 
   .service-card:first-child::before {
-    top: 18%;
+    top: 8%;
     right: 8px;
     width: 205px;
     font-size: .71rem;
@@ -365,6 +374,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .wascik-nav::after,
   .wascik-hero-copy::before,
   .wascik-portrait-wrap .portrait-halo::before,
@@ -373,9 +383,9 @@
   .service-card:first-child::after,
   .ai-preview .ai-preview-copy::before,
   .ai-preview .ai-preview-copy::after,
-  .promo-band > div::before,
-  .wascik-contact > div:first-child::before,
-  .wascik-contact > div:first-child::after {
+  .promo-band>div::before,
+  .wascik-contact>div:first-child::before,
+  .wascik-contact>div:first-child::after {
     animation: none !important;
   }
 }

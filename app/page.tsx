@@ -18,9 +18,10 @@ function ServiceIcon({ type }: { type: string }) {
 function CodeBackdrop() {
   return (
     <div className="code-backdrop" aria-hidden="true">
-      <div className="code-panel code-panel-one"><code><span>const</span> mission = <b>&quot;Build your future&quot;</b>;<br/><span>WASCIK</span>.create(&#123;<br/> vision: <b>&quot;powerful&quot;</b>,<br/> support: <b>&quot;personal&quot;</b><br/>&#125;);</code></div>
-      <div className="code-panel code-panel-two"><code>business.<span>connect</span>(&#123;<br/> websites: <b>true</b>,<br/> apps: <b>true</b>,<br/> ai: <b>&quot;coming&quot;</b><br/>&#125;);</code></div>
-      <div className="code-panel code-panel-three"><code><span>if</span> (idea) &#123;<br/> WASCIK.<b>build</b>(idea);<br/>&#125;<br/><i>Your vision. Built forward.</i></code></div>
+      <div className="circuit-field" />
+      <code className="code-print code-print-left">const vision = &quot;built forward&quot;;<br/>WASCIK.create(&#123; design, technology, support &#125;);<br/>business.connect(customers);<br/>experience.mobile = true;</code>
+      <code className="code-print code-print-right">if (idea) WASCIK.build(idea);<br/>const future = await launch();<br/>brand.voice = &quot;personal&quot;;<br/>support.local = true;</code>
+      <code className="code-print code-print-middle">function growBusiness() &#123;<br/> return clarity + creativity + code;<br/>&#125;<br/>customer.experience = &quot;memorable&quot;;</code>
     </div>
   );
 }
@@ -123,6 +124,10 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
                 priority
                 className="wascik-portrait"
               />
+              <div className="founder-message">
+                <span>A MESSAGE FROM MICHAEL</span>
+                <p>Your business deserves technology that feels powerful, personal, and built for where you&apos;re going next.</p>
+              </div>
               <div className="founder-card"><strong>Michael Lewis</strong><span>Founder &amp; Developer</span></div>
             </div>
 
@@ -248,10 +253,6 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             </div>
           </div>
            
-          <Link href="/"className="portfolio-return-button inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-950 px-5 py-2 font-bold text-white transition hover:bg-blue-800">
-           ← Back to WASCIK Portfolio
-          </Link>
-
           <div className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-2xl">
             <div className="flex min-h-72 flex-col justify-end rounded-xl bg-gradient-to-br from-white via-yellow-100 to-yellow-300 p-7 text-blue-950 sm:min-h-96">
               <p className="text-sm font-bold uppercase tracking-widest">

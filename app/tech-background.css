@@ -1,0 +1,15 @@
+/* WASCIK unified technology background system */
+
+.wascik-site {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(0, 173, 255, 0.12), transparent 24%),
+    radial-gradient(circle at 84% 46%, rgba(0, 157, 255, 0.10), transparent 28%),
+    linear-gradient(180deg, #020913 0%, #03101a 46%, #020913 100%);
+}
+
+/* Full-page circuit-board trace layer */
+.wascik-site::before {
+  content: "";
+  position: absolute;

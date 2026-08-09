@@ -15,9 +15,14 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         "/affiliate/dhgate/voice-recorder-black.webp",
         "/affiliate/dhgate/voice-recorder-wallet.webp",
       ]
-    : product.imageUrl
-      ? [product.imageUrl]
-      : [];
+    : product.id === 3
+      ? [
+          "/affiliate/dhgate/card-reader-black.jpg",
+          "/affiliate/dhgate/card-reader-white.jpg",
+        ]
+      : product.imageUrl
+        ? [product.imageUrl]
+        : [];
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">
@@ -44,6 +49,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         <h3 className="mt-3 text-2xl font-black leading-tight text-white">{product.title}</h3>
         {product.note ? <p className="mt-2 text-xs font-bold uppercase tracking-[.16em] text-yellow-200/80">{product.note}</p> : null}
         {product.id === 1 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Available in gold and black · slim wallet-size card design</p> : null}
+        {product.id === 3 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Shown in black and white · compact USB / OTG memory-card reader</p> : null}
         <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
         <ul className="mt-5 grid gap-2 text-sm text-slate-200">{product.features.map((feature) => <li key={feature} className="flex gap-2"><span className="mt-1 text-sky-300">✓</span><span>{feature}</span></li>)}</ul>
         {product.resources?.length ? (

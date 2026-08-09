@@ -9,14 +9,33 @@ const merchantMeta = {
 };
 
 function ProductCard({ product }: { product: (typeof affiliateProducts)[number] }) {
+  const productImages = product.id === 1
+    ? [
+        "/affiliate/dhgate/voice-recorder-gold.webp",
+        "/affiliate/dhgate/voice-recorder-black.webp",
+        "/affiliate/dhgate/voice-recorder-wallet.webp",
+      ]
+    : product.imageUrl
+      ? [product.imageUrl]
+      : [];
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">
-      <div className="relative grid min-h-64 place-items-center overflow-hidden border-b border-sky-800/60 bg-[radial-gradient(circle_at_50%_45%,rgba(32,190,255,.20),transparent_34%),linear-gradient(135deg,#071e2e,#03101a)] p-5">
+      <div className="relative min-h-64 overflow-hidden border-b border-sky-800/60 bg-[radial-gradient(circle_at_50%_45%,rgba(32,190,255,.20),transparent_34%),linear-gradient(135deg,#071e2e,#03101a)] p-5">
         <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(72,198,255,.16)_1px,transparent_1px),linear-gradient(90deg,rgba(72,198,255,.16)_1px,transparent_1px)] [background-size:28px_28px]" />
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.title} loading="lazy" referrerPolicy="no-referrer" className="relative z-[1] h-56 w-full rounded-2xl bg-white object-contain p-2 shadow-2xl" />
+        {productImages.length ? (
+          <div className="relative z-[1]">
+            <img src={productImages[0]} alt={product.title} loading="lazy" referrerPolicy="no-referrer" className="h-56 w-full rounded-2xl bg-white object-contain p-2 shadow-2xl" />
+            {productImages.length > 1 ? (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {productImages.map((image, index) => (
+                  <img key={image} src={image} alt={`${product.title} view ${index + 1}`} loading="lazy" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-cover" />
+                ))}
+              </div>
+            ) : null}
+          </div>
         ) : (
-          <div className="relative z-[1] flex h-28 w-28 items-center justify-center rounded-[2rem] border border-sky-400/50 bg-sky-950/80 text-3xl font-black tracking-[-.06em] text-yellow-300 shadow-[0_0_36px_rgba(0,177,255,.18)]">{merchantMeta[product.merchant].mark}</div>
+          <div className="relative z-[1] mx-auto flex h-28 w-28 items-center justify-center rounded-[2rem] border border-sky-400/50 bg-sky-950/80 text-3xl font-black tracking-[-.06em] text-yellow-300 shadow-[0_0_36px_rgba(0,177,255,.18)]">{merchantMeta[product.merchant].mark}</div>
         )}
         <span className="absolute left-5 top-5 z-[2] rounded-full border border-yellow-300/30 bg-[#07111d]/90 px-3 py-1 text-[11px] font-black uppercase tracking-[.18em] text-yellow-200">{product.badge}</span>
       </div>
@@ -24,6 +43,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         <p className="text-xs font-black uppercase tracking-[.2em] text-sky-300">{product.category}</p>
         <h3 className="mt-3 text-2xl font-black leading-tight text-white">{product.title}</h3>
         {product.note ? <p className="mt-2 text-xs font-bold uppercase tracking-[.16em] text-yellow-200/80">{product.note}</p> : null}
+        {product.id === 1 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Available in gold and black · slim wallet-size card design</p> : null}
         <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
         <ul className="mt-5 grid gap-2 text-sm text-slate-200">{product.features.map((feature) => <li key={feature} className="flex gap-2"><span className="mt-1 text-sky-300">✓</span><span>{feature}</span></li>)}</ul>
         {product.resources?.length ? (

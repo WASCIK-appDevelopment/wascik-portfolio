@@ -279,3 +279,28 @@ textarea {
   color: #ffe600 !important;
 
 }
+
+/* Keep the official wide logo visible at its natural proportions. */
+.wascik-logo-nav {
+  width: 220px;
+  height: auto;
+}
+
+.wascik-logo-hero {
+  width: min(100%, 680px);
+  height: auto;
+  max-height: none;
+}
+
+@media (max-width: 600px) {
+  .wascik-logo-nav {
+    width: 180px;
+    height: auto;
+  }
+
+  .wascik-logo-hero {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+}

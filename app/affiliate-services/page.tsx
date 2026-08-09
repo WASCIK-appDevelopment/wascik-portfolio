@@ -12,13 +12,14 @@ const merchantMeta = {
 function ProductCard({ product }: { product: (typeof affiliateProducts)[number] }) {
   const productImages = product.id === 1
     ? [
-        "/affiliate/dhgate/voice-recorder-gold-clean.png",
-        "/affiliate/dhgate/voice-recorder-black-clean.png",
+        "/affiliate/dhgate/voice-recorder-gold.webp",
+        "/affiliate/dhgate/voice-recorder-black.webp",
         "https://s.alicdn.com/%40sc04/kf/H8f79dd7e50ec417786680eb1d4edbd43H/750mah-Long-Battrey-Life-Sound-Recorder-150-Hours-Working-Slim-Card-Size-Voice-Activated-Recording-Mini-Audio-Recorder-Device.jpg",
       ]
     : product.id === 3
       ? [
-          "/affiliate/dhgate/card-reader-white-clean.jpg",
+          "/affiliate/dhgate/card-reader-black.jpg",
+          "/affiliate/dhgate/card-reader-white.jpg",
         ]
       : product.id === 8
         ? [
@@ -64,7 +65,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         <h3 className="mt-3 text-2xl font-black leading-tight text-white">{product.title}</h3>
         {product.note ? <p className="mt-2 text-xs font-bold uppercase tracking-[.16em] text-yellow-200/80">{product.note}</p> : null}
         {product.id === 1 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Available in gold and black · slim wallet-size card design</p> : null}
-        {product.id === 3 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Compact white USB / OTG memory-card reader</p> : null}
+        {product.id === 3 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Shown in black and white · compact USB / OTG memory-card reader</p> : null}
         {product.id === 8 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Three shared Philips palm-lock views</p> : null}
         {product.id === 9 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Includes the shared palm-lock views plus the wireless-chime bundle image</p> : null}
         <p className="mt-4 leading-7 text-slate-300">{product.description}</p>

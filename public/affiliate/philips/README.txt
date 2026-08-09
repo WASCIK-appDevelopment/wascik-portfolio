@@ -1,0 +1,1 @@
+Philips palm-lock gallery images are supplied by the user in ChatGPT and should be used on the two DDL250X palm-reader product cards according to the page logic.

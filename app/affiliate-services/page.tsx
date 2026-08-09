@@ -50,7 +50,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
             {productImages.length > 1 ? (
               <div className={`mt-3 grid gap-2 ${productImages.length === 4 ? "grid-cols-4" : productImages.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                 {productImages.slice(1).map((image, index) => (
-                  <img key={image} src={image} alt={`${product.title} view ${index + 2}`} loading="lazy" referrerPolicy="no-referrer" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-contain p-1" />
+                  <img key={`${product.id}-${index}-${image}`} src={image} alt={`${product.title} view ${index + 2}`} loading="lazy" referrerPolicy="no-referrer" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-contain p-1" />
                 ))}
               </div>
             ) : null}

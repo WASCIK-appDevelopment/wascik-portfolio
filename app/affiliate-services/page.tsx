@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { affiliateProducts, merchantOrder } from "./products";
+import { suppliedProductImageUrls } from "./revo-image-urls";
 
 const merchantMeta = {
   DHgate: { kicker: "Tech & everyday gadgets", copy: "Compact technology, creator tools, travel gear, and practical accessories selected for useful everyday applications.", mark: "DH" },
@@ -33,9 +34,11 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
               "https://mobileimages.lowes.com/productimages/3cb54a9c-87be-40ed-ab95-2b8f7f43b8a8/69389236.jpeg",
               "https://www.notebookcheck.net/fileadmin/Notebooks/News/_nc4/Philips-5000-series-Smart-Deadbolt.jpg",
             ]
-          : product.imageUrl
-            ? [product.imageUrl]
-            : [];
+          : suppliedProductImageUrls[product.id]?.length
+            ? suppliedProductImageUrls[product.id]
+            : product.imageUrl
+              ? [product.imageUrl]
+              : [];
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">

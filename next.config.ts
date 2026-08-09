@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
         pathname: "/wascik-logo-v2.png",
         search: "?v=20260809",
       },
+      {
+        pathname: "/michael-wascik-full-v2.png",
+      },
     ],
   },
 };

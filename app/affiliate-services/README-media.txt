@@ -1,0 +1,1 @@
+User-supplied product media is being integrated into the affiliate catalog. Image mappings are maintained in the adjacent TypeScript files.

@@ -13,16 +13,29 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
     ? [
         "/affiliate/dhgate/voice-recorder-gold.webp",
         "/affiliate/dhgate/voice-recorder-black.webp",
-        "/affiliate/dhgate/voice-recorder-wallet.webp",
+        "https://s.alicdn.com/%40sc04/kf/H8f79dd7e50ec417786680eb1d4edbd43H/750mah-Long-Battrey-Life-Sound-Recorder-150-Hours-Working-Slim-Card-Size-Voice-Activated-Recording-Mini-Audio-Recorder-Device.jpg",
       ]
     : product.id === 3
       ? [
           "/affiliate/dhgate/card-reader-black.jpg",
-          "/affiliate/dhgate/card-reader-white.jpg",
+          "https://i5.walmartimages.com/asr/e6f845fb-8862-434f-a1be-49f447d8dd32_1.9bfd2ae23d3db27cf0c9a2c35da1fef2.jpeg?odnBg=ffffff&odnHeight=400&odnWidth=400",
         ]
-      : product.imageUrl
-        ? [product.imageUrl]
-        : [];
+      : product.id === 8
+        ? [
+            "https://images.philips.com/is/image/philipsconsumer/1c278d24487e442f8bbcb1840031ca54?$pnglarge$=&wid=960",
+            "https://cdn.shopify.com/s/files/1/0704/9845/1748/files/Voice_guide__To_assist_with_setting_up_your_lock_10.png?v=1753239294",
+            "https://mobileimages.lowes.com/productimages/3cb54a9c-87be-40ed-ab95-2b8f7f43b8a8/69389236.jpeg",
+          ]
+        : product.id === 9
+          ? [
+              "https://images.philips.com/is/image/philipsconsumer/1c278d24487e442f8bbcb1840031ca54?$pnglarge$=&wid=960",
+              "https://cdn.shopify.com/s/files/1/0704/9845/1748/files/Voice_guide__To_assist_with_setting_up_your_lock_10.png?v=1753239294",
+              "https://mobileimages.lowes.com/productimages/3cb54a9c-87be-40ed-ab95-2b8f7f43b8a8/69389236.jpeg",
+              "https://www.notebookcheck.net/fileadmin/Notebooks/News/_nc4/Philips-5000-series-Smart-Deadbolt.jpg",
+            ]
+          : product.imageUrl
+            ? [product.imageUrl]
+            : [];
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">
@@ -32,9 +45,9 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
           <div className="relative z-[1]">
             <img src={productImages[0]} alt={product.title} loading="lazy" referrerPolicy="no-referrer" className="h-56 w-full rounded-2xl bg-white object-contain p-2 shadow-2xl" />
             {productImages.length > 1 ? (
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className={`mt-3 grid gap-2 ${productImages.length === 4 ? "grid-cols-4" : productImages.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                 {productImages.map((image, index) => (
-                  <img key={image} src={image} alt={`${product.title} view ${index + 1}`} loading="lazy" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-cover" />
+                  <img key={image} src={image} alt={`${product.title} view ${index + 1}`} loading="lazy" referrerPolicy="no-referrer" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-contain p-1" />
                 ))}
               </div>
             ) : null}
@@ -50,6 +63,8 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         {product.note ? <p className="mt-2 text-xs font-bold uppercase tracking-[.16em] text-yellow-200/80">{product.note}</p> : null}
         {product.id === 1 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Available in gold and black · slim wallet-size card design</p> : null}
         {product.id === 3 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Shown in black and white · compact USB / OTG memory-card reader</p> : null}
+        {product.id === 8 ? <p className="mt-3 rounded-lg border border-sky-300/25 bg-sky-300/[.06] px-3 py-2 text-sm font-bold text-sky-100">Three shared Philips palm-lock views</p> : null}
+        {product.id === 9 ? <p className="mt-3 rounded-lg border border-yellow-300/25 bg-yellow-300/[.06] px-3 py-2 text-sm font-bold text-yellow-100">Includes the shared palm-lock views plus the wireless-chime bundle image</p> : null}
         <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
         <ul className="mt-5 grid gap-2 text-sm text-slate-200">{product.features.map((feature) => <li key={feature} className="flex gap-2"><span className="mt-1 text-sky-300">✓</span><span>{feature}</span></li>)}</ul>
         {product.resources?.length ? (

@@ -14,7 +14,13 @@ export const suppliedProductImageUrls: Record<number, string[]> = {
   14: [
     "https://m.media-amazon.com/images/I/619dv2KmAGL._AC_SL1500_.jpg"
   ],
-  15: ["https://revomadic.com/cdn/shop/files/REVO-Sculptor.jpg"],
-  16: ["https://revomadic.com/cdn/shop/files/REVO-Collagen-Jelly.jpg"],
-  19: ["https://revomadic.com/cdn/shop/files/REVO-Face-Genie-Collagen-Jelly-Bundle.jpg"]
+  15: [
+    "https://revomadic.com/cdn/shop/files/Sculptor_1st_Variant_1.webp?v=1785359071"
+  ],
+  16: [
+    "https://revomadic.com/cdn/shop/files/Collagen-Jelly_a2a13f9c-46fe-4de4-bc8a-fad8ddb2ee25.jpg?v=1748528264"
+  ],
+  19: [
+    "https://revomadic.com/cdn/shop/files/FG_Beige_X1_e1599336-0a8a-43f6-90c8-23b280f43a6a.webp?v=1785931485"
+  ]
 };

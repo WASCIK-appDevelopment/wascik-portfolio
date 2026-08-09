@@ -183,6 +183,17 @@ export const affiliateProducts: AffiliateProduct[] = [
     affiliateUrl: "https://revomadicamazon.pxf.io/k4NerM",
     badge: "Portable recovery",
   },
+  {
+    id: 19,
+    merchant: "RevoMatic",
+    title: "REVO Facial Care 2-Piece Bundle",
+    category: "Beauty Tech Bundle",
+    description: "A two-piece RevoMatic facial-care bundle listed in the wrinkle and anti-aging device category. Exact bundle components should be confirmed on the merchant listing before purchase.",
+    features: ["2-piece set", "Facial-care category", "RevoMatic brand", "Exact bundle details on merchant page"],
+    affiliateUrl: "https://revomadicamazon.pxf.io/enb9Lg",
+    badge: "Bundle",
+    note: "Exact Amazon bundle title pending confirmation",
+  },
 ];
 
 export const merchantOrder = ["DHgate", "Philips", "RevoMatic"] as const;

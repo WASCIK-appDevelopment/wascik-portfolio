@@ -1,0 +1,1 @@
+RevoMatic product images supplied by the user for affiliate catalog cards.

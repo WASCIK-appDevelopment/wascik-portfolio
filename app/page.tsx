@@ -84,7 +84,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           <CodeBackdrop />
           <header className="wascik-nav">
             <a href="#top" className="wascik-brand" aria-label="WASCIK home">
-              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png" alt="WASCIK" width={1812} height={868} priority />
+              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority />
               <span className="brand-words">WASCIK <small>APP DEVELOPMENT</small></span>
             </a>
             <nav aria-label="Portfolio navigation">
@@ -99,7 +99,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             <div className="circuit-glow circuit-two" />
             <div className="wascik-hero-copy">
               <p className="wascik-eyebrow">WE BUILD MORE THAN WEBSITES</p>
-              <h1><Image className="wascik-logo wascik-logo-hero" src="/wascik-logo-v2.png" alt="WASCIK" width={1812} height={868} priority /><em>App Development</em></h1>
+              <h1><Image className="wascik-logo wascik-logo-hero" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority /><em>App Development</em></h1>
               <p className="wascik-tagline">Powerful digital solutions for local businesses.</p>
               <p className="wascik-intro">
                 We help local businesses look professional, reach more customers, and

@@ -18,7 +18,7 @@ export default function GearUpPage() {
       <header className="relative z-10 border-b border-violet-900/60 bg-[#05040d]/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <Link href="/affiliate-services" className="flex items-center gap-3">
-            <Image src="/wascik-logo-v2.png" alt="WASCIK" width={1254} height={1254} className="h-12 w-12 rounded-xl object-contain sm:h-14 sm:w-14" priority />
+            <Image src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} className="h-auto w-32 object-contain sm:w-40" priority />
             <span className="hidden text-sm font-black uppercase tracking-[.15em] text-violet-100 sm:block">Affiliate Services</span>
           </Link>
           <Link href="/affiliate-services" className="rounded-lg border border-violet-500/70 px-4 py-2 text-sm font-bold text-violet-100 transition hover:border-violet-300">← All Affiliate Picks</Link>

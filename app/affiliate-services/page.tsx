@@ -73,7 +73,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
         {product.resources?.length ? (
           <div className="mt-6 border-t border-sky-900/70 pt-5">
             <p className="mb-3 text-xs font-black uppercase tracking-[.18em] text-sky-300">Videos & guides</p>
-            <div className="grid gap-2">{product.resources.map((resource) => <a key={resource.url} href={resource.url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-sky-800/80 bg-sky-950/40 px-4 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-400 hover:text-yellow-200">▶ {resource.label} →</a>)}</div>
+            <div className="grid gap-2">{product.resources.map((resource, index) => <a key={`${product.id}-${index}-${resource.label}`} href={resource.url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-sky-800/80 bg-sky-950/40 px-4 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-400 hover:text-yellow-200">▶ {resource.label} →</a>)}</div>
           </div>
         ) : null}
         <div className="mt-auto pt-6"><a href={product.affiliateUrl} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-yellow-300 px-5 py-3 text-center font-black text-slate-950 transition hover:bg-yellow-200">View Product →</a><p className="mt-3 text-center text-[11px] leading-5 text-slate-500">Affiliate link · Merchant pricing and availability may change.</p></div>

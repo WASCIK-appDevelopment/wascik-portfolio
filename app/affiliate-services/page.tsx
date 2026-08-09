@@ -49,8 +49,8 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
             <img src={productImages[0]} alt={product.title} loading="lazy" referrerPolicy="no-referrer" className="h-56 w-full rounded-2xl bg-white object-contain p-2 shadow-2xl" />
             {productImages.length > 1 ? (
               <div className={`mt-3 grid gap-2 ${productImages.length === 4 ? "grid-cols-4" : productImages.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-                {productImages.map((image, index) => (
-                  <img key={image} src={image} alt={`${product.title} view ${index + 1}`} loading="lazy" referrerPolicy="no-referrer" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-contain p-1" />
+                {productImages.slice(1).map((image, index) => (
+                  <img key={image} src={image} alt={`${product.title} view ${index + 2}`} loading="lazy" referrerPolicy="no-referrer" className="h-20 w-full rounded-xl border border-sky-700/70 bg-white object-contain p-1" />
                 ))}
               </div>
             ) : null}

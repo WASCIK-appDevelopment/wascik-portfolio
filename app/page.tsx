@@ -74,26 +74,27 @@ const reviews = [
   },
 ];
 
-type PageMode = "portfolio" | "sample";
+type PageMode = "portfolio" | "project" | "sample";
 
 export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      {mode === "portfolio" && (
+      {(mode === "portfolio" || mode === "project") && (
         <div className="wascik-site">
           <CodeBackdrop />
           <header className="wascik-nav">
-            <a href="#top" className="wascik-brand" aria-label="WASCIK home">
+            <a href={mode === "portfolio" ? "#top" : "/"} className="wascik-brand" aria-label="WASCIK home">
               <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority />
               <span className="brand-words">WASCIK <small>APP DEVELOPMENT</small></span>
             </a>
             <nav aria-label="Portfolio navigation">
-              <a href="#services">Services</a>
+              <a href="/start-project#services">Services</a>
               <a href="/sample-project">Our work</a>
-              <a href="#contact">Contact</a>
+              <a href="/start-project#contact">Contact</a>
             </nav>
           </header>
 
+          {mode === "portfolio" && (
           <section id="top" className="wascik-hero">
             <div className="circuit-glow circuit-one" />
             <div className="circuit-glow circuit-two" />
@@ -108,7 +109,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
                 digital tools built around the way your business actually works.
               </p>
               <div className="wascik-actions">
-                <a href="#contact" className="wascik-cta primary">Start My Project</a>
+                <a href="/start-project" className="wascik-cta primary">Start My Project</a>
                 <a href="/sample-project" className="wascik-cta secondary">View Our Work</a>
               </div>
               <div className="wascik-trust"><span>✓ Mobile-first</span><span>✓ Custom-built</span><span>✓ Local support</span></div>
@@ -137,7 +138,10 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <a href="#contact">Let&apos;s talk →</a>
             </aside>
           </section>
+          )}
 
+          {mode === "project" && (
+          <>
           <section id="services" className="wascik-services">
             <p className="wascik-eyebrow">WHAT WE BUILD</p>
             <h2>Your business. Upgraded.</h2>
@@ -169,6 +173,8 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           </section>
 
           <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          </>
+          )}
         </div>
       )}
       

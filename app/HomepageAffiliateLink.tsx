@@ -2,11 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function HomepageAffiliateLink() {
   const pathname = usePathname();
+  const [showLink, setShowLink] = useState(false);
 
-  if (pathname !== "/") return null;
+  useEffect(() => {
+    if (pathname !== "/") return;
+
+    const updateVisibility = () => {
+      const portrait = document.querySelector<HTMLElement>(".wascik-portrait-wrap");
+      if (!portrait) {
+        setShowLink(false);
+        return;
+      }
+
+      const portraitBottom = portrait.getBoundingClientRect().bottom + window.scrollY;
+      setShowLink(window.scrollY > portraitBottom);
+    };
+
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+    };
+  }, [pathname]);
+
+  if (pathname !== "/" || !showLink) return null;
 
   return (
     <Link

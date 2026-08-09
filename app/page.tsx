@@ -95,6 +95,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           </header>
 
           {mode === "portfolio" && (
+          <>
           <section id="top" className="wascik-hero">
             <div className="circuit-glow circuit-one" />
             <div className="circuit-glow circuit-two" />
@@ -111,6 +112,8 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <div className="wascik-actions">
                 <a href="/start-project" className="wascik-cta primary">Start My Project</a>
                 <a href="/sample-project" className="wascik-cta secondary">View Our Work</a>
+                <a href="/affiliate-services" className="wascik-cta secondary">Affiliate Services</a>
+                <button type="button" className="wascik-cta future" disabled aria-disabled="true">What We&apos;re Working On</button>
               </div>
               <div className="wascik-trust"><span>✓ Mobile-first</span><span>✓ Custom-built</span><span>✓ Local support</span></div>
             </div>
@@ -138,6 +141,34 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <a href="#contact">Let&apos;s talk →</a>
             </aside>
           </section>
+
+          <section className="wascik-mission" aria-labelledby="mission-title">
+            <p className="wascik-eyebrow">OUR MISSION</p>
+            <h2 id="mission-title">Technology should feel personal.</h2>
+            <p className="mission-lead">
+              Our mission is to change the way people receive technology services by making every experience friendly, timely, and professional. We listen first, communicate clearly, and create practical solutions that help people and businesses move forward with confidence.
+            </p>
+            <div className="mission-grid">
+              <p>
+                Through WASCIK Affiliate Services, we also help people discover useful products and technology with honest information, clear explanations, and convenient access—all while keeping trust at the center of every recommendation.
+              </p>
+              <p>
+                As we grow, we are building toward a future of original websites, mobile applications, and intelligent AI tools designed to make business, communication, and everyday technology more helpful, accessible, and human.
+              </p>
+            </div>
+            <p className="mission-promise">We are not only building for today. We are creating the friendly, connected technology experiences of tomorrow.</p>
+          </section>
+
+          <section id="contact" className="wascik-contact">
+            <div><p className="wascik-eyebrow">READY WHEN YOU ARE</p><h2>Let&apos;s build something powerful.</h2><p>Serving Central Arkansas and businesses everywhere.</p></div>
+            <div className="contact-links">
+              <a href="tel:+15015782259">Call Michael<br/><strong>(501) 578-2259</strong></a>
+              <a href="mailto:LewisMike0435@gmail.com">Send an email<br/><strong>LewisMike0435@gmail.com</strong></a>
+            </div>
+          </section>
+
+          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          </>
           )}
 
           {mode === "project" && (

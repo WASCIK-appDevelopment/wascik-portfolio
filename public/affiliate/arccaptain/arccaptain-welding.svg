@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">ArcCaptain Welding Equipment</title>
+  <desc id="desc">Industrial black and red ArcCaptain welding equipment promotional thumbnail.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08090b"/><stop offset="1" stop-color="#17191d"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#9e0f1e"/><stop offset="1" stop-color="#ef233c"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grain" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r="0.8" fill="#fff" opacity=".06"/><circle cx="8" cy="7" r=".7" fill="#fff" opacity=".04"/></pattern>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <rect width="1200" height="760" fill="url(#grain)"/>
+  <path d="M0 590 L1200 420 L1200 760 L0 760Z" fill="#050608"/>
+  <path d="M0 610 L1200 440" stroke="#d91d34" stroke-width="5" opacity=".7"/>
+  <g transform="translate(70 64)">
+    <path d="M0 35 L36 0 L78 14 L58 80 L18 92Z" fill="#d71932"/>
+    <path d="M19 26 L61 14 L47 63 L27 71Z" fill="#090a0c" opacity=".65"/>
+    <text x="105" y="77" font-family="Arial,Helvetica,sans-serif" font-size="82" font-weight="900" fill="#d71932" letter-spacing="3">ARCCAPTAIN</text>
+  </g>
+  <text x="70" y="260" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="94" font-weight="900" fill="#f4f4f4" letter-spacing="2">WELDING EQUIPMENT</text>
+  <rect x="70" y="300" width="1060" height="90" rx="12" fill="none" stroke="#d71932" stroke-width="5"/>
+  <text x="600" y="361" text-anchor="middle" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="55" font-weight="900" fill="#f7f7f7">MIG  •  TIG  •  STICK  •  PLASMA</text>
+  <text x="600" y="440" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" font-weight="700" fill="#d8d8d8">Welders · Plasma Cutters · Helmets · Accessories</text>
+  <g transform="translate(85 505)">
+    <rect width="250" height="150" rx="20" fill="#16181d" stroke="#555" stroke-width="3"/>
+    <rect x="24" y="30" width="82" height="60" rx="8" fill="#20242a" stroke="#d71932" stroke-width="4"/>
+    <circle cx="188" cy="76" r="35" fill="#101114" stroke="#e7e7e7" stroke-width="8"/>
+    <path d="M116 62 H150" stroke="#d71932" stroke-width="8"/>
+    <text x="125" y="130" text-anchor="middle" font-family="Arial" font-size="22" fill="#eee">WELDER</text>
+  </g>
+  <g transform="translate(470 510)">
+    <path d="M70 5 Q180 0 230 60 L200 160 H40 L15 60 Q55 10 70 5Z" fill="#202329" stroke="#666" stroke-width="4"/>
+    <rect x="78" y="50" width="88" height="55" rx="8" fill="#081018" stroke="#39a9ff" stroke-width="4" filter="url(#glow)"/>
+    <text x="120" y="195" text-anchor="middle" font-family="Arial" font-size="22" fill="#eee">HELMETS</text>
+  </g>
+  <g transform="translate(820 505)">
+    <rect width="265" height="150" rx="20" fill="#16181d" stroke="#555" stroke-width="3"/>
+    <path d="M50 112 L115 38 H175 L210 88 L178 112Z" fill="#c4172d"/>
+    <path d="M200 35 H235 V120 H200" fill="none" stroke="#d6d6d6" stroke-width="9"/>
+    <text x="132" y="135" text-anchor="middle" font-family="Arial" font-size="21" fill="#eee">PLASMA &amp; ACCESSORIES</text>
+  </g>
+</svg>

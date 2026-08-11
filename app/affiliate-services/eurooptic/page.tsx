@@ -49,6 +49,22 @@ export default function EuroOpticPage() {
             <h2 className="mt-3 text-3xl font-black sm:text-4xl">Garmin Quatix 8 Pro</h2>
             <p className="mt-5 leading-8 text-slate-300">Use the button below to open the current EuroOptic product listing, where you can confirm specifications, price, availability, shipping, and return terms.</p>
             <a href={watchLink} target="_blank" rel="sponsored noopener noreferrer" className="mt-7 inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-emerald-300 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-emerald-200">Shop the Garmin Watch →</a>
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-4">
+              <Image
+                src="/affiliate/eurooptic/garmin-quatix-8-pro-front.svg"
+                alt="Front view of the Garmin Quatix 8 Pro smartwatch with Captain Blue silicone band"
+                width={650}
+                height={650}
+                className="h-auto w-full rounded-2xl border border-white/10 bg-white object-contain"
+              />
+              <Image
+                src="/affiliate/eurooptic/garmin-quatix-8-pro-angle.svg"
+                alt="Angled view of the Garmin Quatix 8 Pro smartwatch with Captain Blue silicone band"
+                width={634}
+                height={634}
+                className="h-auto w-full rounded-2xl border border-white/10 bg-white object-contain"
+              />
+            </div>
           </article>
           <article className="rounded-3xl border border-cyan-500/25 bg-cyan-500/[.06] p-7 sm:p-10">
             <p className="text-xs font-black uppercase tracking-[.26em] text-cyan-300">Browse more</p>

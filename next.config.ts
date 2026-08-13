@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       {
         pathname: "/michael-wascik-full-v2.png",
       },
+      {
+        pathname: "/affiliate/**",
+      },
     ],
   },
 };

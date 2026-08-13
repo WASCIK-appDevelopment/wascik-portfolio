@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 const productLink = "https://focuscamera.pxi6.net/3kzXRX";
+const storeLink = "https://focuscamera.pxi6.net/c/7587435/642856/10228";
 
 export default function FocusCameraPage() {
   return (
@@ -23,6 +24,7 @@ export default function FocusCameraPage() {
           <p className="text-xs font-black uppercase tracking-[.3em] text-blue-300">Focus Camera &amp; Lifestyle by Focus</p>
           <h1 className="mt-5 max-w-4xl text-5xl font-black uppercase leading-[.9] tracking-[-.05em] sm:text-7xl">Technology for<br /><span className="text-blue-400">life on the move.</span></h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">Explore featured navigation, camera, electronics, and lifestyle products through WASCIK&apos;s tracked Focus Camera links.</p>
+          <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="mt-9 inline-flex min-h-14 items-center justify-center rounded-xl bg-blue-400 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-blue-300">Shop the Focus Camera Main Store →</a>
         </div>
       </section>
 
@@ -53,6 +55,7 @@ export default function FocusCameraPage() {
           <p className="font-black text-yellow-200">Affiliate disclosure</p>
           <p className="mt-3 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through Focus Camera links on this page, at no additional cost to you. Product prices, availability, specifications, and promotions may change.</p>
         </div>
+        <div className="mx-auto mt-8 max-w-4xl text-center"><a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-blue-400 px-7 py-4 text-center font-black text-blue-100 transition hover:bg-blue-500/10 sm:w-auto">Browse All Focus Camera Products →</a></div>
       </section>
 
       <footer className="relative z-10 border-t border-blue-950 bg-[#04060a] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · Focus Camera partner page.</footer>

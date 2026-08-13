@@ -20,23 +20,13 @@ export default function EuroOpticPage() {
       </header>
 
       <section className="relative z-10 px-5 py-16 md:px-8 lg:py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.08fr_.92fr]">
-          <div>
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[.3em] text-emerald-300">WASCIK Featured Retail Partner</p>
             <h1 className="mt-5 text-5xl font-black uppercase leading-[.88] tracking-[-.06em] sm:text-7xl">Explore<br /><span className="text-emerald-400">EuroOptic.</span></h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">Shop optics, outdoor equipment, watches, and other specialty gear through WASCIK&apos;s tracked EuroOptic links.</p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <a href={watchLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 items-center justify-center rounded-xl bg-emerald-300 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-emerald-200">View Garmin Quatix 8 Pro ↗</a>
-              <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 items-center justify-center rounded-xl border border-emerald-700 px-7 py-4 text-center font-bold text-emerald-100 transition hover:border-emerald-400">Shop EuroOptic ↗</a>
-            </div>
-          </div>
-
-          <div className="relative mx-auto flex w-full max-w-lg items-center justify-center py-8">
-            <div className="absolute h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl" />
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full border-[18px] border-slate-700 bg-gradient-to-br from-slate-950 to-emerald-950 shadow-[0_35px_100px_rgba(0,0,0,.65),0_0_45px_rgba(52,211,153,.18)] sm:h-80 sm:w-80">
-              <div className="absolute -top-24 h-28 w-32 rounded-t-3xl bg-slate-800" />
-              <div className="absolute -bottom-24 h-28 w-32 rounded-b-3xl bg-slate-800" />
-              <div className="text-center"><p className="text-xs font-black uppercase tracking-[.28em] text-emerald-300">Garmin</p><p className="mt-3 text-4xl font-black">QUATIX 8</p><p className="mt-2 text-sm font-bold uppercase tracking-[.22em] text-slate-400">Pro</p></div>
+            <div className="mt-9">
+              <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 items-center justify-center rounded-xl bg-emerald-300 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-emerald-200">Shop the EuroOptic Store ↗</a>
             </div>
           </div>
         </div>
@@ -79,6 +69,9 @@ export default function EuroOpticPage() {
         <div className="mx-auto max-w-4xl rounded-3xl border border-yellow-300/25 bg-yellow-300/[.06] p-7 sm:p-9">
           <p className="font-black text-yellow-200">Affiliate disclosure</p>
           <p className="mt-3 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through the EuroOptic links on this page, at no additional cost to you. Prices, availability, specifications, and promotions may change. Please confirm all current product details with EuroOptic before purchasing.</p>
+        </div>
+        <div className="mx-auto mt-8 max-w-4xl text-center">
+          <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-emerald-300 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-emerald-200 sm:w-auto">Shop the EuroOptic Store ↗</a>
         </div>
       </section>
 

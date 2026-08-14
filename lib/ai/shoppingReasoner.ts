@@ -7,6 +7,10 @@ const intentExpansions: Record<string, string[]> = {
   recovery: ["recovery", "massage", "muscle", "joint", "cupping", "heat", "vibration"],
   skincare: ["skincare", "face", "facial", "collagen", "beauty", "led"],
   fitness: ["fitness", "workout", "exercise", "vibration", "platform"],
+  outdoor: ["outdoor", "hunting", "optics", "watch", "watches", "gear", "specialty", "adventure"],
+  navigation: ["navigation", "gps", "truck", "driver", "driving", "dash camera", "road"],
+  gaming: ["gaming", "game", "lag", "ping", "latency", "server", "mobile", "booster"],
+  poolside: ["poolside", "pool", "patio", "outdoor living", "furniture", "leisure"],
 };
 
 function normalize(text: string) {
@@ -74,6 +78,8 @@ export function recommendAffiliateProducts(query: string, merchant?: string, lim
     description: product.description,
     features: product.features,
     affiliateUrl: product.affiliateUrl,
+    pagePath: product.pagePath,
+    source: product.source,
     score,
     reason: reasons[0],
   }));

@@ -5,6 +5,15 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Concert Tickets & Upcoming Events | WASCIK Affiliate Services",
   description: "Explore upcoming concerts and event tickets through WASCIK's TicketNetwork affiliate page.",
+  alternates: {
+    canonical: "/affiliate-services/ticketnetwork",
+  },
+  openGraph: {
+    type: "website",
+    url: "/affiliate-services/ticketnetwork",
+    title: "Concert Tickets & Upcoming Events | WASCIK Affiliate Services",
+    description: "Explore upcoming concerts and event tickets through WASCIK's TicketNetwork affiliate page.",
+  },
 };
 
 const ticketLink = "https://goto.ticketnetwork.com/c/7587435/120057/2322";

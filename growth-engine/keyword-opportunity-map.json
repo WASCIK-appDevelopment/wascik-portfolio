@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "status": "baseline-without-search-console-data",
+  "researchedOn": "2026-08-13",
+  "market": "Central Arkansas and remote United States",
+  "scoring": {
+    "scale": "1-5",
+    "fields": {
+      "businessValue": "Likelihood that a qualified visit can become meaningful business",
+      "brandRelevance": "Fit with WASCIK's verified services or content",
+      "attainability": "Relative chance for a new site; higher means more attainable",
+      "readiness": "How ready WASCIK is to support the search with a credible page"
+    },
+    "caveat": "No Google Search Console or paid keyword-volume source is connected yet. Scores are directional and must be recalibrated after deployment and 30-60 days of impression data."
+  },
+  "observedLandscape": [
+    {
+      "segment": "Local web design",
+      "observation": "Results are crowded with established agencies and directory pages. Competitors emphasize Little Rock, affordability, mobile-friendly design, SEO, quotes, and local support.",
+      "implication": "WASCIK should compete through a specific offer, founder access, transparent pricing, and Central Arkansas relevance rather than a generic web-design page."
+    },
+    {
+      "segment": "Small-business AI",
+      "observation": "National software publishers dominate informational searches, while only limited Arkansas-specific consulting content appeared.",
+      "implication": "Local AI-assistant content may become a differentiator, but it should follow a working demonstration and verified service offer."
+    },
+    {
+      "segment": "Portable voice recorders",
+      "observation": "Large retailers and established review sites dominate broad recorder searches.",
+      "implication": "A generic product card is unlikely to compete. The dedicated guide needs original images, a clearly identified model, limitations, use cases, and firsthand testing if available."
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "brand-wascik",
+      "priority": "P0",
+      "cluster": "WASCIK brand ownership",
+      "primaryQuery": "WASCIK App Development",
+      "supportingQueries": [
+        "WASCIK Affiliate Services",
+        "WASCIK website development"
+      ],
+      "intent": "Navigational",
+      "targetPath": "/",
+      "scores": {
+        "businessValue": 5,
+        "brandRelevance": 5,
+        "attainability": 5,
+        "readiness": 5,
+        "total": 20
+      },
+      "nextAction": "Secure indexing, consistent company information, and links from verified social and business profiles."
+    },
+    {
+      "id": "local-affordable-websites",
+      "priority": "P0",
+      "cluster": "Affordable small-business websites in Little Rock",
+      "primaryQuery": "affordable website developer Little Rock",
+      "supportingQueries": [
+        "affordable web design Little Rock",
+        "small business website design Little Rock",
+        "mobile friendly website Little Rock"
+      ],
+      "intent": "Commercial",
+      "targetPath": "/start-project",
+      "scores": {
+        "businessValue": 5,
+        "brandRelevance": 5,
+        "attainability": 3,
+        "readiness": 5,
+        "total": 18
+      },
+      "nextAction": "Turn the start-project route into the strongest service-and-offer page, using the verified $324 promotion, deliverables, founder access, service area, FAQ, and clear contact action."
+    },
+    {
+      "id": "arkansas-small-business-websites",
+      "priority": "P0",
+      "cluster": "Small-business website development in Arkansas",
+      "primaryQuery": "small business website development Arkansas",
+      "supportingQueries": [
+        "Arkansas small business web design",
+        "website designer Central Arkansas",
+        "custom business website Arkansas"
+      ],
+      "intent": "Commercial",
+      "targetPath": "/start-project",
+      "scores": {
+        "businessValue": 5,
+        "brandRelevance": 5,
+        "attainability": 3,
+        "readiness": 5,
+        "total": 18
+      },
+      "nextAction": "Cover Arkansas relevance naturally on the existing service page; do not create repetitive city pages."
+    },
+    {
+      "id": "affiliate-brand",
+      "priority": "P0",
+      "cluster": "WASCIK Affiliate Services brand ownership",
+      "primaryQuery": "WASCIK Affiliate Services",
+      "supportingQueries": [
+        "WASCIK product guides",
+        "WASCIK affiliate products"
+      ],
+      "intent": "Navigational",
+      "targetPath": "/affiliate-services",
+      "scores": {
+        "businessValue": 3,
+        "brandRelevance": 5,
+        "attainability": 5,
+        "readiness": 5,
+        "total": 18
+      },
+      "nextAction": "Strengthen selection standards, author identity, guide navigation, and internal links to original product pages."
+    },
+    {
+      "id": "maintenance-arkansas",
+      "priority": "P1",
+      "cluster": "Website maintenance for Arkansas small businesses",
+      "primaryQuery": "small business website maintenance Arkansas",
+      "supportingQueries": [
+        "website maintenance Little Rock",
+        "monthly website support Arkansas",
+        "business website updates Little Rock"
+      ],
+      "intent": "Commercial",
+      "targetPath": "/start-project",
+      "scores": {
+        "businessValue": 4,
+        "brandRelevance": 5,
+        "attainability": 4,
+        "readiness": 4,
+        "total": 17
+      },
+      "nextAction": "Add a clear maintenance section using verified pricing and responsibilities before considering a dedicated page."
+    },
+    {
+      "id": "church-websites",
+      "priority": "P1",
+      "cluster": "Church website development in Arkansas",
+      "primaryQuery": "church website development Arkansas",
+      "supportingQueries": [
+        "church web designer Little Rock",
+        "affordable church website Arkansas"
+      ],
+      "intent": "Commercial",
+      "targetPath": "/start-project",
+      "scores": {
+        "businessValue": 4,
+        "brandRelevance": 4,
+        "attainability": 4,
+        "readiness": 3,
+        "total": 15
+      },
+      "nextAction": "Wait to create a focused page until WASCIK can show an approved church project or case study."
+    },
+    {
+      "id": "ai-assistants-arkansas",
+      "priority": "P2",
+      "cluster": "AI website assistants for Arkansas businesses",
+      "primaryQuery": "AI website assistant Arkansas small business",
+      "supportingQueries": [
+        "AI assistant for business website",
+        "small business AI solutions Arkansas",
+        "website AI assistant Little Rock"
+      ],
+      "intent": "Commercial and informational",
+      "targetPath": "/start-project",
+      "scores": {
+        "businessValue": 4,
+        "brandRelevance": 5,
+        "attainability": 4,
+        "readiness": 2,
+        "total": 15
+      },
+      "nextAction": "Build and document a working assistant demonstration before making this a major acquisition page."
+    },
+    {
+      "id": "portable-recorder",
+      "priority": "P2",
+      "cluster": "Portable card-size voice recorder",
+      "primaryQuery": "card size voice activated recorder review",
+      "supportingQueries": [
+        "wallet size digital voice recorder",
+        "portable voice recorder 128GB review",
+        "voice activated recorder for meetings"
+      ],
+      "intent": "Commercial investigation",
+      "targetPath": "/affiliate-services/dhgate/portable-voice-recorder",
+      "scores": {
+        "businessValue": 2,
+        "brandRelevance": 3,
+        "attainability": 2,
+        "readiness": 4,
+        "total": 11
+      },
+      "nextAction": "Verify the exact model and specifications, add limitations and intended uses, and publish original testing or clearly labeled research rather than claiming firsthand experience."
+    }
+  ],
+  "firstSprint": [
+    "Get the WASCIK brand and Affiliate Services pages indexed",
+    "Strengthen /start-project for affordable Little Rock and Arkansas small-business website searches",
+    "Add maintenance information using verified pricing",
+    "Improve author, selection-method, and internal-link signals on /affiliate-services",
+    "Upgrade the recorder guide only after exact product facts are verified"
+  ],
+  "successSignals": [
+    "Homepage and Affiliate Services indexed",
+    "Impressions for WASCIK-branded searches",
+    "Impressions for Little Rock and Arkansas website-design queries",
+    "Clicks to call and email actions",
+    "Affiliate guide impressions and outbound affiliate-link clicks"
+  ]
+}

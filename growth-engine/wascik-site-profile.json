@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "status": "draft-for-owner-confirmation",
+  "lastUpdated": "2026-08-13",
+  "site": {
+    "name": "WASCIK App Development",
+    "url": "https://wascik-app-development.netlify.app",
+    "repository": "WASCIK-appDevelopment/wascik-portfolio",
+    "primaryLanguage": "en-US",
+    "owner": "Michael Lewis",
+    "email": "LewisMike0435@gmail.com",
+    "phone": "+1-501-578-2259",
+    "serviceArea": [
+      "Central Arkansas",
+      "United States (remote services)"
+    ]
+  },
+  "positioning": {
+    "primaryStatement": "Powerful digital solutions for local businesses.",
+    "mission": "Make technology services friendly, timely, professional, practical, and personal.",
+    "audiences": [
+      "Small businesses",
+      "Local businesses in Central Arkansas",
+      "Churches and community organizations",
+      "Businesses needing websites, apps, e-commerce, branding, support, or practical AI tools"
+    ],
+    "differentiators": [
+      "Mobile-first design",
+      "Custom-built solutions",
+      "Direct support from the founder",
+      "Friendly and clear communication",
+      "Services designed around how the client's business actually works"
+    ]
+  },
+  "services": [
+    "Website design and development",
+    "Mobile app development",
+    "Practical AI solutions and website assistants",
+    "E-commerce development",
+    "Design and branding",
+    "Website maintenance and support",
+    "Affiliate product guides and promotions"
+  ],
+  "verifiedOffers": {
+    "onePageWebsitePromotion": {
+      "priceUsd": 324,
+      "durationDays": 90,
+      "regularPriceUsd": 399,
+      "includes": [
+        "Custom mobile-friendly design",
+        "Business information and services",
+        "Contact and call buttons",
+        "Two revision rounds"
+      ]
+    },
+    "extraPage": {
+      "promotionalPriceUsd": 100,
+      "regularPriceUsd": 125
+    },
+    "hostingAndSecurity": {
+      "monthlyUsd": 20,
+      "annualUsd": 240
+    },
+    "domain": {
+      "annualUsd": 25
+    },
+    "maintenance": {
+      "firstYearMonthlyUsd": 39.99,
+      "laterMonthlyUsd": 49.99
+    },
+    "testimonialDiscountUsd": 25
+  },
+  "affiliatePolicy": {
+    "disclosure": "WASCIK Affiliate Services may earn a commission if you purchase through our link, at no additional cost to you.",
+    "requiredLinkRel": [
+      "sponsored",
+      "noopener",
+      "noreferrer"
+    ],
+    "permittedContent": [
+      "Accurate product information",
+      "Research-backed descriptions",
+      "Clearly identified personal observations",
+      "Benefits and limitations",
+      "Buying guides and comparisons",
+      "Merchant price and availability disclaimers"
+    ],
+    "prohibitedClaims": [
+      "Claiming Michael personally uses a product unless confirmed",
+      "Inventing prices, specifications, test results, customer reviews, or merchant promotions",
+      "Calling a product the best without evidence and a defined comparison",
+      "Concealing the affiliate relationship"
+    ]
+  },
+  "contentRules": {
+    "voice": [
+      "Friendly",
+      "Professional",
+      "Direct",
+      "Plain English",
+      "Forward-looking"
+    ],
+    "mustDo": [
+      "Confirm business and product facts before publication",
+      "Prioritize helpful original content",
+      "Use clear page-specific calls to action",
+      "Preserve affiliate disclosures",
+      "Keep major publishing changes behind Michael's approval"
+    ],
+    "mustAvoid": [
+      "Mass-producing repetitive location or keyword pages",
+      "Generic AI filler",
+      "Unsupported guarantees",
+      "Guaranteed search-ranking claims",
+      "Publishing major changes automatically"
+    ]
+  },
+  "initialSearchThemes": [
+    "Affordable website developer in Little Rock",
+    "Small-business website development in Arkansas",
+    "Mobile-friendly website design",
+    "Website maintenance for small businesses",
+    "AI assistants for business websites",
+    "Church website development",
+    "Affiliate technology product guides"
+  ],
+  "workflow": {
+    "deployment": "Preview and verify first; deploy Netlify only after Michael deliberately approves.",
+    "publishingApprovalRequired": true,
+    "productionAutoDeployAllowed": false
+  },
+  "confirmationsNeeded": [
+    "Whether Central Arkansas should remain the primary local service area",
+    "Whether the 90-day $324 website promotion is currently active",
+    "Which one service and one affiliate product should receive first search priority"
+  ]
+}

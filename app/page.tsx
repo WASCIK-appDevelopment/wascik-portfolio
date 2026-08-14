@@ -173,6 +173,25 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
 
           {mode === "project" && (
           <>
+          <section className="growth-service-hero" aria-labelledby="growth-service-title">
+            <p className="wascik-eyebrow">SMALL-BUSINESS WEBSITES · CENTRAL ARKANSAS</p>
+            <h1 id="growth-service-title">Affordable website development built around your business.</h1>
+            <p className="growth-service-lead">
+              WASCIK App Development creates clear, mobile-friendly business websites for
+              Little Rock, Central Arkansas, and businesses we can serve remotely. You work
+              directly with Michael from the first conversation through launch, so the site
+              reflects what your business actually does and makes it easy for customers to
+              call, email, learn about your services, or take the next step.
+            </p>
+            <div className="wascik-actions">
+              <a href="#website-special" className="wascik-cta primary">See the $324 Website Special</a>
+              <a href="#contact" className="wascik-cta secondary">Talk With Michael</a>
+            </div>
+            <div className="growth-proof" aria-label="WASCIK website benefits">
+              <span>Mobile-first</span><span>Clear pricing</span><span>Direct founder support</span><span>Two revision rounds</span>
+            </div>
+          </section>
+
           <section id="services" className="wascik-services">
             <p className="wascik-eyebrow">WHAT WE BUILD</p>
             <h2>Your business. Upgraded.</h2>
@@ -189,10 +208,53 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
 
           <AIAssistantDemo />
 
-          <section className="promo-band">
+          <section id="website-special" className="promo-band">
             <div><p>90-DAY WEBSITE SPECIAL</p><strong><sup>$</sup>324</strong><span>one-page business website</span></div>
             <ul><li>Custom mobile-friendly design</li><li>Business information and services</li><li>Contact and call buttons</li><li>Two revision rounds</li></ul>
             <a href="#contact" className="wascik-cta primary">Claim This Offer</a>
+          </section>
+
+          <section className="growth-details" aria-labelledby="website-package-title">
+            <div className="growth-section-heading">
+              <p className="wascik-eyebrow">STRAIGHTFORWARD PRICING</p>
+              <h2 id="website-package-title">Know what your website costs.</h2>
+              <p>The promotional one-page website is $324 during the 90-day special and $399 afterward. Additional pages can be added as your business grows.</p>
+            </div>
+            <div className="growth-price-grid">
+              <article><span>Website special</span><strong>$324</strong><p>One mobile-friendly business page during the 90-day promotion. The regular price is $399.</p></article>
+              <article><span>Additional pages</span><strong>$100</strong><p>Promotional price per additional page. The regular price afterward is $125 per page.</p></article>
+              <article><span>Hosting &amp; security</span><strong>$20/mo</strong><p>$240 per year for hosting and security, plus $25 per year for the domain.</p></article>
+              <article><span>Maintenance</span><strong>$39.99/mo</strong><p>First-year maintenance pricing. The ongoing price after the first year is $49.99 per month.</p></article>
+            </div>
+            <p className="growth-price-note">Customers who provide an approved testimonial can receive a $25 discount. Final scope and pricing are confirmed before work begins.</p>
+          </section>
+
+          <section className="growth-process" aria-labelledby="growth-process-title">
+            <div className="growth-section-heading">
+              <p className="wascik-eyebrow">A SIMPLE, PERSONAL PROCESS</p>
+              <h2 id="growth-process-title">From your idea to a website customers can use.</h2>
+            </div>
+            <ol>
+              <li><span>01</span><div><strong>Tell us about the business.</strong><p>We learn what you offer, who you serve, and what visitors should do when they reach your website.</p></div></li>
+              <li><span>02</span><div><strong>Review the plan.</strong><p>You see the proposed page structure, content needs, pricing, and next steps before the build moves forward.</p></div></li>
+              <li><span>03</span><div><strong>Preview and revise.</strong><p>We build the mobile-friendly site, let you review it, and include two revision rounds in the promotional package.</p></div></li>
+              <li><span>04</span><div><strong>Launch with support.</strong><p>After your approval, the site goes live with hosting guidance and optional ongoing maintenance.</p></div></li>
+            </ol>
+          </section>
+
+          <section className="growth-faq" aria-labelledby="growth-faq-title">
+            <div className="growth-section-heading">
+              <p className="wascik-eyebrow">COMMON QUESTIONS</p>
+              <h2 id="growth-faq-title">What small-business owners usually want to know.</h2>
+            </div>
+            <div className="growth-faq-grid">
+              <article><h3>Who is the $324 website for?</h3><p>It is designed for a small business, independent professional, church, community organization, or new venture that needs one clear mobile-friendly page with services and contact actions.</p></article>
+              <article><h3>Can I add more pages later?</h3><p>Yes. Additional pages can be added for services, products, staff, frequently asked questions, galleries, or other business needs.</p></article>
+              <article><h3>Do you only serve Little Rock?</h3><p>No. WASCIK serves Central Arkansas locally and can work remotely with businesses elsewhere when the project is a good fit.</p></article>
+              <article><h3>Will the website work on phones?</h3><p>Yes. Mobile presentation is treated as a primary requirement because many customers will first reach your business from a phone.</p></article>
+              <article><h3>What does maintenance cover?</h3><p>Maintenance provides ongoing help with appropriate website updates and support. The exact responsibilities are confirmed for each project before service begins.</p></article>
+              <article><h3>Can WASCIK help with more than websites?</h3><p>Yes. WASCIK also develops mobile-app concepts, e-commerce experiences, branding, affiliate services, and practical AI solutions as those projects are scoped and approved.</p></article>
+            </div>
           </section>
 
           <section id="contact" className="wascik-contact">

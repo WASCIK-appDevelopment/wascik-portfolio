@@ -41,6 +41,15 @@ const outdoorProducts = [
     features: ["Solar charging support", "Rugged 45mm GPS watch design", "Tactical-edition activity and navigation features"],
     note: "Battery performance varies by use and solar exposure. Confirm compatibility, feature availability, and current specifications with EuroOptic.",
   },
+  {
+    name: "Oakley Meta Vanguard White Prizm Black Shield Sunglasses",
+    category: "Smart eyewear & performance sunglasses",
+    image: "/affiliate/eurooptic/products/oakley-meta-vanguard-white.webp",
+    link: "https://eurooptic.sjv.io/vDm1A3",
+    description: "Performance-focused Oakley Meta smart eyewear in white with a Prizm Black shield lens and a streamlined semi-rimless wraparound design.",
+    features: ["Oakley Meta smart-eyewear platform", "Prizm Black shield lens", "Lightweight semi-rimless performance frame"],
+    note: "Confirm device compatibility, connected-feature availability, fit, included accessories, and current specifications with EuroOptic before purchasing.",
+  },
 ];
 
 export default function EuroOpticPage() {

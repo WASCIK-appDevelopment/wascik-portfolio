@@ -2,19 +2,36 @@ import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../lib/ai/openaiConfig";
 import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
 
+type ResponsesPayload = {
+  status?: string;
+  incomplete_details?: { reason?: string } | null;
+  error?: { message?: string } | null;
+  output?: Array<{
+    content?: Array<{
+      type?: string;
+      text?: string;
+      refusal?: string;
+    }>;
+  }>;
+};
+
 function extractResponseText(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
+  const data = payload as ResponsesPayload;
 
-  const data = payload as {
-    output?: Array<{
-      content?: Array<{ type?: string; text?: string }>;
-    }>;
-  };
-
-  return (data.output ?? [])
-    .flatMap((item) => item.content ?? [])
+  const parts = (data.output ?? []).flatMap((item) => item.content ?? []);
+  const text = parts
     .filter((item) => item.type === "output_text" && typeof item.text === "string")
     .map((item) => item.text?.trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  if (text) return text;
+
+  return parts
+    .filter((item) => item.type === "refusal" && typeof item.refusal === "string")
+    .map((item) => item.refusal?.trim())
     .filter(Boolean)
     .join("\n")
     .trim();
@@ -72,12 +89,13 @@ export async function POST(request: Request) {
         model: config.model,
         instructions,
         input: message,
-        max_output_tokens: 220,
+        reasoning: { effort: "minimal" },
+        max_output_tokens: 800,
         store: false,
       }),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = (await response.json().catch(() => ({}))) as ResponsesPayload;
 
     if (!response.ok) {
       console.error("OpenAI Responses API error", response.status, data);
@@ -89,8 +107,18 @@ export async function POST(request: Request) {
 
     const text = extractResponseText(data);
     if (!text) {
+      console.error("OpenAI response contained no visible text", {
+        status: data.status,
+        incompleteReason: data.incomplete_details?.reason,
+        apiError: data.error?.message,
+      });
       return NextResponse.json(
-        { error: "The representative returned an empty response." },
+        {
+          error:
+            data.status === "incomplete"
+              ? "The representative ran out of response capacity. Please try again."
+              : "The representative returned an empty response.",
+        },
         { status: 502 }
       );
     }

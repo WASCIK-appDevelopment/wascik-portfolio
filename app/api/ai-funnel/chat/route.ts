@@ -1,24 +1,27 @@
 import { NextResponse } from "next/server";
+import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
 
 const replies: Record<string, string> = {
-  service: "I can explain services, collect project details, and help route a visitor toward a consultation or human follow-up.",
-  retail: "I can help compare products, explain features, guide shoppers to the right category, and keep the buying path clear.",
-  church: "I can answer common visitor questions about services, events, ministries, directions, and ways to connect with the organization.",
-  custom: "I can be configured around approved business knowledge, the company's voice, and the actions visitors should take next.",
+  services: "I can explain WASCIK services, qualify the project, and guide a visitor toward starting a project or reaching the team.",
+  shopping: "I can help a shopper discover relevant products, compare listed options, and guide them through WASCIK affiliate pages while preserving the required disclosure.",
+  owner: "I can help prepare WASCIK social media content, short-form video scripts, ad concepts, and reusable content ideas for the private owner workspace.",
+  general: "I can help the visitor navigate the WASCIK site and get to the right service, affiliate section, or next step.",
 };
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const message = typeof body.message === "string" ? body.message.trim().slice(0, 1200) : "";
-  const businessType = typeof body.businessType === "string" ? body.businessType : "custom";
+  const pathname = typeof body.pathname === "string" ? body.pathname.trim() : "/";
+  const pageContext = resolveAssistantPageContext(pathname);
 
   if (!message) {
     return NextResponse.json({ error: "A visitor message is required." }, { status: 400 });
   }
 
   return NextResponse.json({
-    text: replies[businessType] ?? replies.custom,
-    mode: "stage-3-backend-contract",
-    handoffReady: true,
+    text: replies[pageContext.mode] ?? replies.general,
+    pageContext,
+    mode: "page-aware-backend-contract",
+    handoffReady: pageContext.mode !== "owner",
   });
 }

@@ -74,7 +74,7 @@ export default function FunnelExperience() {
           <div className={styles.glow} />
           <div className={styles.speechBubble}>
             <span className={styles.speechLabel}>WASCIK DIGITAL REPRESENTATIVE</span>
-            <strong>{demoOpen ? current.title : "Hi. I&apos;m your website representative."}</strong>
+            <strong>{demoOpen ? current.title : "Hi. I'm your website representative."}</strong>
             <p>
               {demoOpen
                 ? current.reply

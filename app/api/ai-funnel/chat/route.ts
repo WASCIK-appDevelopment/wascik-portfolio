@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getOpenAIConfig } from "../../../../lib/ai/openaiConfig";
 import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
 
 function extractResponseText(payload: unknown): string {
@@ -29,10 +30,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A visitor message is required." }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const config = getOpenAIConfig();
+  if (!config.configured || !config.apiKey) {
     return NextResponse.json(
-      { error: "The AI service is not configured yet." },
+      {
+        error: "The AI service is not configured yet.",
+        setup: "Add OPENAI_API_KEY to the server environment and restart the app.",
+      },
       { status: 503 }
     );
   }
@@ -61,11 +65,11 @@ export async function POST(request: Request) {
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-5-mini",
+        model: config.model,
         instructions,
         input: message,
         max_output_tokens: 220,

@@ -4,6 +4,57 @@ import Link from "next/link";
 const productLink = "https://focuscamera.pxi6.net/3kzXRX";
 const storeLink = "https://focuscamera.pxi6.net/c/7587435/642856/10228";
 
+const featuredProducts = [
+  {
+    name: "Poseidon Nano 3000mAh Wireless Charger",
+    category: "Portable power",
+    image: "/affiliate/focus-camera/products/poseidon-nano-charger.webp",
+    link: "https://focuscamera.pxi6.net/Ag5kVR",
+    description: "A compact 3000mAh wireless charging solution built for convenient backup power without adding a bulky full-size battery pack to your everyday carry.",
+    features: ["Compact portable design", "3000mAh power capacity", "Built-in Mavrik charging technology"],
+  },
+  {
+    name: "eMeet C980 Pro Full HD Webcam",
+    category: "Work & video calls",
+    image: "/affiliate/focus-camera/products/emee-c980-pro-webcam.webp",
+    link: "https://focuscamera.pxi6.net/aNDYVj",
+    description: "An all-in-one Full HD webcam designed to simplify meetings, remote work, classes, and everyday video calls with integrated audio hardware.",
+    features: ["Full HD video", "Noise-reduction microphone", "Built-in speakers"],
+  },
+  {
+    name: "Zoom ZDM-1 Four-Person Podcast Bundle",
+    category: "Podcast & creator gear",
+    image: "/affiliate/focus-camera/products/zoom-zdm1-podcast-bundle.webp",
+    link: "https://focuscamera.pxi6.net/X4Eoj5",
+    description: "A coordinated four-person podcast setup that brings together microphone-and-headphone packs with four adjustable boom arms for a cleaner shared recording space.",
+    features: ["Four podcast mic packs", "Headphones included", "Four adjustable boom arms"],
+  },
+  {
+    name: "Dell UltraSharp 27-inch 4K UHD Monitor",
+    category: "Computers & displays",
+    image: "/affiliate/focus-camera/products/dell-ultrasharp-27-monitor.webp",
+    link: "https://focuscamera.pxi6.net/xJoXKk",
+    description: "A sharp 27-inch 4K display for detailed creative work, productivity, media, and multi-device desk setups in a clean black-and-silver design.",
+    features: ["27-inch 4K UHD display", "DisplayPort, USB, and HDMI connectivity", "Productivity-focused UltraSharp design"],
+  },
+  {
+    name: "DJI Flip Fly More Combo Camera Drone",
+    category: "Camera & drone technology",
+    image: "/affiliate/focus-camera/products/dji-flip-fly-more-combo.webp",
+    link: "https://focuscamera.pxi6.net/k4AQKM",
+    description: "A complete compact camera-drone package with the DJI RC 2 controller, extra batteries, charging hub, protective components, and a carrying bag for travel-ready aerial content creation.",
+    features: ["DJI RC 2 controller", "Extra batteries and charging hub", "Carrying bag and Fly More accessories"],
+  },
+  {
+    name: "Outdoor Survival Bracelet & Lifestyle Gear",
+    category: "Explore the main store",
+    image: "/affiliate/focus-camera/products/outdoor-survival-bracelet.webp",
+    link: storeLink,
+    description: "Explore Focus Camera & Lifestyle for practical outdoor accessories such as this multi-function paracord bracelet, along with cameras, electronics, travel gear, and other current store selections.",
+    features: ["Multi-function outdoor accessory", "Paracord bracelet design", "Links to the full Focus Camera catalog"],
+  },
+];
+
 export default function FocusCameraPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#080b12] text-white">
@@ -48,6 +99,35 @@ export default function FocusCameraPage() {
             </div>
           </div>
         </article>
+      </section>
+
+      <section className="relative z-10 px-5 py-20 md:px-8 lg:py-24">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-xs font-black uppercase tracking-[.28em] text-blue-300">More Focus Camera picks</p>
+          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Technology, creator gear &amp; lifestyle essentials</h2>
+          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Six selections presented in the same order as their supplied Focus Camera tracking links. Open each current merchant listing to confirm specifications, price, availability, and included accessories.</p>
+          <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
+            {featuredProducts.map((product) => (
+              <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-br from-[#10203b] to-[#070b13] shadow-[0_24px_70px_rgba(0,0,0,.32)]">
+                <div className="bg-white p-4">
+                  <Image src={product.image} alt={product.name} width={1200} height={800} className="aspect-[3/2] h-auto w-full object-contain" />
+                </div>
+                <div className="flex flex-1 flex-col p-7">
+                  <p className="text-xs font-black uppercase tracking-[.22em] text-blue-300">{product.category}</p>
+                  <h3 className="mt-3 text-2xl font-black leading-tight">{product.name}</h3>
+                  <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
+                  <ul className="mt-5 grid gap-2 text-sm text-slate-200">
+                    {product.features.map((feature) => <li key={feature}>✓ {feature}</li>)}
+                  </ul>
+                  <div className="mt-auto pt-7">
+                    <a href={product.link} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-400 px-5 py-3 text-center font-black text-slate-950 transition hover:bg-blue-300">{product.link === storeLink ? "Explore Focus Camera →" : "View Product →"}</a>
+                    <p className="mt-3 text-center text-xs leading-5 text-slate-500">Affiliate link · Merchant pricing and availability may change.</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="relative z-10 px-5 py-14 md:px-8">

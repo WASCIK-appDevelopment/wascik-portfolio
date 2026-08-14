@@ -4,6 +4,27 @@ import Link from "next/link";
 const watchLink = "https://eurooptic.sjv.io/WOEqjX";
 const storeLink = "https://eurooptic.sjv.io/c/7587435/2973190/35464";
 
+const outdoorProducts = [
+  {
+    name: "Garmin inReach Mini 2 GPS Satellite Communicator",
+    category: "Satellite communication & navigation",
+    image: "/affiliate/eurooptic/products/garmin-inreach-mini-2.webp",
+    link: "https://eurooptic.sjv.io/JkZoPe",
+    description: "A compact black GPS satellite communicator designed for off-grid trips, route awareness, and staying connected beyond normal cellular coverage.",
+    features: ["Compact handheld design", "GPS navigation support", "Satellite communication capabilities"],
+    note: "Some satellite communication and safety features may require activation, a compatible device, and a paid service plan.",
+  },
+  {
+    name: "Fujinon Polaris 7x50 FMTR-SX2 Waterproof Binoculars",
+    category: "Optics & outdoor observation",
+    image: "/affiliate/eurooptic/products/fujinon-polaris-binoculars.webp",
+    link: "https://eurooptic.sjv.io/4aMR9L",
+    description: "Rugged waterproof binoculars built for detailed outdoor and marine observation with multicoated optics, a rubberized body, and field-flattener lenses.",
+    features: ["Waterproof construction", "Multicoated optical system", "Rubberized body and field-flattener lenses"],
+    note: "Confirm the current model number, magnification, included accessories, and full specifications on EuroOptic before purchasing.",
+  },
+];
+
 export default function EuroOpticPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#020908] text-white">
@@ -62,6 +83,29 @@ export default function EuroOpticPage() {
             <p className="mt-5 leading-8 text-slate-300">Looking for something else? Open EuroOptic&apos;s main storefront through the WASCIK affiliate link and explore its current catalog.</p>
             <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="mt-7 inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-cyan-400 px-7 py-4 text-center font-black text-cyan-100 transition hover:bg-cyan-500/10">Browse EuroOptic →</a>
           </article>
+        </div>
+      </section>
+
+      <section className="relative z-10 px-5 py-20 md:px-8 lg:py-24">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-xs font-black uppercase tracking-[.28em] text-emerald-300">Outdoor technology &amp; optics</p>
+          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Featured EuroOptic gear</h2>
+          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Explore navigation, satellite-communication, and observation gear through WASCIK&apos;s tracked EuroOptic links.</p>
+          <div className="mt-10 grid gap-7 lg:grid-cols-2">
+            {outdoorProducts.map((product) => (
+              <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-[#0b231d] to-[#030b09] shadow-[0_24px_70px_rgba(0,0,0,.32)]">
+                <div className="bg-white p-4"><Image src={product.image} alt={product.name} width={1200} height={800} className="aspect-[3/2] h-auto w-full object-contain" /></div>
+                <div className="flex flex-1 flex-col p-7 sm:p-9">
+                  <p className="text-xs font-black uppercase tracking-[.22em] text-emerald-300">{product.category}</p>
+                  <h3 className="mt-3 text-3xl font-black leading-tight">{product.name}</h3>
+                  <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
+                  <ul className="mt-5 grid gap-2 text-sm text-slate-200">{product.features.map((feature) => <li key={feature}>✓ {feature}</li>)}</ul>
+                  <p className="mt-5 text-sm leading-6 text-slate-400">{product.note}</p>
+                  <div className="mt-auto pt-7"><a href={product.link} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-300 px-5 py-3 text-center font-black text-slate-950 transition hover:bg-emerald-200">View Product →</a><p className="mt-3 text-center text-xs leading-5 text-slate-500">Affiliate link · Merchant pricing and availability may change.</p></div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

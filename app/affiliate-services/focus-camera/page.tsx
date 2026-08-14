@@ -53,6 +53,22 @@ const featuredProducts = [
     description: "Explore Focus Camera & Lifestyle for practical outdoor accessories such as this multi-function paracord bracelet, along with cameras, electronics, travel gear, and other current store selections.",
     features: ["Multi-function outdoor accessory", "Paracord bracelet design", "Links to the full Focus Camera catalog"],
   },
+  {
+    name: "Beats Solo 4 Bluetooth On-Ear Headphones (Refurbished)",
+    category: "Wireless audio",
+    image: "/affiliate/focus-camera/products/beats-solo-4-refurbished.webp",
+    link: "https://focuscamera.pxi6.net/0GzXqY",
+    description: "Refurbished matte-black Beats Solo 4 on-ear headphones for wireless everyday listening, travel, calls, and compact personal audio.",
+    features: ["Bluetooth wireless listening", "Built-in digital-to-analog converter", "Refurbished matte-black finish"],
+  },
+  {
+    name: "Apple 11-inch iPad with A16 Chip, 128GB Wi-Fi",
+    category: "Tablets & mobile technology",
+    image: "/affiliate/focus-camera/products/apple-ipad-11-a16.webp",
+    link: "https://focuscamera.pxi6.net/OYEoqK",
+    description: "A silver 11-inch Wi-Fi iPad pairing Apple&apos;s A16 chip with 128GB of storage for browsing, streaming, creative work, communication, and everyday mobile productivity.",
+    features: ["11-inch display", "Apple A16 chip", "128GB Wi-Fi configuration"],
+  },
 ];
 
 export default function FocusCameraPage() {
@@ -105,7 +121,7 @@ export default function FocusCameraPage() {
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[.28em] text-blue-300">More Focus Camera picks</p>
           <h2 className="mt-3 text-4xl font-black sm:text-5xl">Technology, creator gear &amp; lifestyle essentials</h2>
-          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Six selections presented in the same order as their supplied Focus Camera tracking links. Open each current merchant listing to confirm specifications, price, availability, and included accessories.</p>
+          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Featured selections presented with their supplied Focus Camera tracking links. Open each current merchant listing to confirm specifications, price, availability, condition, and included accessories.</p>
           <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
             {featuredProducts.map((product) => (
               <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-br from-[#10203b] to-[#070b13] shadow-[0_24px_70px_rgba(0,0,0,.32)]">

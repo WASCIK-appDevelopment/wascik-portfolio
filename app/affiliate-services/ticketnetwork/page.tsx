@@ -14,6 +14,10 @@ const events = [
   { artist: "Kane Brown", tour: "OC Smoke Show with Dustin Lynch & LoCash", date: "Saturday, August 15, 2026", time: "1:00 PM", venue: "Rancho Mission Viejo Riding Park", location: "San Juan Capistrano, California", image: "/affiliate/ticketnetwork/kane-brown.webp", genre: "Country" },
   { artist: "Guns N’ Roses", tour: "Guns N’ Roses with Public Enemy", date: "Sunday, August 16, 2026", time: "6:25 PM", venue: "Busch Stadium", location: "St. Louis, Missouri", image: "/affiliate/ticketnetwork/guns-n-roses.webp", genre: "Rock" },
   { artist: "Pitbull", tour: "Pitbull with Lil Jon", date: "Wednesday, August 19, 2026", time: "8:00 PM", venue: "Jiffy Lube Live", location: "Bristow, Virginia", image: "/affiliate/ticketnetwork/pitbull.webp", genre: "Pop & Hip-Hop" },
+  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Thursday, August 20, 2026", time: "7:30 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Friday, August 21, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Saturday, August 22, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Sunday, August 23, 2026", time: "2:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
   { artist: "Weezer", tour: "Weezer with The Shins & Silversun Pickups", date: "Tuesday, October 6, 2026", time: "7:00 PM", venue: "Nationwide Arena", location: "Columbus, Ohio", image: "/affiliate/ticketnetwork/weezer.webp", genre: "Alternative Rock" },
   { artist: "Journey", tour: "Journey Live in Concert", date: "Thursday, October 8, 2026", time: "7:30 PM", venue: "BOK Center", location: "Tulsa, Oklahoma", image: "/affiliate/ticketnetwork/journey.webp", genre: "Classic Rock" },
 ];
@@ -41,7 +45,7 @@ export default function TicketNetworkPage() {
       <section id="upcoming-events" className="relative z-10 border-y border-fuchsia-950 bg-[#12091d]/85 px-5 py-20 md:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[.28em] text-fuchsia-300">Upcoming concert spotlight</p>
-          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Six shows worth checking out</h2>
+          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Upcoming shows worth checking out</h2>
           <p className="mt-5 max-w-3xl leading-8 text-slate-300">Schedules were reviewed on August 13, 2026. Events, performers, times, ticket inventory, and pricing can change, so verify every detail on TicketNetwork before ordering.</p>
           <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
             {events.map((event) => (

@@ -7,6 +7,7 @@ const storeLink = "https://focuscamera.pxi6.net/c/7587435/642856/10228";
 const featuredProducts = [
   {
     name: "Poseidon Nano 3000mAh Wireless Charger",
+    group: "Lifestyle & everyday essentials",
     category: "Portable power",
     image: "/affiliate/focus-camera/products/poseidon-nano-charger.webp",
     link: "https://focuscamera.pxi6.net/Ag5kVR",
@@ -15,6 +16,7 @@ const featuredProducts = [
   },
   {
     name: "eMeet C980 Pro Full HD Webcam",
+    group: "Computing & personal technology",
     category: "Work & video calls",
     image: "/affiliate/focus-camera/products/emee-c980-pro-webcam.webp",
     link: "https://focuscamera.pxi6.net/aNDYVj",
@@ -23,6 +25,7 @@ const featuredProducts = [
   },
   {
     name: "Zoom ZDM-1 Four-Person Podcast Bundle",
+    group: "Music, podcasting & studio audio",
     category: "Podcast & creator gear",
     image: "/affiliate/focus-camera/products/zoom-zdm1-podcast-bundle.webp",
     link: "https://focuscamera.pxi6.net/X4Eoj5",
@@ -31,6 +34,7 @@ const featuredProducts = [
   },
   {
     name: "Dell UltraSharp 27-inch 4K UHD Monitor",
+    group: "Computing & personal technology",
     category: "Computers & displays",
     image: "/affiliate/focus-camera/products/dell-ultrasharp-27-monitor.webp",
     link: "https://focuscamera.pxi6.net/xJoXKk",
@@ -39,6 +43,7 @@ const featuredProducts = [
   },
   {
     name: "DJI Flip Fly More Combo Camera Drone",
+    group: "Cameras, lighting & imaging",
     category: "Camera & drone technology",
     image: "/affiliate/focus-camera/products/dji-flip-fly-more-combo.webp",
     link: "https://focuscamera.pxi6.net/k4AQKM",
@@ -47,6 +52,7 @@ const featuredProducts = [
   },
   {
     name: "Outdoor Survival Bracelet & Lifestyle Gear",
+    group: "Lifestyle & everyday essentials",
     category: "Explore the main store",
     image: "/affiliate/focus-camera/products/outdoor-survival-bracelet.webp",
     link: storeLink,
@@ -55,6 +61,7 @@ const featuredProducts = [
   },
   {
     name: "Beats Solo 4 Bluetooth On-Ear Headphones (Refurbished)",
+    group: "Computing & personal technology",
     category: "Wireless audio",
     image: "/affiliate/focus-camera/products/beats-solo-4-refurbished.webp",
     link: "https://focuscamera.pxi6.net/0GzXqY",
@@ -63,11 +70,85 @@ const featuredProducts = [
   },
   {
     name: "Apple 11-inch iPad with A16 Chip, 128GB Wi-Fi",
+    group: "Computing & personal technology",
     category: "Tablets & mobile technology",
     image: "/affiliate/focus-camera/products/apple-ipad-11-a16.webp",
     link: "https://focuscamera.pxi6.net/OYEoqK",
     description: "A silver 11-inch Wi-Fi iPad pairing Apple&apos;s A16 chip with 128GB of storage for browsing, streaming, creative work, communication, and everyday mobile productivity.",
     features: ["11-inch display", "Apple A16 chip", "128GB Wi-Fi configuration"],
+  },
+  {
+    name: "Alesis Nitro Ultimate 9-Piece Professional Electronic Drum Kit",
+    group: "Music, podcasting & studio audio",
+    category: "Electronic instruments",
+    image: "/affiliate/focus-camera/products/alesis-nitro-ultimate-drum-kit.webp",
+    link: "https://focuscamera.pxi6.net/xJoXxR",
+    description: "A nine-piece electronic drum system with a complete rack-mounted pad layout, cymbal pads, drum module, Bluetooth support, and kick-pedal setup for practice, recording, and performance.",
+    features: ["Nine-piece electronic drum configuration", "Bluetooth-equipped drum module", "Rack, cymbal pads, and kick-pedal system"],
+  },
+  {
+    name: "OutIn Fino Portable Electric Coffee Grinder",
+    group: "Lifestyle & everyday essentials",
+    category: "Coffee & travel accessories",
+    image: "/affiliate/focus-camera/products/outin-fino-coffee-grinder.webp",
+    link: "https://focuscamera.pxi6.net/c/7587435/3759881/10228?prodsku=50543834202407&u=https%3A%2F%2Flifestylebyfocus.com%2Fproducts%2Foutin-fino-gr-sw-coffee-espresso-tea-coffee-accessories-tools&intsrc=APIG_30377",
+    description: "A compact Sandstone White electric coffee grinder built for home or travel, with adjustable settings for dialing in grounds for different brewing methods.",
+    features: ["28 grind-size settings", "Portable electric design", "Cleaning brush and accessories shown"],
+  },
+  {
+    name: "RØDE NT1 Signature Series Studio Condenser Microphone in Pink",
+    group: "Music, podcasting & studio audio",
+    category: "Studio microphones",
+    image: "/affiliate/focus-camera/products/rode-nt1-signature-pink.webp",
+    link: "https://focuscamera.pxi6.net/VOdRrM",
+    description: "A pink RØDE NT1 Signature Series studio condenser microphone presented with a shock mount and pop filter for polished vocal, podcast, voice-over, and instrument recording.",
+    features: ["Studio condenser microphone", "Shock mount included", "Pop filter included"],
+  },
+  {
+    name: "RØDE NT1 5th Generation Condenser Microphone in Silver",
+    group: "Music, podcasting & studio audio",
+    category: "Studio microphones",
+    image: "/affiliate/focus-camera/products/rode-nt1-5th-generation-silver.webp",
+    link: "https://focuscamera.pxi6.net/X4EoPb",
+    description: "A silver RØDE NT1 5th Generation condenser microphone package with the SM6 shock mount and pop filter for studio vocals, podcasting, voice-over work, and instruments.",
+    features: ["5th Generation NT1 microphone", "SM6 shock mount", "Pop filter included"],
+  },
+  {
+    name: "Vaonis Vespera Pro 2 Smart Telescope",
+    group: "Cameras, lighting & imaging",
+    category: "Astronomy & astrophotography",
+    image: "/affiliate/focus-camera/products/vaonis-vespera-pro-2.webp",
+    link: "https://focuscamera.pxi6.net/OYEoXr",
+    description: "A compact 12.5MP smart telescope system for guided sky observation and astrophotography, paired with a lightweight tripod for a portable observing setup.",
+    features: ["12.5MP imaging system", "Smart astrophotography workflow", "Portable tripod-mounted design"],
+  },
+  {
+    name: "Elinchrom D-Lite RX 4/4 Softbox To Go Kit",
+    group: "Cameras, lighting & imaging",
+    category: "Studio lighting",
+    image: "/affiliate/focus-camera/products/elinchrom-d-lite-rx-4-4-kit.webp",
+    link: "https://focuscamera.pxi6.net/R0EYzR",
+    description: "A portable two-light studio kit with Elinchrom D-Lite RX 4 heads, softboxes, stands, and carrying cases for portraits, products, and location photography.",
+    features: ["Two-light studio setup", "Softboxes and stands included", "Travel cases for location work"],
+  },
+];
+
+const productGroups = [
+  {
+    name: "Music, podcasting & studio audio",
+    description: "Instruments, microphones, podcast bundles, and recording tools for musicians and creators.",
+  },
+  {
+    name: "Cameras, lighting & imaging",
+    description: "Aerial cameras, astrophotography systems, and studio lighting for capturing stronger images.",
+  },
+  {
+    name: "Computing & personal technology",
+    description: "Displays, tablets, webcams, headphones, and useful technology for work and entertainment.",
+  },
+  {
+    name: "Lifestyle & everyday essentials",
+    description: "Portable power, coffee equipment, outdoor accessories, and practical gear for daily life.",
   },
 ];
 
@@ -119,29 +200,42 @@ export default function FocusCameraPage() {
 
       <section className="relative z-10 px-5 py-20 md:px-8 lg:py-24">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-black uppercase tracking-[.28em] text-blue-300">More Focus Camera picks</p>
-          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Technology, creator gear &amp; lifestyle essentials</h2>
-          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Featured selections presented with their supplied Focus Camera tracking links. Open each current merchant listing to confirm specifications, price, availability, condition, and included accessories.</p>
-          <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
-            {featuredProducts.map((product) => (
-              <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-br from-[#10203b] to-[#070b13] shadow-[0_24px_70px_rgba(0,0,0,.32)]">
-                <div className="bg-white p-4">
-                  <Image src={product.image} alt={product.name} width={1200} height={800} className="aspect-[3/2] h-auto w-full object-contain" />
-                </div>
-                <div className="flex flex-1 flex-col p-7">
-                  <p className="text-xs font-black uppercase tracking-[.22em] text-blue-300">{product.category}</p>
-                  <h3 className="mt-3 text-2xl font-black leading-tight">{product.name}</h3>
-                  <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
-                  <ul className="mt-5 grid gap-2 text-sm text-slate-200">
-                    {product.features.map((feature) => <li key={feature}>✓ {feature}</li>)}
-                  </ul>
-                  <div className="mt-auto pt-7">
-                    <a href={product.link} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-400 px-5 py-3 text-center font-black text-slate-950 transition hover:bg-blue-300">{product.link === storeLink ? "Explore Focus Camera →" : "View Product →"}</a>
-                    <p className="mt-3 text-center text-xs leading-5 text-slate-500">Affiliate link · Merchant pricing and availability may change.</p>
+          <p className="text-xs font-black uppercase tracking-[.28em] text-blue-300">Organized Focus Camera picks</p>
+          <h2 className="mt-3 text-4xl font-black sm:text-5xl">Shop by what you&apos;re looking for</h2>
+          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Products are grouped by use so related equipment stays together. Open each supplied Focus Camera tracking link to confirm current specifications, price, availability, condition, and included accessories.</p>
+          <div className="mt-14 space-y-20">
+            {productGroups.map((group) => {
+              const products = featuredProducts.filter((product) => product.group === group.name);
+              return (
+                <section key={group.name} aria-labelledby={group.name.replaceAll(" ", "-").toLowerCase()}>
+                  <div className="max-w-3xl border-l-4 border-blue-400 pl-5">
+                    <h3 id={group.name.replaceAll(" ", "-").toLowerCase()} className="text-3xl font-black sm:text-4xl">{group.name}</h3>
+                    <p className="mt-3 leading-7 text-slate-400">{group.description}</p>
                   </div>
-                </div>
-              </article>
-            ))}
+                  <div className="mt-8 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
+                    {products.map((product) => (
+                      <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-blue-500/30 bg-gradient-to-br from-[#10203b] to-[#070b13] shadow-[0_24px_70px_rgba(0,0,0,.32)]">
+                        <div className="bg-white p-4">
+                          <Image src={product.image} alt={product.name} width={1200} height={800} className="aspect-[3/2] h-auto w-full object-contain" />
+                        </div>
+                        <div className="flex flex-1 flex-col p-7">
+                          <p className="text-xs font-black uppercase tracking-[.22em] text-blue-300">{product.category}</p>
+                          <h4 className="mt-3 text-2xl font-black leading-tight">{product.name}</h4>
+                          <p className="mt-4 leading-7 text-slate-300">{product.description}</p>
+                          <ul className="mt-5 grid gap-2 text-sm text-slate-200">
+                            {product.features.map((feature) => <li key={feature}>✓ {feature}</li>)}
+                          </ul>
+                          <div className="mt-auto pt-7">
+                            <a href={product.link} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-400 px-5 py-3 text-center font-black text-slate-950 transition hover:bg-blue-300">{product.link === storeLink ? "Explore Focus Camera →" : "View Product →"}</a>
+                            <p className="mt-3 text-center text-xs leading-5 text-slate-500">Affiliate link · Merchant pricing and availability may change.</p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
       </section>

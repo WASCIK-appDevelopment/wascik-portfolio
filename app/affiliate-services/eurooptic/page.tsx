@@ -50,6 +50,24 @@ const outdoorProducts = [
     features: ["Oakley Meta smart-eyewear platform", "Prizm Black shield lens", "Lightweight semi-rimless performance frame"],
     note: "Confirm device compatibility, connected-feature availability, fit, included accessories, and current specifications with EuroOptic before purchasing.",
   },
+  {
+    name: "Ray-Ban Meta Skyler Shiny Chalky Gray Transitions Sapphire Sunglasses",
+    category: "Smart eyewear & transition lenses",
+    image: "/affiliate/eurooptic/products/ray-ban-meta-skyler-chalky-gray.webp",
+    link: "https://eurooptic.sjv.io/oNJP1W",
+    description: "Ray-Ban Meta Skyler smart glasses in a shiny chalky-gray frame with Transitions Sapphire lenses that adapt as lighting conditions change.",
+    features: ["Ray-Ban Meta smart-eyewear platform", "Transitions Sapphire lenses", "Rounded Skyler frame in shiny chalky gray"],
+    note: "Confirm connected-feature availability, device compatibility, lens options, fit, included accessories, and current specifications with EuroOptic before purchasing.",
+  },
+  {
+    name: "Oakley Holbrook Matte Black PRIZM Dark Golf Sunglasses",
+    category: "Performance eyewear & golf lenses",
+    image: "/affiliate/eurooptic/products/oakley-holbrook-prizm-dark-golf.webp",
+    link: "https://eurooptic.sjv.io/B5kerJ",
+    description: "Oakley Holbrook sunglasses with a matte-black frame and PRIZM Dark Golf lenses designed to enhance contrast and visual detail on the course.",
+    features: ["PRIZM Dark Golf lenses", "Classic Holbrook frame", "Matte-black finish"],
+    note: "Confirm lens transmission, fit, included accessories, and current specifications with EuroOptic before purchasing.",
+  },
 ];
 
 export default function EuroOpticPage() {
@@ -117,7 +135,7 @@ export default function EuroOpticPage() {
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-black uppercase tracking-[.28em] text-emerald-300">Outdoor technology &amp; optics</p>
           <h2 className="mt-3 text-4xl font-black sm:text-5xl">Featured EuroOptic gear</h2>
-          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Explore navigation, satellite-communication, and observation gear through WASCIK&apos;s tracked EuroOptic links.</p>
+          <p className="mt-5 max-w-3xl leading-8 text-slate-300">Explore navigation, satellite communication, outdoor optics, and performance eyewear through WASCIK&apos;s tracked EuroOptic links.</p>
           <div className="mt-10 grid gap-7 lg:grid-cols-2">
             {outdoorProducts.map((product) => (
               <article key={product.name} className="flex h-full flex-col overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-[#0b231d] to-[#030b09] shadow-[0_24px_70px_rgba(0,0,0,.32)]">

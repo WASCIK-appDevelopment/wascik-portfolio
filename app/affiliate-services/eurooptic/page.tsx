@@ -68,6 +68,33 @@ const outdoorProducts = [
     features: ["PRIZM Dark Golf lenses", "Classic Holbrook frame", "Matte-black finish"],
     note: "Confirm lens transmission, fit, included accessories, and current specifications with EuroOptic before purchasing.",
   },
+  {
+    name: "Oakley Edge Icon Shoes in White",
+    category: "Performance footwear",
+    image: "/affiliate/eurooptic/products/oakley-edge-icon-white.webp",
+    link: "https://eurooptic.sjv.io/PznY3R",
+    description: "Oakley Edge Icon slip-on performance shoes in a clean white colorway, combining a streamlined upper with a sculpted, high-traction outsole.",
+    features: ["Slip-on athletic design", "Sculpted cushioned sole", "White monochrome colorway"],
+    note: "The supplied listing shows size 7.5. Confirm current sizing, fit guidance, materials, availability, and return terms with EuroOptic before purchasing.",
+  },
+  {
+    name: "Oakley Edge Icon Shoes in Mist and Pebble",
+    category: "Performance footwear",
+    image: "/affiliate/eurooptic/products/oakley-edge-icon-mist-pebble.webp",
+    link: "https://eurooptic.sjv.io/enjJVX",
+    description: "Oakley Edge Icon slip-on performance shoes in a Mist and Pebble colorway with navy accents and a rugged, sculpted outsole.",
+    features: ["Slip-on athletic design", "Cushioned high-traction outsole", "Mist, Pebble, and navy color palette"],
+    note: "The supplied listing shows size 9. Confirm current sizing, fit guidance, materials, availability, and return terms with EuroOptic before purchasing.",
+  },
+  {
+    name: "Oakley Edge Icon Shoes in Blackout",
+    category: "Performance footwear",
+    image: "/affiliate/eurooptic/products/oakley-edge-icon-blackout.webp",
+    link: "https://eurooptic.sjv.io/B5keZW",
+    description: "Oakley Edge Icon slip-on performance shoes in an all-black Blackout finish with a sculpted sole and tonal Oakley detailing.",
+    features: ["Slip-on athletic design", "Sculpted cushioned sole", "All-black tonal finish"],
+    note: "The supplied listing shows size 7.5. Confirm current sizing, fit guidance, materials, availability, and return terms with EuroOptic before purchasing.",
+  },
 ];
 
 export default function EuroOpticPage() {
@@ -90,7 +117,7 @@ export default function EuroOpticPage() {
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[.3em] text-emerald-300">WASCIK Featured Retail Partner</p>
             <h1 className="mt-5 text-5xl font-black uppercase leading-[.88] tracking-[-.06em] sm:text-7xl">Explore<br /><span className="text-emerald-400">EuroOptic.</span></h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">Shop optics, outdoor equipment, watches, and other specialty gear through WASCIK&apos;s tracked EuroOptic links.</p>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">Shop optics, outdoor equipment, watches, performance footwear, and other specialty gear through WASCIK&apos;s tracked EuroOptic links.</p>
             <div className="mt-9">
               <a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 items-center justify-center rounded-xl bg-emerald-300 px-7 py-4 text-center font-black text-slate-950 transition hover:bg-emerald-200">Shop the EuroOptic Store ↗</a>
             </div>

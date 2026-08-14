@@ -37,6 +37,7 @@ export default function WidgetPreviewPage() {
       <RepresentativeWidget
         title="WASCIK Digital Representative"
         greeting="Hi! I’m the WASCIK digital representative. Ask me anything about what we can build for you."
+        defaultOpen
       />
     </main>
   );

@@ -23,6 +23,24 @@ const outdoorProducts = [
     features: ["Waterproof construction", "Multicoated optical system", "Rubberized body and field-flattener lenses"],
     note: "Confirm the current model number, magnification, included accessories, and full specifications on EuroOptic before purchasing.",
   },
+  {
+    name: "Leofoto PC-20 Blue Mobile Phone Stand",
+    category: "Mobile photography accessory",
+    image: "/affiliate/eurooptic/products/leofoto-pc20-phone-stand.webp",
+    link: "https://eurooptic.sjv.io/Ag5k7K",
+    description: "A compact blue mobile-phone stand designed for convenient tabletop positioning and easy attachment to compatible photography support equipment.",
+    features: ["Compact folding design", "Blue metal construction", '1/4-inch mounting sockets'],
+    note: "Confirm phone compatibility, included accessories, mounting options, and current specifications on EuroOptic before purchasing.",
+  },
+  {
+    name: "Garmin Instinct 3 45mm Solar Tactical Edition Smartwatch",
+    category: "Outdoor technology & tactical wearables",
+    image: "/affiliate/eurooptic/products/garmin-instinct-3-solar-tactical.webp",
+    link: "https://eurooptic.sjv.io/3kzXgr",
+    description: "A rugged black 45mm GPS smartwatch with solar charging support and tactical-focused features for outdoor training, navigation, and everyday activity tracking.",
+    features: ["Solar charging support", "Rugged 45mm GPS watch design", "Tactical-edition activity and navigation features"],
+    note: "Battery performance varies by use and solar exposure. Confirm compatibility, feature availability, and current specifications with EuroOptic.",
+  },
 ];
 
 export default function EuroOpticPage() {

@@ -7,6 +7,7 @@ import "./representative-mobile.css";
 import HomepageAffiliateLink from "./HomepageAffiliateLink";
 import PortfolioVisitTracker from "./PortfolioVisitTracker";
 import AffiliateClickAutoTracker from "./affiliate-services/AffiliateClickAutoTracker";
+import SitewideRepresentative from "./SitewideRepresentative";
 
 const siteUrl = "https://wascik-app-development.netlify.app";
 
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <PortfolioVisitTracker />
         <AffiliateClickAutoTracker />
         {children}
+        <SitewideRepresentative />
         <HomepageAffiliateLink />
       </body>
     </html>

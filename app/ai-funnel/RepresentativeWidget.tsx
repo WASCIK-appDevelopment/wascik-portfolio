@@ -32,6 +32,77 @@ type LeadQualification = {
 
 const SESSION_KEY = "wascik-ai-session-v1";
 
+
+function WascikRepresentativeCharacter({ compact = false }: { compact?: boolean }) {
+  const scale = compact ? 0.66 : 1;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "relative",
+        display: "block",
+        width: compact ? 52 : 78,
+        height: compact ? 112 : 218,
+        flex: "0 0 auto",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          left: compact ? -13 : 0,
+          bottom: compact ? -43 : 0,
+          width: 78,
+          height: 218,
+          transform: "scale(" + scale + ")",
+          transformOrigin: "bottom center",
+        }}
+      >
+        <span style={{ position: "absolute", bottom: 0, left: 4, width: 70, height: 14, borderRadius: "50%", background: "rgba(0,0,0,.34)", filter: "blur(6px)" }} />
+
+        <span style={{ position: "absolute", top: 7, left: 18, width: 42, height: 50, borderRadius: "48% 48% 44% 44%", background: "linear-gradient(145deg,#e0b797,#a96f4f)", boxShadow: "inset -5px -5px 9px rgba(88,43,25,.16)", zIndex: 4 }}>
+          <span style={{ position: "absolute", left: -4, top: 21, width: 7, height: 13, borderRadius: "60% 25% 25% 60%", background: "#b87d5b", boxShadow: "inset -2px 0 2px rgba(81,42,28,.24)" }} />
+          <span style={{ position: "absolute", right: -4, top: 21, width: 7, height: 13, borderRadius: "25% 60% 60% 25%", background: "#b87d5b", boxShadow: "inset 2px 0 2px rgba(81,42,28,.24)" }} />
+
+          <span style={{ position: "absolute", left: 7, top: 18, width: 10, height: 2, borderRadius: 99, background: "#442e26", transform: "rotate(-4deg)" }} />
+          <span style={{ position: "absolute", right: 7, top: 18, width: 10, height: 2, borderRadius: 99, background: "#442e26", transform: "rotate(4deg)" }} />
+          <span style={{ position: "absolute", left: 9, top: 22, width: 7, height: 5, borderRadius: "50%", background: "#f7f8fb", boxShadow: "0 0 0 1px rgba(61,31,23,.18)" }}>
+            <span style={{ position: "absolute", left: 2, top: 1, width: 3, height: 3, borderRadius: "50%", background: "#163d57" }} />
+          </span>
+          <span style={{ position: "absolute", right: 9, top: 22, width: 7, height: 5, borderRadius: "50%", background: "#f7f8fb", boxShadow: "0 0 0 1px rgba(61,31,23,.18)" }}>
+            <span style={{ position: "absolute", right: 2, top: 1, width: 3, height: 3, borderRadius: "50%", background: "#163d57" }} />
+          </span>
+
+          <span style={{ position: "absolute", left: 19, top: 25, width: 5, height: 10, borderRadius: "40% 50% 55% 45%", borderRight: "1.5px solid rgba(91,45,30,.55)", borderBottom: "1px solid rgba(91,45,30,.3)", transform: "rotate(4deg)" }} />
+          <span style={{ position: "absolute", left: 14, top: 38, width: 15, height: 6, borderBottom: "2px solid #6d382c", borderRadius: "50%", transform: "rotate(-2deg)" }} />
+        </span>
+
+        <span style={{ position: "absolute", top: -2, left: 11, width: 56, height: 28, borderRadius: "58% 58% 24% 24%", background: "linear-gradient(145deg,#0c1728,#263c59 62%,#07111f)", border: "1px solid rgba(94,190,255,.38)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.1),0 4px 10px rgba(0,0,0,.28)", zIndex: 6 }}>
+          <span style={{ position: "absolute", top: 4, left: 10, width: 36, height: 20, borderRadius: 7, background: "#020812", border: "1px solid rgba(109,205,255,.68)", boxShadow: "0 0 9px rgba(36,157,255,.5),inset 0 0 7px rgba(37,132,231,.22)", overflow: "hidden" }}>
+            <img src="/wascik-logo-v2.png" alt="" style={{ position: "absolute", width: 48, height: 48, maxWidth: "none", left: -6, top: -14, objectFit: "contain", filter: "drop-shadow(0 0 3px rgba(90,190,255,.9)) brightness(1.22) contrast(1.12)" }} />
+          </span>
+        </span>
+        <span style={{ position: "absolute", top: 20, left: 8, width: 62, height: 8, borderRadius: "52% 58% 45% 52%", background: "linear-gradient(180deg,#182b44,#07111f)", borderBottom: "1px solid rgba(69,175,255,.42)", boxShadow: "0 4px 7px rgba(0,0,0,.3)", transform: "rotate(-2deg)", zIndex: 7 }} />
+        <span style={{ position: "absolute", top: 51, left: 31, width: 16, height: 15, background: "linear-gradient(#c58b69,#a86e50)", zIndex: 2 }} />
+
+        <span style={{ position: "absolute", top: 64, left: 7, width: 64, height: 91, borderRadius: "22px 22px 16px 16px", clipPath: "polygon(18% 0,82% 0,100% 15%,92% 78%,78% 100%,22% 100%,8% 78%,0 15%)", background: "linear-gradient(165deg,#213a5d 0%,#10233b 48%,#07111f 82%)", border: "1px solid rgba(89,183,255,.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.1),inset 10px 0 18px rgba(50,111,180,.08),inset -10px 0 18px rgba(0,0,0,.2),0 8px 20px rgba(0,0,0,.24)" }}>
+          <span style={{ position: "absolute", left: 5, top: 10, width: 54, height: 50, borderRadius: 12, background: "#020812", border: "1px solid rgba(126,214,255,.72)", boxShadow: "0 0 20px rgba(28,143,255,.5),inset 0 0 13px rgba(44,155,255,.26)", overflow: "hidden" }}>
+            <span style={{ position: "absolute", inset: 3, borderRadius: 9, border: "1px solid rgba(102,207,255,.3)", zIndex: 2, pointerEvents: "none" }} />
+            <img src="/wascik-logo-v2.png" alt="" style={{ position: "absolute", width: 72, height: 72, maxWidth: "none", left: -9, top: -11, objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(90,190,255,1)) brightness(1.22) contrast(1.12)" }} />
+          </span>
+          <span style={{ position: "absolute", left: 4, top: 34, width: 8, height: 1, background: "#42c9ff", boxShadow: "0 -12px 0 rgba(66,201,255,.55),0 12px 0 rgba(66,201,255,.55)" }} />
+          <span style={{ position: "absolute", right: 4, top: 34, width: 8, height: 1, background: "#42c9ff", boxShadow: "0 -12px 0 rgba(66,201,255,.55),0 12px 0 rgba(66,201,255,.55)" }} />
+          <span style={{ position: "absolute", left: 9, right: 9, bottom: 13, height: 1, background: "linear-gradient(90deg,transparent,#39b9ff,transparent)", opacity: .8 }} />
+        </span>
+
+        <span style={{ position: "absolute", top: 71, left: 0, width: 15, height: 82, borderRadius: 12, background: "linear-gradient(#1b304e,#081321)", transform: "rotate(5deg)", transformOrigin: "top", borderLeft: "1px solid rgba(89,183,255,.18)" }} />
+        <span style={{ position: "absolute", top: 71, right: 0, width: 15, height: 82, borderRadius: 12, background: "linear-gradient(#1b304e,#081321)", transform: "rotate(-5deg)", transformOrigin: "top", borderRight: "1px solid rgba(89,183,255,.18)" }} />
+        <span style={{ position: "absolute", top: 153, left: 17, width: 18, height: 59, borderRadius: "0 0 11px 11px", background: "linear-gradient(#0b1727,#02060d)" }} />
+        <span style={{ position: "absolute", top: 153, right: 17, width: 18, height: 59, borderRadius: "0 0 11px 11px", background: "linear-gradient(#0b1727,#02060d)" }} />
+      </span>
+    </span>
+  );
+}
+
 export default function RepresentativeWidget({
   title = "WASCIK Digital Representative",
   greeting = "Hi. What can I help you with today?",
@@ -150,8 +221,8 @@ export default function RepresentativeWidget({
   return (
     <aside aria-label={title} style={{ position: "fixed", bottom: 3, zIndex: 70, ...sideStyle, width: compact ? 282 : "min(360px, calc(100vw - 12px))", fontFamily: "inherit", pointerEvents: "none" }}>
       {open ? (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 82px", alignItems: "end", gap: 5, pointerEvents: "auto" }}>
-          <div style={{ minWidth: 0, paddingBottom: 38 }}>
+        <div style={{ display: "grid", gridTemplateColumns: position === "left" ? "82px minmax(0,1fr)" : "minmax(0,1fr) 82px", alignItems: "end", gap: 5, pointerEvents: "auto" }}>
+          <div style={{ minWidth: 0, paddingBottom: 38, order: position === "left" ? 2 : 1 }}>
             <div style={{ position: "relative", border: "1px solid rgba(126,198,255,.28)", borderRadius: 21, background: "rgba(5,13,24,.97)", color: "white", boxShadow: "0 18px 56px rgba(0,0,0,.4)", backdropFilter: "blur(18px)", overflow: "visible" }}>
               <span aria-hidden="true" style={{ position: "absolute", bottom: 28, [bubbleTailSide]: -10, width: 19, height: 19, background: "rgba(5,13,24,.97)", borderRight: bubbleTailSide === "right" ? "1px solid rgba(126,198,255,.28)" : undefined, borderBottom: bubbleTailSide === "right" ? "1px solid rgba(126,198,255,.28)" : undefined, borderLeft: bubbleTailSide === "left" ? "1px solid rgba(126,198,255,.28)" : undefined, borderTop: bubbleTailSide === "left" ? "1px solid rgba(126,198,255,.28)" : undefined, transform: "rotate(45deg)" }} />
 
@@ -178,21 +249,14 @@ export default function RepresentativeWidget({
             </div>
           </div>
 
-          <div style={{ position: "relative", height: 218, display: "flex", alignItems: "end", justifyContent: "center" }} aria-hidden="true">
-            <div style={{ position: "absolute", bottom: 0, width: 70, height: 14, borderRadius: "50%", background: "rgba(0,0,0,.34)", filter: "blur(6px)" }} />
-            <div style={{ position: "relative", width: 72, height: 205 }}>
-              <div style={{ position: "absolute", top: 0, left: 18, width: 38, height: 46, borderRadius: "48% 48% 44% 44%", background: "linear-gradient(160deg,#d7b18f,#a97152)", zIndex: 3 }}><span style={{ position: "absolute", left: 8, top: 19, width: 4, height: 3, borderRadius: 99, background: "#1e2b3a" }} /><span style={{ position: "absolute", right: 8, top: 19, width: 4, height: 3, borderRadius: 99, background: "#1e2b3a" }} /><span style={{ position: "absolute", left: 15, top: 31, width: 10, height: 4, borderBottom: "2px solid rgba(81,42,28,.8)", borderRadius: "50%" }} /></div>
-              <div style={{ position: "absolute", top: -4, left: 14, width: 46, height: 28, borderRadius: "55% 55% 32% 32%", background: "linear-gradient(145deg,#1a2230,#39465a)", zIndex: 4 }} />
-              <div style={{ position: "absolute", top: 42, left: 29, width: 16, height: 15, background: "#b98261", zIndex: 2 }} />
-              <div style={{ position: "absolute", top: 55, left: 9, width: 56, height: 94, borderRadius: "18px 18px 11px 11px", background: "linear-gradient(165deg,#17263d,#07111f)", border: "1px solid rgba(89,183,255,.35)" }}><span style={{ position: "absolute", top: 20, left: 21, width: 14, height: 14, borderRadius: 4, background: "linear-gradient(135deg,#2e75ff,#0cb5c9)", display: "grid", placeItems: "center", color: "white", fontSize: 8, fontWeight: 900 }}>W</span></div>
-              <div style={{ position: "absolute", top: 61, left: 0, width: 14, height: 84, borderRadius: 12, background: "linear-gradient(#17263d,#0a1422)", transform: "rotate(5deg)", transformOrigin: "top" }} /><div style={{ position: "absolute", top: 61, right: 0, width: 14, height: 84, borderRadius: 12, background: "linear-gradient(#17263d,#0a1422)", transform: "rotate(-5deg)", transformOrigin: "top" }} /><div style={{ position: "absolute", top: 145, left: 16, width: 17, height: 59, borderRadius: "0 0 11px 11px", background: "linear-gradient(#0a1422,#030711)" }} /><div style={{ position: "absolute", top: 145, right: 16, width: 17, height: 59, borderRadius: "0 0 11px 11px", background: "linear-gradient(#0a1422,#030711)" }} />
-            </div>
+          <div style={{ position: "relative", height: 218, display: "flex", alignItems: "end", justifyContent: "center", order: position === "left" ? 1 : 2 }}>
+            <WascikRepresentativeCharacter />
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setOpen(true)} style={{ pointerEvents: "auto", marginLeft: position === "right" ? "auto" : 0, display: "flex", alignItems: "end", gap: 6, border: 0, background: "transparent", color: "white", cursor: "pointer" }}>
-          <span style={{ maxWidth: 170, border: "1px solid rgba(126,198,255,.28)", borderRadius: 16, padding: "8px 10px", background: "rgba(5,13,24,.96)", boxShadow: "0 14px 38px rgba(0,0,0,.34)", fontSize: 11, textAlign: "left" }}><strong style={{ display: "block" }}>{affiliateMode ? "Need help choosing?" : leadStatus === "handoff-ready" ? "Ready to continue?" : "Need some help?"}</strong><small style={{ color: "#92a8bd" }}>{history.length ? "Tap to continue your conversation." : "Tap to talk with the WASCIK representative."}</small></span>
-          <span aria-hidden="true" style={{ position: "relative", display: "block", width: 48, height: 98 }}><span style={{ position: "absolute", top: 0, left: 11, width: 26, height: 31, borderRadius: "48%", background: "#bb8968" }} /><span style={{ position: "absolute", top: -2, left: 8, width: 32, height: 19, borderRadius: "55% 55% 30% 30%", background: "#263246" }} /><span style={{ position: "absolute", top: 28, left: 5, width: 38, height: 49, borderRadius: "12px 12px 8px 8px", background: "linear-gradient(165deg,#17263d,#07111f)", border: "1px solid rgba(89,183,255,.35)" }} /><span style={{ position: "absolute", top: 75, left: 10, width: 11, height: 23, background: "#050a13" }} /><span style={{ position: "absolute", top: 75, right: 10, width: 11, height: 23, background: "#050a13" }} /></span>
+        <button type="button" onClick={() => setOpen(true)} style={{ pointerEvents: "auto", marginLeft: position === "right" ? "auto" : 0, display: "flex", flexDirection: position === "left" ? "row-reverse" : "row", alignItems: "end", gap: 6, border: 0, background: "transparent", color: "white", cursor: "pointer" }}>
+          <span style={{ width: "min(128px, calc(100vw - 238px))", minWidth: 104, border: "1px solid rgba(126,198,255,.28)", borderRadius: 15, padding: "7px 8px", background: "rgba(5,13,24,.96)", boxShadow: "0 14px 38px rgba(0,0,0,.34)", fontSize: 10, lineHeight: 1.25, textAlign: "left" }}><strong style={{ display: "block" }}>{affiliateMode ? "Need help choosing?" : leadStatus === "handoff-ready" ? "Ready to continue?" : "Need some help?"}</strong><small style={{ color: "#92a8bd" }}>{history.length ? "Tap to continue your conversation." : "Tap to talk with the WASCIK representative."}</small></span>
+          <WascikRepresentativeCharacter compact />
         </button>
       )}
     </aside>

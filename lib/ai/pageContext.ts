@@ -11,6 +11,8 @@ export type AssistantPageContext = {
 };
 
 const brandRoutes: Array<{ prefix: string; merchant: string; topics: string[] }> = [
+  { prefix: "/affiliate-services/ticketnetwork", merchant: "TicketNetwork", topics: ["concerts", "events", "tickets", "artists", "live entertainment"] },
+  { prefix: "/affiliate-services/arccaptain", merchant: "ArcCaptain", topics: ["welding", "MIG", "TIG", "stick welding", "plasma equipment", "helmets"] },
   { prefix: "/affiliate-services/eurooptic", merchant: "EuroOptic", topics: ["optics", "outdoor gear", "watches", "navigation", "specialty gear"] },
   { prefix: "/affiliate-services/focus-camera", merchant: "Focus Camera", topics: ["cameras", "electronics", "navigation", "GPS", "creator gear"] },
   { prefix: "/affiliate-services/aquacurve", merchant: "AquaCurve", topics: ["poolside living", "outdoor furniture", "patio", "outdoor lifestyle"] },

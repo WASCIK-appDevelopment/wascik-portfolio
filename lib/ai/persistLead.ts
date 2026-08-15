@@ -14,7 +14,7 @@ export type PersistLeadInput = {
 };
 
 export type PersistLeadResult =
-  | { saved: true; leadId?: string; configured: true }
+  | { saved: true; leadId?: string; alertSentAt?: string; configured: true }
   | { saved: false; configured: boolean; reason: string; detail?: string };
 
 function clean(value: unknown, max = 500) {
@@ -51,7 +51,6 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
   const record = {
     capture_key: key ?? null,
     session_id: clean(input.sessionId, 160) || null,
-    status: "new",
     name: clean(input.profile.name, 160) || null,
     email: email || null,
     phone: phone || null,
@@ -82,11 +81,11 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
   const attempts = [
     {
       url: `${config.supabaseUrl}/rest/v1/leads?on_conflict=capture_key`,
-      prefer: "resolution=merge-duplicates,return=representation",
+      prefer: "resolution=merge-duplicates,missing=default,return=representation",
     },
     {
       url: `${config.supabaseUrl}/rest/v1/leads`,
-      prefer: "return=representation",
+      prefer: "missing=default,return=representation",
     },
   ];
 
@@ -101,8 +100,13 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     });
 
     if (response.ok) {
-      const rows = (await response.json().catch(() => [])) as Array<{ id?: string }>;
-      return { saved: true, configured: true, leadId: rows[0]?.id };
+      const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+      return {
+        saved: true,
+        configured: true,
+        leadId: rows[0]?.id,
+        alertSentAt: rows[0]?.alert_sent_at || undefined,
+      };
     }
 
     lastStatus = response.status;
@@ -120,4 +124,38 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     reason: "database_insert_failed",
     detail: `${lastStatus}${lastDetail ? `: ${lastDetail.slice(0, 300)}` : ""}`,
   };
+}
+
+
+export async function markLeadAlertSent(leadId: string, sentAt = new Date().toISOString()) {
+  const config = getStage6Config();
+  if (!config.databaseConfigured || !config.supabaseServerKey || !leadId) {
+    return { recorded: false, reason: "database_not_configured" };
+  }
+
+  const headers: Record<string, string> = {
+    apikey: config.supabaseServerKey,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+  if (config.supabaseKeyKind === "service_role") {
+    headers.Authorization = `Bearer ${config.supabaseServerKey}`;
+  }
+
+  const response = await fetch(
+    `${config.supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}&alert_sent_at=is.null`,
+    {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ alert_sent_at: sentAt }),
+    },
+  );
+  const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+  if (!response.ok) {
+    const detail = JSON.stringify(rows).slice(0, 300);
+    console.error("Stage 6 alert timestamp update failed", response.status, detail);
+    return { recorded: false, reason: "database_update_failed", detail };
+  }
+
+  return { recorded: rows.length > 0, alreadyRecorded: rows.length === 0, alertSentAt: rows[0]?.alert_sent_at || sentAt };
 }

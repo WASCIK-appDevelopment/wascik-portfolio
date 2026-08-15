@@ -28,6 +28,16 @@ type Lead = {
 
 type Draft = { owner_notes: string; next_action: string; follow_up_at: string };
 type AssistantTurn = { role: "owner" | "assistant"; content: string };
+type ActionProposal = {
+  actionType: "change_status" | "append_note" | "set_follow_up";
+  leadId: string;
+  leadLabel: string;
+  summary: string;
+  status?: Lead["status"];
+  note?: string;
+  nextAction?: string;
+  followUpAt?: string;
+};
 
 const labels: Record<Lead["status"], string> = {
   new: "New",
@@ -44,6 +54,13 @@ function localInputValue(value?: string | null) {
   return local.toISOString().slice(0, 16);
 }
 
+function proposalDetails(proposal: ActionProposal) {
+  if (proposal.actionType === "change_status") return proposal.status ? `New status: ${labels[proposal.status]}` : proposal.summary;
+  if (proposal.actionType === "append_note") return proposal.note || proposal.summary;
+  const parts = [proposal.nextAction ? `Next action: ${proposal.nextAction}` : "", proposal.followUpAt ? `Follow-up: ${new Date(proposal.followUpAt).toLocaleString()}` : ""].filter(Boolean);
+  return parts.join(" · ") || proposal.summary;
+}
+
 export default function LeadConsoleClient() {
   const [key, setKey] = useState("");
   const [inputKey, setInputKey] = useState("");
@@ -58,8 +75,10 @@ export default function LeadConsoleClient() {
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTurns, setAiTurns] = useState<AssistantTurn[]>([
-    { role: "assistant", content: "I can analyze your live WASCIK leads. Ask me which leads are new, who needs follow-up, what a customer wants, or which leads mention a specific service." },
+    { role: "assistant", content: "I can analyze your live WASCIK leads and prepare safe changes. If you ask me to update a lead, I will show you the proposed change and wait for your confirmation before anything is saved." },
   ]);
+  const [pendingProposal, setPendingProposal] = useState<ActionProposal | null>(null);
+  const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("wascik-owner-console-key") || "";
@@ -73,7 +92,7 @@ export default function LeadConsoleClient() {
     setDrafts((current) => {
       const next = { ...current };
       for (const lead of nextLeads) {
-        if (!next[lead.id]) next[lead.id] = {
+        next[lead.id] = {
           owner_notes: lead.owner_notes || "",
           next_action: lead.next_action || "",
           follow_up_at: localInputValue(lead.follow_up_at),
@@ -159,6 +178,7 @@ export default function LeadConsoleClient() {
     if (!question || aiLoading) return;
     setAiQuestion("");
     setAiLoading(true);
+    setPendingProposal(null);
     setAiTurns((current) => [...current, { role: "owner", content: question }]);
     const response = await fetch("/api/owner/leads/assistant", {
       method: "POST",
@@ -172,7 +192,38 @@ export default function LeadConsoleClient() {
       return;
     }
     setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
+    setPendingProposal(data.proposal || null);
     setAiLoading(false);
+  }
+
+  async function confirmProposal() {
+    if (!pendingProposal || actionSaving) return;
+    setActionSaving(true);
+    setError("");
+    const response = await fetch("/api/owner/leads/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+      body: JSON.stringify(pendingProposal),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(data.error || "Could not apply the confirmed Owner AI change.");
+      setActionSaving(false);
+      return;
+    }
+    const completed = pendingProposal;
+    setPendingProposal(null);
+    setActionSaving(false);
+    setAiTurns((current) => [...current, { role: "assistant", content: `Confirmed. ${data.description || completed.summary}` }]);
+    setNotice(`Owner AI change saved for ${completed.leadLabel}.`);
+    await loadLeads();
+  }
+
+  function cancelProposal() {
+    if (!pendingProposal) return;
+    const label = pendingProposal.leadLabel;
+    setPendingProposal(null);
+    setAiTurns((current) => [...current, { role: "assistant", content: `Canceled. No changes were made to ${label}.` }]);
   }
 
   const counts = useMemo(() => ({
@@ -198,12 +249,19 @@ export default function LeadConsoleClient() {
     </nav>
 
     <section className="owner-ai-panel">
-      <div className="owner-ai-heading"><div><div className="owner-kicker">OWNER AI</div><h2>Lead Assistant</h2><p>Read-only for now. It analyzes the live lead database but cannot change records yet.</p></div><span className="owner-ai-live">LIVE DATA · {leads.length} LEADS</span></div>
+      <div className="owner-ai-heading"><div><div className="owner-kicker">OWNER AI</div><h2>Lead Assistant</h2><p>Live lead intelligence with confirmation-gated actions. It cannot change a record until you approve the proposed change.</p></div><span className="owner-ai-live">LIVE DATA · {leads.length} LEADS</span></div>
       <div className="owner-ai-messages">
         {aiTurns.map((turn, index) => <div className={`owner-ai-turn ${turn.role}`} key={`${turn.role}-${index}`}><strong>{turn.role === "owner" ? "You" : "WASCIK Owner AI"}</strong><p>{turn.content}</p></div>)}
         {aiLoading && <div className="owner-ai-turn assistant"><strong>WASCIK Owner AI</strong><p>Analyzing your leads…</p></div>}
       </div>
-      <form className="owner-ai-form" onSubmit={askOwnerAI}><input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask: Which new leads need my attention?"/><button type="submit" disabled={aiLoading}>{aiLoading ? "Thinking…" : "Ask Owner AI"}</button></form>
+      {pendingProposal && <div className="owner-ai-confirm">
+        <div className="owner-ai-confirm-title"><span>CONFIRM CHANGE</span><strong>{pendingProposal.leadLabel}</strong></div>
+        <p>{pendingProposal.summary}</p>
+        <div className="owner-ai-confirm-detail">{proposalDetails(pendingProposal)}</div>
+        <div className="owner-ai-confirm-actions"><button className="confirm" disabled={actionSaving} onClick={() => void confirmProposal()}>{actionSaving ? "Saving…" : "Confirm change"}</button><button className="cancel" disabled={actionSaving} onClick={cancelProposal}>Cancel</button></div>
+        <small>Nothing is written to Supabase until you tap Confirm change.</small>
+      </div>}
+      <form className="owner-ai-form" onSubmit={askOwnerAI}><input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask or say: Mark the restaurant lead contacted"/><button type="submit" disabled={aiLoading || actionSaving}>{aiLoading ? "Thinking…" : "Ask Owner AI"}</button></form>
       <div className="owner-ai-prompts"><button onClick={() => setAiQuestion("Which leads need my attention first and why?")}>Priority leads</button><button onClick={() => setAiQuestion("Which leads are still new and have not been contacted?")}>Uncontacted</button><button onClick={() => setAiQuestion("Summarize my current lead pipeline by status and project type.")}>Pipeline summary</button></div>
     </section>
 

@@ -78,51 +78,76 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     headers.Authorization = `Bearer ${config.supabaseServerKey}`;
   }
 
-  const attempts = [
-    {
-      url: `${config.supabaseUrl}/rest/v1/leads?on_conflict=capture_key`,
-      prefer: "resolution=merge-duplicates,missing=default,return=representation",
-    },
-    {
-      url: `${config.supabaseUrl}/rest/v1/leads`,
-      prefer: "missing=default,return=representation",
-    },
-  ];
+  const resultFromRows = (rows: Array<{ id?: string; alert_sent_at?: string | null }>): PersistLeadResult => ({
+    saved: true,
+    configured: true,
+    leadId: rows[0]?.id,
+    alertSentAt: rows[0]?.alert_sent_at || undefined,
+  });
 
-  let lastStatus = 0;
-  let lastDetail = "";
+  const patchExisting = async (leadId: string) => {
+    const response = await fetch(
+      `${config.supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`,
+      {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(record),
+      },
+    );
+    const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return { response, rows };
+  };
 
-  for (const attempt of attempts) {
-    const response = await fetch(attempt.url, {
-      method: "POST",
-      headers: { ...headers, Prefer: attempt.prefer },
-      body: JSON.stringify(record),
-    });
+  const findExisting = async () => {
+    if (!key) return undefined;
+    const response = await fetch(
+      `${config.supabaseUrl}/rest/v1/leads?capture_key=eq.${encodeURIComponent(key)}&select=id,alert_sent_at&limit=1`,
+      { headers, cache: "no-store" },
+    );
+    if (!response.ok) return undefined;
+    const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return rows[0];
+  };
 
-    if (response.ok) {
-      const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
-      return {
-        saved: true,
-        configured: true,
-        leadId: rows[0]?.id,
-        alertSentAt: rows[0]?.alert_sent_at || undefined,
-      };
-    }
+  // Existing leads are patched without a status field. This guarantees that
+  // owner-managed workflow states survive later AI conversation enrichment.
+  const existing = await findExisting();
+  if (existing?.id) {
+    const { response, rows } = await patchExisting(existing.id);
+    if (response.ok) return resultFromRows(rows);
+    const detail = await response.text().catch(() => "");
+    console.error("Stage 6 lead enrichment failed", response.status, detail);
+    return { saved: false, configured: true, reason: "database_update_failed", detail: `${response.status}: ${detail.slice(0, 300)}` };
+  }
 
-    lastStatus = response.status;
-    lastDetail = await response.text().catch(() => "");
+  // Only a brand-new row receives the initial workflow status.
+  const insertResponse = await fetch(`${config.supabaseUrl}/rest/v1/leads`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({ ...record, status: "new" }),
+  });
+  if (insertResponse.ok) {
+    const rows = (await insertResponse.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return resultFromRows(rows);
+  }
 
-    if (response.status === 409 && key) {
-      return { saved: true, configured: true };
+  // A concurrent request may have inserted the capture key after our lookup.
+  // Resolve that race by finding and enriching the now-existing row.
+  if (insertResponse.status === 409 && key) {
+    const raced = await findExisting();
+    if (raced?.id) {
+      const { response, rows } = await patchExisting(raced.id);
+      if (response.ok) return resultFromRows(rows);
     }
   }
 
-  console.error("Stage 6 lead persistence failed", lastStatus, lastDetail);
+  const detail = await insertResponse.text().catch(() => "");
+  console.error("Stage 6 lead persistence failed", insertResponse.status, detail);
   return {
     saved: false,
     configured: true,
     reason: "database_insert_failed",
-    detail: `${lastStatus}${lastDetail ? `: ${lastDetail.slice(0, 300)}` : ""}`,
+    detail: `${insertResponse.status}${detail ? `: ${detail.slice(0, 300)}` : ""}`,
   };
 }
 

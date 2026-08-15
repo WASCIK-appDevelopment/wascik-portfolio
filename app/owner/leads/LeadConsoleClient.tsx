@@ -96,10 +96,14 @@ export default function LeadConsoleClient() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem("wascik-owner-console-key") || "";
-    if (saved) {
+    if (!saved) return;
+    const timer = window.setTimeout(() => {
       setKey(saved);
       void loadLeads(saved);
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // The owner key is restored once when this client mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function syncDrafts(nextLeads: Lead[]) {

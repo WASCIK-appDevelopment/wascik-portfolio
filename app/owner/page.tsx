@@ -11,6 +11,10 @@ const cards = [
 export default function OwnerHomePage() {
   return <OwnerModuleClient title="Owner Console" description="Your private WASCIK business command center. Each business function gets its own module while Owner AI eventually connects intelligence across all of them." currentPath="/owner">
     <div style={{ display: "grid", gap: 14 }}>
+      <div>
+        <a href="/" style={{ display: "inline-flex", alignItems: "center", minHeight: 42, padding: "9px 14px", borderRadius: 12, border: "1px solid rgba(112,227,255,.35)", background: "rgba(36,132,255,.12)", color: "#bdefff", textDecoration: "none", fontWeight: 800, fontSize: 13 }}>← Back to WASCIK Portfolio</a>
+      </div>
+
       <div style={{ padding: 16, borderRadius: 18, background: "linear-gradient(135deg,rgba(36,132,255,.16),rgba(0,199,217,.08))", border: "1px solid rgba(100,210,255,.25)" }}>
         <div style={{ color: "#70e3ff", fontWeight: 900, fontSize: 12, letterSpacing: ".12em" }}>OWNER AI COMMAND CENTER</div>
         <h2 style={{ margin: "8px 0 5px", fontSize: 26 }}>One console, separate business modules</h2>

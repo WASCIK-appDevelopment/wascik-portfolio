@@ -255,7 +255,7 @@ export default function RepresentativeWidget({
         </div>
       ) : (
         <button type="button" onClick={() => setOpen(true)} style={{ pointerEvents: "auto", marginLeft: position === "right" ? "auto" : 0, display: "flex", flexDirection: position === "left" ? "row-reverse" : "row", alignItems: "end", gap: 6, border: 0, background: "transparent", color: "white", cursor: "pointer" }}>
-          <span style={{ maxWidth: 170, border: "1px solid rgba(126,198,255,.28)", borderRadius: 16, padding: "8px 10px", background: "rgba(5,13,24,.96)", boxShadow: "0 14px 38px rgba(0,0,0,.34)", fontSize: 11, textAlign: "left" }}><strong style={{ display: "block" }}>{affiliateMode ? "Need help choosing?" : leadStatus === "handoff-ready" ? "Ready to continue?" : "Need some help?"}</strong><small style={{ color: "#92a8bd" }}>{history.length ? "Tap to continue your conversation." : "Tap to talk with the WASCIK representative."}</small></span>
+          <span style={{ width: "min(128px, calc(100vw - 238px))", minWidth: 104, border: "1px solid rgba(126,198,255,.28)", borderRadius: 15, padding: "7px 8px", background: "rgba(5,13,24,.96)", boxShadow: "0 14px 38px rgba(0,0,0,.34)", fontSize: 10, lineHeight: 1.25, textAlign: "left" }}><strong style={{ display: "block" }}>{affiliateMode ? "Need help choosing?" : leadStatus === "handoff-ready" ? "Ready to continue?" : "Need some help?"}</strong><small style={{ color: "#92a8bd" }}>{history.length ? "Tap to continue your conversation." : "Tap to talk with the WASCIK representative."}</small></span>
           <WascikRepresentativeCharacter compact />
         </button>
       )}

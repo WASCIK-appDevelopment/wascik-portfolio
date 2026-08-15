@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   const merchant = namedMerchant?.name ?? pageContext.merchant ?? requestedMerchant;
-  const recommendations = recommendAffiliateProducts(query, merchant, merchant === "TicketNetwork" ? 12 : 5);
+  const recommendations = recommendAffiliateProducts(query, merchant, merchant ? 50 : 5);
 
   let guidance: string;
   if (merchant === "TicketNetwork" && recommendations.length) {

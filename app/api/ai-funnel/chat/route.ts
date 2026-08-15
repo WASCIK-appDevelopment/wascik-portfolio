@@ -4,6 +4,7 @@ import { retrieveWascikKnowledge } from "../../../../lib/ai/knowledgeBase";
 import { ConversationTurn, LeadProfile, qualifyLead } from "../../../../lib/ai/leadQualification";
 import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
 import { persistQualifiedLead } from "../../../../lib/ai/persistLead";
+import { sendLeadAlert } from "../../../../lib/ai/sendLeadAlert";
 
 type ResponsesPayload = {
   status?: string;
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
   const fullConversation: ConversationTurn[] = [...history, { role: "user", content: message }];
   const leadQualification = pageContext.mode === "services" ? qualifyLead(fullConversation, existingLead) : undefined;
   const hasContact = Boolean(leadQualification?.profile?.email || leadQualification?.profile?.phone);
+  const hadContactBeforeThisTurn = Boolean(existingLead.email || existingLead.phone);
   const handoffRequested = explicitHandoffRequested(fullConversation.filter((turn) => turn.role === "user").map((turn) => turn.content).join("\n"));
   const knowledge = retrieveWascikKnowledge(`${message} ${history.filter((turn) => turn.role === "user").map((turn) => turn.content).join(" ")}`, pageContext.allowedTopics, 5);
   const knowledgeText = knowledge.length ? knowledge.map((fact) => `- ${fact.text}`).join("\n") : "- No additional approved WASCIK facts were retrieved for this request.";
@@ -85,9 +87,17 @@ export async function POST(request: Request) {
     if (!text) return NextResponse.json({ error: data.status === "incomplete" ? "The representative ran out of response capacity. Please try again." : "The representative returned an empty response." }, { status: 502 });
 
     let leadPersistence: Awaited<ReturnType<typeof persistQualifiedLead>> | undefined;
-    if (leadQualification && hasContact) leadPersistence = await persistQualifiedLead({ profile: leadQualification.profile, pathname, summary: text, conversation: [...fullConversation, { role: "assistant", content: text }], qualificationScore: leadQualification.score, qualificationStatus: leadQualification.status, sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined, referrer: request.headers.get("referer") || undefined });
+    let leadAlert: Awaited<ReturnType<typeof sendLeadAlert>> | undefined;
+    if (leadQualification && hasContact) {
+      leadPersistence = await persistQualifiedLead({ profile: leadQualification.profile, pathname, summary: text, conversation: [...fullConversation, { role: "assistant", content: text }], qualificationScore: leadQualification.score, qualificationStatus: leadQualification.status, sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined, referrer: request.headers.get("referer") || undefined });
+      // Alert only on the first turn where this session acquires contact information.
+      // Later enrichment updates the same Supabase lead without flooding the owner inbox.
+      if (leadPersistence.saved && !hadContactBeforeThisTurn) {
+        leadAlert = await sendLeadAlert({ profile: leadQualification.profile, pathname, leadId: leadPersistence.leadId });
+      }
+    }
 
-    return NextResponse.json({ text, pageContext, leadQualification, leadPersistence, contactCaptured: Boolean(leadPersistence?.saved), explicitHandoffRequested: handoffRequested, knowledgeIds: knowledge.map((fact) => fact.id), mode: "live-openai-stage6-contact-capture", handoffReady: leadQualification?.status === "handoff-ready" || hasContact || false });
+    return NextResponse.json({ text, pageContext, leadQualification, leadPersistence, leadAlert, contactCaptured: Boolean(leadPersistence?.saved), explicitHandoffRequested: handoffRequested, knowledgeIds: knowledge.map((fact) => fact.id), mode: "live-openai-stage6-contact-capture", handoffReady: leadQualification?.status === "handoff-ready" || hasContact || false });
   } catch (error) {
     console.error("WASCIK AI assistant request failed", error);
     return NextResponse.json({ error: "The representative could not respond right now." }, { status: 502 });

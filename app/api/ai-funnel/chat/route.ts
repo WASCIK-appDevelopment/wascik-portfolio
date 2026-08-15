@@ -3,6 +3,7 @@ import { getOpenAIConfig } from "../../../../lib/ai/openaiConfig";
 import { retrieveWascikKnowledge } from "../../../../lib/ai/knowledgeBase";
 import { ConversationTurn, LeadProfile, qualifyLead } from "../../../../lib/ai/leadQualification";
 import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
+import { persistQualifiedLead } from "../../../../lib/ai/persistLead";
 
 type ResponsesPayload = {
   status?: string;
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
     "Budget and timeline are useful optional details: remember them when volunteered or when directly relevant to the visitor's question, but do not automatically interrogate every visitor for them.",
     "Ask at most one qualification question in a reply. Prefer answering the visitor's current question first. Do not turn the conversation into a questionnaire.",
     "If the visitor has already answered a qualification question, acknowledge/use that answer before asking anything else. Only revisit a detail if their earlier answer was genuinely ambiguous.",
-    "If the lead is handoff-ready, stop qualification questions, briefly summarize what WASCIK knows, and ask permission to proceed to the project/contact handoff.",
+    "If the lead is handoff-ready, stop qualification questions and give a short summary of what WASCIK knows. Tell the visitor that their project details can now be passed to WASCIK for follow-up.",
     "If a visitor asks for a fact that is not in the approved knowledge, say you do not have that detail yet and guide them toward the appropriate WASCIK contact or page.",
     "Keep replies conversational and usually under 110 words unless the visitor clearly asks for more detail.",
     pageContext.mode === "shopping" ? "For specific product recommendations, use only the shopping-guide flow and supplied catalog data rather than inventing a product." : "",
@@ -149,12 +150,27 @@ export async function POST(request: Request) {
       );
     }
 
+    let leadPersistence: Awaited<ReturnType<typeof persistQualifiedLead>> | undefined;
+    if (leadQualification?.status === "handoff-ready") {
+      leadPersistence = await persistQualifiedLead({
+        profile: leadQualification.profile,
+        pathname,
+        summary: text,
+        conversation: [...fullConversation, { role: "assistant", content: text }],
+        qualificationScore: leadQualification.score,
+        qualificationStatus: leadQualification.status,
+        sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined,
+        referrer: request.headers.get("referer") || undefined,
+      });
+    }
+
     return NextResponse.json({
       text,
       pageContext,
       leadQualification,
+      leadPersistence,
       knowledgeIds: knowledge.map((fact) => fact.id),
-      mode: "live-openai-stage5",
+      mode: "live-openai-stage6",
       handoffReady: leadQualification?.status === "handoff-ready" || false,
     });
   } catch (error) {

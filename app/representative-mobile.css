@@ -1,0 +1,13 @@
+/* Mobile safeguards for the reusable WASCIK representative.
+   iOS Safari auto-zooms focused form controls when their text is below 16px. */
+@media (max-width: 767px) {
+  aside[aria-label*="Representative"] input {
+    font-size: 16px !important;
+    line-height: 1.25;
+    touch-action: manipulation;
+  }
+
+  aside[aria-label*="Representative"] {
+    max-height: 100dvh;
+  }
+}

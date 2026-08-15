@@ -3,7 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./tech-background.css";
 import "./code-atmosphere.css";
+import "./representative-mobile.css";
 import HomepageAffiliateLink from "./HomepageAffiliateLink";
+import PortfolioVisitTracker from "./PortfolioVisitTracker";
+import AffiliateClickAutoTracker from "./affiliate-services/AffiliateClickAutoTracker";
 
 const siteUrl = "https://wascik-app-development.netlify.app";
 
@@ -25,9 +28,7 @@ export const metadata: Metadata = {
   },
   description:
     "WASCIK App Development builds mobile-friendly websites, apps, e-commerce experiences, branding, and practical AI solutions for small businesses in Central Arkansas and beyond.",
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
   applicationName: "WASCIK App Development",
   authors: [{ name: "Michael Lewis" }],
   creator: "WASCIK App Development",
@@ -46,15 +47,13 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "WASCIK App Development",
     title: "WASCIK App Development | Websites, Apps & AI Solutions",
-    description:
-      "Mobile-friendly websites, apps, e-commerce, branding, and practical AI solutions built around your business.",
+    description: "Mobile-friendly websites, apps, e-commerce, branding, and practical AI solutions built around your business.",
     locale: "en_US",
   },
   twitter: {
     card: "summary",
     title: "WASCIK App Development | Websites, Apps & AI Solutions",
-    description:
-      "Mobile-friendly websites, apps, e-commerce, branding, and practical AI solutions built around your business.",
+    description: "Mobile-friendly websites, apps, e-commerce, branding, and practical AI solutions built around your business.",
   },
   robots: {
     index: true,
@@ -75,24 +74,14 @@ const organizationSchema = {
   "@id": `${siteUrl}/#organization`,
   name: "WASCIK App Development",
   url: siteUrl,
-  founder: {
-    "@type": "Person",
-    name: "Michael Lewis",
-  },
+  founder: { "@type": "Person", name: "Michael Lewis" },
   telephone: "+1-501-578-2259",
   email: "LewisMike0435@gmail.com",
   areaServed: [
-    {
-      "@type": "AdministrativeArea",
-      name: "Central Arkansas",
-    },
-    {
-      "@type": "Country",
-      name: "United States",
-    },
+    { "@type": "AdministrativeArea", name: "Central Arkansas" },
+    { "@type": "Country", name: "United States" },
   ],
-  description:
-    "WASCIK App Development creates websites, mobile applications, e-commerce experiences, branding, and practical AI solutions for businesses.",
+  description: "WASCIK App Development creates websites, mobile applications, e-commerce experiences, branding, and practical AI solutions for businesses.",
   knowsAbout: [
     "Website development",
     "Mobile application development",
@@ -109,35 +98,23 @@ const websiteSchema = {
   "@id": `${siteUrl}/#website`,
   url: siteUrl,
   name: "WASCIK App Development",
-  publisher: {
-    "@id": `${siteUrl}/#organization`,
-  },
+  publisher: { "@id": `${siteUrl}/#organization` },
   inLanguage: "en-US",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}>
       <head>
-        <meta
-          name="impact-site-verification"
-          content="b92be5b8-e61a-476b-a19c-8ff91bfc0e95"
-        />
+        <meta name="impact-site-verification" content="b92be5b8-e61a-476b-a19c-8ff91bfc0e95" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationSchema, websiteSchema]),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationSchema, websiteSchema]) }}
         />
       </head>
       <body className="min-h-full">
+        <PortfolioVisitTracker />
+        <AffiliateClickAutoTracker />
         {children}
         <HomepageAffiliateLink />
       </body>

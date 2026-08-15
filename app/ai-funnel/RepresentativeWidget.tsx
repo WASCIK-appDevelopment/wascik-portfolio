@@ -76,14 +76,22 @@ function WascikRepresentativeCharacter({ compact = false }: { compact?: boolean 
           <span style={{ position: "absolute", left: 14, top: 38, width: 15, height: 6, borderBottom: "2px solid #6d382c", borderRadius: "50%", transform: "rotate(-2deg)" }} />
         </span>
 
-        <span style={{ position: "absolute", top: 1, left: 14, width: 50, height: 30, borderRadius: "58% 58% 30% 30%", background: "linear-gradient(145deg,#17202f,#425069)", clipPath: "polygon(4% 100%,0 36%,14% 10%,37% 0,68% 6%,94% 25%,100% 100%,83% 61%,73% 29%,58% 42%,43% 25%,25% 45%,17% 76%)", zIndex: 5 }} />
+        <span style={{ position: "absolute", top: -2, left: 11, width: 56, height: 28, borderRadius: "58% 58% 24% 24%", background: "linear-gradient(145deg,#0c1728,#263c59 62%,#07111f)", border: "1px solid rgba(94,190,255,.38)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.1),0 4px 10px rgba(0,0,0,.28)", zIndex: 6 }}>
+          <span style={{ position: "absolute", top: 6, left: 19, width: 18, height: 13, borderRadius: 5, background: "linear-gradient(145deg,#07111f,#173d66)", border: "1px solid rgba(109,205,255,.42)", overflow: "hidden", display: "grid", placeItems: "center" }}>
+            <img src="/wascik-logo-v2.png" alt="" style={{ width: 22, height: 22, objectFit: "contain", filter: "drop-shadow(0 0 2px rgba(90,190,255,.6))" }} />
+          </span>
+        </span>
+        <span style={{ position: "absolute", top: 20, left: 8, width: 62, height: 8, borderRadius: "52% 58% 45% 52%", background: "linear-gradient(180deg,#182b44,#07111f)", borderBottom: "1px solid rgba(69,175,255,.42)", boxShadow: "0 4px 7px rgba(0,0,0,.3)", transform: "rotate(-2deg)", zIndex: 7 }} />
         <span style={{ position: "absolute", top: 51, left: 31, width: 16, height: 15, background: "linear-gradient(#c58b69,#a86e50)", zIndex: 2 }} />
 
         <span style={{ position: "absolute", top: 64, left: 9, width: 60, height: 91, borderRadius: "20px 20px 12px 12px", background: "linear-gradient(165deg,#1c3150,#07111f 78%)", border: "1px solid rgba(89,183,255,.42)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.08),0 8px 20px rgba(0,0,0,.24)" }}>
-          <span style={{ position: "absolute", left: 16, top: 16, width: 28, height: 28, borderRadius: 8, background: "linear-gradient(145deg,rgba(6,15,28,.96),rgba(22,61,102,.96))", border: "1px solid rgba(126,204,255,.42)", boxShadow: "0 0 13px rgba(28,143,255,.24)", overflow: "hidden", display: "grid", placeItems: "center" }}>
-            <img src="/wascik-logo-v2.png" alt="" style={{ width: 34, height: 34, objectFit: "contain", filter: "drop-shadow(0 0 3px rgba(90,190,255,.5))" }} />
+          <span style={{ position: "absolute", left: 6, top: 10, width: 48, height: 50, borderRadius: 12, background: "radial-gradient(circle,rgba(32,137,255,.28),rgba(4,13,25,.96) 70%)", border: "1px solid rgba(126,214,255,.58)", boxShadow: "0 0 18px rgba(28,143,255,.42),inset 0 0 12px rgba(44,155,255,.2)", overflow: "hidden", display: "grid", placeItems: "center" }}>
+            <span style={{ position: "absolute", inset: 4, borderRadius: 8, border: "1px solid rgba(102,207,255,.22)" }} />
+            <img src="/wascik-logo-v2.png" alt="" style={{ position: "relative", width: 58, height: 58, objectFit: "contain", transform: "scale(1.12)", filter: "drop-shadow(0 0 5px rgba(90,190,255,.85)) brightness(1.12)" }} />
           </span>
-          <span style={{ position: "absolute", left: 11, right: 11, bottom: 14, height: 1, background: "linear-gradient(90deg,transparent,#39b9ff,transparent)", opacity: .55 }} />
+          <span style={{ position: "absolute", left: 4, top: 34, width: 8, height: 1, background: "#42c9ff", boxShadow: "0 -12px 0 rgba(66,201,255,.55),0 12px 0 rgba(66,201,255,.55)" }} />
+          <span style={{ position: "absolute", right: 4, top: 34, width: 8, height: 1, background: "#42c9ff", boxShadow: "0 -12px 0 rgba(66,201,255,.55),0 12px 0 rgba(66,201,255,.55)" }} />
+          <span style={{ position: "absolute", left: 9, right: 9, bottom: 13, height: 1, background: "linear-gradient(90deg,transparent,#39b9ff,transparent)", opacity: .8 }} />
         </span>
 
         <span style={{ position: "absolute", top: 71, left: 0, width: 15, height: 82, borderRadius: 12, background: "linear-gradient(#1b304e,#081321)", transform: "rotate(5deg)", transformOrigin: "top", borderLeft: "1px solid rgba(89,183,255,.18)" }} />

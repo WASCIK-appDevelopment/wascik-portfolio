@@ -164,6 +164,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             <div className="contact-links">
               <a href="tel:+15015782259">Call Michael<br/><strong>(501) 578-2259</strong></a>
               <a href="mailto:LewisMike0435@gmail.com">Send an email<br/><strong>LewisMike0435@gmail.com</strong></a>
+              <a href="/owner">Private Owner Console<br/><strong>Open Console →</strong></a>
             </div>
           </section>
 

@@ -48,6 +48,10 @@ function sanitizeHistory(value: unknown): ConversationTurn[] {
     .slice(-10);
 }
 
+function explicitHandoffRequested(text: string) {
+  return /(?:contact me|call me|email me|have (?:someone|them|wascik) (?:contact|call|email|get back to) me|send (?:this|it|my info|my information|my email|my number) (?:over|to)|pass (?:this|it|my info|my information) (?:along|on)|get back to me|follow up with me)/i.test(text);
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const message = typeof body.message === "string" ? body.message.trim().slice(0, 1200) : "";
@@ -80,13 +84,18 @@ export async function POST(request: Request) {
     ? knowledge.map((fact) => `- ${fact.text}`).join("\n")
     : "- No additional approved WASCIK facts were retrieved for this request.";
 
+  const hasContact = Boolean(leadQualification?.profile?.email || leadQualification?.profile?.phone);
+  const handoffRequested = explicitHandoffRequested(fullConversation.filter((turn) => turn.role === "user").map((turn) => turn.content).join("\n"));
+
   const leadText = leadQualification
     ? [
         `Lead status: ${leadQualification.status}; score: ${leadQualification.score}/100.`,
         `Known lead profile: ${JSON.stringify(leadQualification.profile)}.`,
         `Missing core qualification fields: ${leadQualification.missingFields.join(", ") || "none"}.`,
+        hasContact ? "A contact method has been provided, so the lead is being captured now even if qualification is incomplete." : "No contact method has been provided yet.",
+        handoffRequested ? "The visitor explicitly requested follow-up/handoff. Do not ask further qualification questions unless a contact method is still missing." : "",
         leadQualification.nextQuestion ? `Preferred next qualification question: ${leadQualification.nextQuestion}` : "The lead is ready for handoff.",
-      ].join("\n")
+      ].filter(Boolean).join("\n")
     : "";
 
   const instructions = [
@@ -102,11 +111,13 @@ export async function POST(request: Request) {
     leadText ? "LEAD QUALIFICATION STATE:" : "",
     leadText,
     "Remember information already provided in the conversation. Never ask for a detail that is already present in the known lead profile or conversation history.",
-    "Keep lead qualification light and natural. Only project type, business/project context, and one contact method are core handoff requirements.",
+    "Keep lead qualification light and natural. Project type and business/project context are helpful, but a usable email address or phone number is enough for WASCIK to capture a lead for follow-up.",
+    "As soon as the visitor provides a usable email address or phone number, treat that contact information as captured. You may continue the conversation naturally and gather more detail, but do not imply that the lead is still waiting to be handed off.",
+    "If the visitor explicitly asks WASCIK to contact them, send their information over, follow up, call, or email them and a contact method is already known, stop qualification questions immediately. Confirm that their information has been passed along for follow-up.",
+    "If the visitor says they are busy, do not have time, are leaving, or otherwise wants to stop, do not pressure them for more information. If contact details are known, confirm follow-up. If not, ask only for one contact method.",
     "Budget and timeline are useful optional details: remember them when volunteered or when directly relevant to the visitor's question, but do not automatically interrogate every visitor for them.",
     "Ask at most one qualification question in a reply. Prefer answering the visitor's current question first. Do not turn the conversation into a questionnaire.",
     "If the visitor has already answered a qualification question, acknowledge/use that answer before asking anything else. Only revisit a detail if their earlier answer was genuinely ambiguous.",
-    "If the lead is handoff-ready, stop qualification questions and give a short summary of what WASCIK knows. Tell the visitor that their project details can now be passed to WASCIK for follow-up.",
     "If a visitor asks for a fact that is not in the approved knowledge, say you do not have that detail yet and guide them toward the appropriate WASCIK contact or page.",
     "Keep replies conversational and usually under 110 words unless the visitor clearly asks for more detail.",
     pageContext.mode === "shopping" ? "For specific product recommendations, use only the shopping-guide flow and supplied catalog data rather than inventing a product." : "",
@@ -151,7 +162,7 @@ export async function POST(request: Request) {
     }
 
     let leadPersistence: Awaited<ReturnType<typeof persistQualifiedLead>> | undefined;
-    if (leadQualification?.status === "handoff-ready") {
+    if (leadQualification && hasContact) {
       leadPersistence = await persistQualifiedLead({
         profile: leadQualification.profile,
         pathname,
@@ -169,9 +180,11 @@ export async function POST(request: Request) {
       pageContext,
       leadQualification,
       leadPersistence,
+      contactCaptured: Boolean(leadPersistence?.saved),
+      explicitHandoffRequested: handoffRequested,
       knowledgeIds: knowledge.map((fact) => fact.id),
-      mode: "live-openai-stage6",
-      handoffReady: leadQualification?.status === "handoff-ready" || false,
+      mode: "live-openai-stage6-contact-capture",
+      handoffReady: leadQualification?.status === "handoff-ready" || hasContact || false,
     });
   } catch (error) {
     console.error("WASCIK AI assistant request failed", error);

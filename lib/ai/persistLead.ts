@@ -15,7 +15,7 @@ export type PersistLeadInput = {
 
 export type PersistLeadResult =
   | { saved: true; leadId?: string; configured: true }
-  | { saved: false; configured: boolean; reason: string };
+  | { saved: false; configured: boolean; reason: string; detail?: string };
 
 function clean(value: unknown, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -77,26 +77,52 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
   const headers: Record<string, string> = {
     apikey: config.supabaseServerKey,
     "Content-Type": "application/json",
-    Prefer: "resolution=merge-duplicates,return=representation",
   };
 
   if (config.supabaseKeyKind === "service_role") {
     headers.Authorization = `Bearer ${config.supabaseServerKey}`;
   }
 
-  const endpoint = `${config.supabaseUrl}/rest/v1/leads?on_conflict=capture_key`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(record),
-  });
+  const attempts = [
+    {
+      url: `${config.supabaseUrl}/rest/v1/leads?on_conflict=capture_key`,
+      prefer: "resolution=merge-duplicates,return=representation",
+    },
+    {
+      url: `${config.supabaseUrl}/rest/v1/leads`,
+      prefer: "return=representation",
+    },
+  ];
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.error("Stage 6 lead persistence failed", response.status, detail);
-    return { saved: false, configured: true, reason: "database_insert_failed" };
+  let lastStatus = 0;
+  let lastDetail = "";
+
+  for (const attempt of attempts) {
+    const response = await fetch(attempt.url, {
+      method: "POST",
+      headers: { ...headers, Prefer: attempt.prefer },
+      body: JSON.stringify(record),
+    });
+
+    if (response.ok) {
+      const rows = (await response.json().catch(() => [])) as Array<{ id?: string }>;
+      return { saved: true, configured: true, leadId: rows[0]?.id };
+    }
+
+    lastStatus = response.status;
+    lastDetail = await response.text().catch(() => "");
+
+    // A duplicate on the fallback insert means the original upsert effectively found an existing lead.
+    if (response.status === 409 && key) {
+      return { saved: true, configured: true };
+    }
   }
 
-  const rows = (await response.json().catch(() => [])) as Array<{ id?: string }>;
-  return { saved: true, configured: true, leadId: rows[0]?.id };
+  console.error("Stage 6 lead persistence failed", lastStatus, lastDetail);
+  return {
+    saved: false,
+    configured: true,
+    reason: "database_insert_failed",
+    detail: `${lastStatus}${lastDetail ? `: ${lastDetail.slice(0, 300)}` : ""}`,
+  };
 }

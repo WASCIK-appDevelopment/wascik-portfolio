@@ -21,7 +21,12 @@ type Lead = {
   conversation?: Array<{ role?: string; content?: string }> | null;
   qualification_score?: number | null;
   qualification_status?: string | null;
+  owner_notes?: string | null;
+  next_action?: string | null;
+  follow_up_at?: string | null;
 };
+
+type Draft = { owner_notes: string; next_action: string; follow_up_at: string };
 
 const labels: Record<Lead["status"], string> = {
   new: "New",
@@ -30,6 +35,14 @@ const labels: Record<Lead["status"], string> = {
   closed: "Closed",
 };
 
+function localInputValue(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default function LeadConsoleClient() {
   const [key, setKey] = useState("");
   const [inputKey, setInputKey] = useState("");
@@ -37,7 +50,10 @@ export default function LeadConsoleClient() {
   const [filter, setFilter] = useState<"all" | Lead["status"]>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("wascik-owner-console-key") || "";
@@ -46,6 +62,20 @@ export default function LeadConsoleClient() {
       void loadLeads(saved);
     }
   }, []);
+
+  function syncDrafts(nextLeads: Lead[]) {
+    setDrafts((current) => {
+      const next = { ...current };
+      for (const lead of nextLeads) {
+        if (!next[lead.id]) next[lead.id] = {
+          owner_notes: lead.owner_notes || "",
+          next_action: lead.next_action || "",
+          follow_up_at: localInputValue(lead.follow_up_at),
+        };
+      }
+      return next;
+    });
+  }
 
   async function loadLeads(ownerKey = key) {
     if (!ownerKey) return;
@@ -59,7 +89,9 @@ export default function LeadConsoleClient() {
       return;
     }
     const data = await response.json();
-    setLeads(Array.isArray(data.leads) ? data.leads : []);
+    const nextLeads = Array.isArray(data.leads) ? data.leads : [];
+    setLeads(nextLeads);
+    syncDrafts(nextLeads);
     setLoading(false);
   }
 
@@ -72,17 +104,47 @@ export default function LeadConsoleClient() {
     void loadLeads(trimmed);
   }
 
-  async function updateStatus(id: string, status: Lead["status"]) {
+  async function updateLead(id: string, patch: Record<string, unknown>, failureMessage: string) {
     const response = await fetch("/api/owner/leads", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-      body: JSON.stringify({ id, status }),
+      body: JSON.stringify({ id, ...patch }),
     });
     if (!response.ok) {
-      setError("Could not update that lead status.");
-      return;
+      setError(failureMessage);
+      return null;
     }
-    setLeads((current) => current.map((lead) => (lead.id === id ? { ...lead, status } : lead)));
+    const data = await response.json();
+    if (data.lead) setLeads((current) => current.map((lead) => lead.id === id ? { ...lead, ...data.lead } : lead));
+    return data.lead as Lead | null;
+  }
+
+  async function updateStatus(id: string, status: Lead["status"]) {
+    setError("");
+    setNotice("");
+    const updated = await updateLead(id, { status }, "Could not update that lead status.");
+    if (updated) setNotice(`Lead moved to ${labels[status]}.`);
+  }
+
+  async function saveOwnerDetails(lead: Lead) {
+    const draft = drafts[lead.id] || { owner_notes: "", next_action: "", follow_up_at: "" };
+    setSaving(lead.id);
+    setError("");
+    setNotice("");
+    const updated = await updateLead(lead.id, {
+      owner_notes: draft.owner_notes,
+      next_action: draft.next_action,
+      follow_up_at: draft.follow_up_at ? new Date(draft.follow_up_at).toISOString() : "",
+    }, "Could not save the owner notes or follow-up.");
+    setSaving(null);
+    if (updated) {
+      setNotice("Lead notes and follow-up saved.");
+      setDrafts((current) => ({ ...current, [lead.id]: {
+        owner_notes: updated.owner_notes || "",
+        next_action: updated.next_action || "",
+        follow_up_at: localInputValue(updated.follow_up_at),
+      }}));
+    }
   }
 
   const counts = useMemo(() => ({
@@ -105,11 +167,13 @@ export default function LeadConsoleClient() {
       {(["all", "new", "contacted", "in_progress", "closed"] as const).map((status) => <button key={status} className={filter === status ? "active" : ""} onClick={() => setFilter(status)}><strong>{counts[status]}</strong><span>{status === "all" ? "All" : labels[status]}</span></button>)}
     </section>
     {error && <p className="owner-error">{error}</p>}
+    {notice && <p className="owner-notice">{notice}</p>}
     <section className="lead-list">
       {!loading && visible.length === 0 && <div className="owner-empty">No leads in this view yet.</div>}
       {visible.map((lead) => {
         const open = expanded === lead.id;
         const contact = lead.email || lead.phone || "No contact shown";
+        const draft = drafts[lead.id] || { owner_notes: lead.owner_notes || "", next_action: lead.next_action || "", follow_up_at: localInputValue(lead.follow_up_at) };
         return <article className="lead-card" key={lead.id}>
           <div className="lead-top"><div><span className={`lead-status status-${lead.status}`}>{labels[lead.status]}</span><h2>{lead.business || lead.name || "New WASCIK lead"}</h2><p>{lead.project_type || "Project inquiry"} · {contact}</p></div><time>{new Date(lead.created_at).toLocaleString()}</time></div>
           <div className="lead-grid">
@@ -119,12 +183,23 @@ export default function LeadConsoleClient() {
             <div><span>Score</span><strong>{typeof lead.qualification_score === "number" ? `${lead.qualification_score}/100` : "—"}</strong></div>
           </div>
           {lead.features && lead.features.length > 0 && <div className="lead-tags">{lead.features.map((feature) => <span key={feature}>{feature}</span>)}</div>}
+          {lead.next_action && <p className="lead-next"><b>Next action:</b> {lead.next_action}{lead.follow_up_at ? ` · ${new Date(lead.follow_up_at).toLocaleString()}` : ""}</p>}
           <p className="lead-summary">{lead.summary || "No summary available yet."}</p>
           <div className="lead-actions">
             <select value={lead.status} onChange={(event) => void updateStatus(lead.id, event.target.value as Lead["status"])}><option value="new">New</option><option value="contacted">Contacted</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select>
             <button onClick={() => setExpanded(open ? null : lead.id)}>{open ? "Hide details" : "View details"}</button>
           </div>
-          {open && <div className="lead-details"><h3>Contact & project</h3><p><b>Name:</b> {lead.name || "Not provided"}<br/><b>Email:</b> {lead.email || "Not provided"}<br/><b>Phone:</b> {lead.phone || "Not provided"}<br/><b>Business:</b> {lead.business || "Not provided"}<br/><b>Project:</b> {lead.project_type || "Not provided"}</p><h3>Conversation</h3><div className="conversation">{(lead.conversation || []).map((turn, index) => <div className={`turn ${turn.role === "assistant" ? "assistant" : "visitor"}`} key={`${lead.id}-${index}`}><strong>{turn.role === "assistant" ? "WASCIK AI" : "Visitor"}</strong><p>{turn.content}</p></div>)}</div></div>}
+          {open && <div className="lead-details">
+            <h3>Contact & project</h3><p><b>Name:</b> {lead.name || "Not provided"}<br/><b>Email:</b> {lead.email || "Not provided"}<br/><b>Phone:</b> {lead.phone || "Not provided"}<br/><b>Business:</b> {lead.business || "Not provided"}<br/><b>Project:</b> {lead.project_type || "Not provided"}</p>
+            <h3>Owner follow-up</h3>
+            <div className="owner-crm-fields">
+              <label><span>Next action</span><input value={draft.next_action} onChange={(event) => setDrafts((current) => ({ ...current, [lead.id]: { ...draft, next_action: event.target.value } }))} placeholder="Example: Call Monday and discuss scope" /></label>
+              <label><span>Follow-up date & time</span><input type="datetime-local" value={draft.follow_up_at} onChange={(event) => setDrafts((current) => ({ ...current, [lead.id]: { ...draft, follow_up_at: event.target.value } }))} /></label>
+              <label className="owner-notes-field"><span>Owner notes</span><textarea value={draft.owner_notes} onChange={(event) => setDrafts((current) => ({ ...current, [lead.id]: { ...draft, owner_notes: event.target.value } }))} placeholder="Private notes about this lead, call outcome, financing discussion, scope ideas, or anything you want the owner AI to remember later." /></label>
+              <button className="save-owner-details" disabled={saving === lead.id} onClick={() => void saveOwnerDetails(lead)}>{saving === lead.id ? "Saving…" : "Save notes & follow-up"}</button>
+            </div>
+            <h3>Conversation</h3><div className="conversation">{(lead.conversation || []).map((turn, index) => <div className={`turn ${turn.role === "assistant" ? "assistant" : "visitor"}`} key={`${lead.id}-${index}`}><strong>{turn.role === "assistant" ? "WASCIK AI" : "Visitor"}</strong><p>{turn.content}</p></div>)}</div>
+          </div>}
         </article>;
       })}
     </section>

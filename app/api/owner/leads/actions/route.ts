@@ -58,7 +58,11 @@ function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!headerAuthorized(request) && !tokenAuthorized(body)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Both checks are required: the active owner session authenticates Michael,
+  // and the signed short-lived token proves this exact proposal was confirmed.
+  if (!headerAuthorized(request) || !tokenAuthorized(body)) {
+    return NextResponse.json({ error: "Unauthorized or unconfirmed owner action." }, { status: 401 });
+  }
 
   const leadId = cleanText(body.leadId, 80);
   const actionType = cleanText(body.actionType, 40);
@@ -109,6 +113,7 @@ export async function POST(request: Request) {
   });
   const updated = await response.json().catch(() => []);
   if (!response.ok) return NextResponse.json({ error: "Could not apply the confirmed change.", detail: updated }, { status: 502 });
+  if (!updated[0]) return NextResponse.json({ error: "The confirmed lead change did not update a record." }, { status: 409 });
 
-  return NextResponse.json({ success: true, description, lead: updated[0] ?? null });
+  return NextResponse.json({ success: true, description, lead: updated[0] });
 }

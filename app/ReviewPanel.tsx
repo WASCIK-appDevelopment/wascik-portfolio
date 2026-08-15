@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import styles from "./ReviewPanel.module.css";
 
 type ApprovedReview = {
@@ -28,25 +28,11 @@ function Stars({ rating = 0, label }: { rating?: number; label: string }) {
 export default function ReviewPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
 
   const average = useMemo(() => {
     if (!approvedReviews.length) return 0;
     return approvedReviews.reduce((total, review) => total + review.rating, 0) / approvedReviews.length;
   }, []);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    const form = event.currentTarget;
-    if (!selectedRating) {
-      event.preventDefault();
-      return;
-    }
-
-    // Netlify receives the submission. This message confirms the local action
-    // while the browser continues with Netlify's normal form handling.
-    setSubmitted(true);
-    form.requestSubmit();
-  }
 
   return (
     <section id="reviews" className={styles.shell} aria-labelledby="review-summary-title">
@@ -108,7 +94,6 @@ export default function ReviewPanel() {
               data-netlify="true"
               data-netlify-honeypot="company-website"
               className={styles.form}
-              onSubmit={handleSubmit}
             >
               <input type="hidden" name="form-name" value="wascik-customer-review" />
               <p className={styles.honeypot}>
@@ -166,7 +151,7 @@ export default function ReviewPanel() {
 
               <div className={`${styles.formActions} ${styles.fullWidth}`}>
                 <button type="submit" className={styles.submitButton}>Submit review for approval</button>
-                <p>{submitted ? "Submitting your review…" : "Reviews are checked before they appear publicly."}</p>
+                <p>Reviews are checked before they appear publicly.</p>
               </div>
             </form>
           </div>

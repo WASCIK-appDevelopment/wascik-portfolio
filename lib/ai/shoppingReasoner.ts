@@ -34,6 +34,32 @@ function queryTerms(query: string) {
 export function recommendAffiliateProducts(query: string, merchant?: string, limit = 3) {
   const terms = queryTerms(query);
   const catalog = getAffiliateCatalog(merchant);
+  const normalizedQuery = normalize(query);
+  const asksForMerchantOverview =
+    Boolean(merchant) &&
+    ["all", "everything", "offer", "offers", "offered", "advertise", "advertised", "advertising", "products", "items", "tell me about"].some((phrase) =>
+      normalizedQuery.includes(phrase)
+    );
+
+  const present = (product: (typeof catalog)[number], score: number, reason: string) => ({
+    id: product.id,
+    merchant: product.merchant,
+    title: product.title,
+    category: product.category,
+    description: product.description,
+    features: product.features,
+    affiliateUrl: product.affiliateUrl,
+    pagePath: product.pagePath,
+    source: product.source,
+    score,
+    reason,
+  });
+
+  if (asksForMerchantOverview) {
+    return catalog
+      .slice(0, Math.max(1, Math.min(limit, 50)))
+      .map((product) => present(product, 1, product.category));
+  }
 
   const ranked = catalog.map((product) => {
     const title = normalize(product.title);
@@ -68,17 +94,7 @@ export function recommendAffiliateProducts(query: string, merchant?: string, lim
 
   // Never substitute unrelated products when the query has no real catalog match.
   // The route will return a clear no-match message instead.
-  return matches.map(({ product, score, reasons }) => ({
-    id: product.id,
-    merchant: product.merchant,
-    title: product.title,
-    category: product.category,
-    description: product.description,
-    features: product.features,
-    affiliateUrl: product.affiliateUrl,
-    pagePath: product.pagePath,
-    source: product.source,
-    score,
-    reason: reasons[0],
-  }));
+  return matches.map(({ product, score, reasons }) =>
+    present(product, score, reasons[0])
+  );
 }

@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
+import { ConversationTurn, LeadProfile } from "../../../../lib/ai/leadQualification";
+import { persistQualifiedLead } from "../../../../lib/ai/persistLead";
 import { getStage6Config } from "../../../../lib/ai/stage6Config";
 
 type LeadPayload = {
   sessionId?: string;
   sourcePage?: string;
+  referrer?: string;
   summary?: string;
-  profile?: {
-    name?: string;
-    email?: string;
-    phone?: string;
-    business?: string;
-    projectType?: string;
-    budget?: string;
-    timeline?: string;
-  };
+  qualificationScore?: number;
+  qualificationStatus?: string;
+  conversation?: ConversationTurn[];
+  profile?: LeadProfile;
 };
 
 function clean(value: unknown, max = 500) {
@@ -34,7 +32,7 @@ function buildAlertText(payload: LeadPayload) {
   };
 }
 
-async function sendAlert(payload: LeadPayload, leadId: string | number) {
+async function sendAlert(payload: LeadPayload, leadId: string) {
   const config = getStage6Config();
   if (!config.emailConfigured || !config.resendApiKey || !config.alertEmail || !config.alertFrom) {
     return { sent: false, reason: "email_not_configured" };
@@ -66,61 +64,33 @@ async function sendAlert(payload: LeadPayload, leadId: string | number) {
 }
 
 export async function POST(request: Request) {
-  const config = getStage6Config();
-  if (!config.databaseConfigured || !config.supabaseUrl || !config.supabaseServiceRoleKey) {
-    return NextResponse.json({ error: "Lead storage is not configured yet." }, { status: 503 });
-  }
-
   const body = (await request.json().catch(() => ({}))) as LeadPayload;
-  const profile = body.profile ?? {};
-  const contactEmail = clean(profile.email, 320);
-  const contactPhone = clean(profile.phone, 80);
-  const projectType = clean(profile.projectType, 120);
-  const business = clean(profile.business, 180);
+  const profile = body.profile && typeof body.profile === "object" ? body.profile : {};
+  const conversation = Array.isArray(body.conversation) ? body.conversation.slice(-12) : [];
 
-  if (!projectType || !business || (!contactEmail && !contactPhone)) {
-    return NextResponse.json({ error: "The lead is not ready for handoff yet." }, { status: 400 });
-  }
-
-  const record = {
-    session_id: clean(body.sessionId, 120) || null,
-    source_page: clean(body.sourcePage, 500) || "/",
-    status: "new",
-    name: clean(profile.name, 160) || null,
-    email: contactEmail || null,
-    phone: contactPhone || null,
-    business,
-    project_type: projectType,
-    budget: clean(profile.budget, 160) || null,
-    timeline: clean(profile.timeline, 160) || null,
-    summary: clean(body.summary, 1200) || `${business} is interested in a ${projectType} project.`,
-  };
-
-  const databaseResponse = await fetch(`${config.supabaseUrl}/rest/v1/wascik_leads`, {
-    method: "POST",
-    headers: {
-      apikey: config.supabaseServiceRoleKey,
-      Authorization: `Bearer ${config.supabaseServiceRoleKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    },
-    body: JSON.stringify(record),
+  const result = await persistQualifiedLead({
+    profile,
+    pathname: clean(body.sourcePage, 500) || "/",
+    referrer: clean(body.referrer, 1000) || request.headers.get("referer") || undefined,
+    summary: clean(body.summary, 1600),
+    conversation,
+    qualificationScore: typeof body.qualificationScore === "number" ? body.qualificationScore : undefined,
+    qualificationStatus: clean(body.qualificationStatus, 80),
+    sessionId: clean(body.sessionId, 160),
   });
 
-  if (!databaseResponse.ok) {
-    const detail = await databaseResponse.text().catch(() => "");
-    console.error("Stage 6 lead database insert failed", databaseResponse.status, detail);
-    return NextResponse.json({ error: "The lead could not be saved right now." }, { status: 502 });
+  if (!result.saved) {
+    const status = !result.configured ? 503 : result.reason === "lead_not_handoff_ready" ? 400 : 502;
+    const error = !result.configured
+      ? "Lead storage is not configured yet."
+      : result.reason === "lead_not_handoff_ready"
+        ? "The lead is not ready for handoff yet."
+        : "The lead could not be saved right now.";
+    return NextResponse.json({ error, reason: result.reason }, { status });
   }
 
-  const rows = (await databaseResponse.json().catch(() => [])) as Array<{ id?: string | number }>;
-  const leadId = rows[0]?.id ?? `captured-${Date.now()}`;
+  const leadId = result.leadId || `captured-${Date.now()}`;
   const alert = await sendAlert(body, leadId);
 
-  return NextResponse.json({
-    saved: true,
-    leadId,
-    status: "new",
-    alert,
-  });
+  return NextResponse.json({ saved: true, leadId, status: "new", alert });
 }

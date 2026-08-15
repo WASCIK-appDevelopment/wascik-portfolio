@@ -243,11 +243,6 @@ export default function LeadConsoleClient() {
   return <main className="owner-shell">
     <header className="owner-header"><div><div className="owner-kicker">WASCIK PRIVATE CONSOLE</div><h1>Lead Inbox</h1><p>Captured by the AI representative and stored in Supabase.</p></div><button className="owner-refresh" onClick={() => void loadLeads()}>{loading ? "Refreshing…" : "Refresh"}</button></header>
 
-    <nav className="owner-console-nav" aria-label="Owner console modules">
-      <a className="active" href="/owner/leads">Leads</a>
-      <span>Social & Ads</span><span>Affiliate Search</span><span>Click Analytics</span><span>Product Status</span>
-    </nav>
-
     <section className="owner-ai-panel">
       <div className="owner-ai-heading"><div><div className="owner-kicker">OWNER AI</div><h2>Lead Assistant</h2><p>Live lead intelligence with confirmation-gated actions. It cannot change a record until you approve the proposed change.</p></div><span className="owner-ai-live">LIVE DATA · {leads.length} LEADS</span></div>
       <div className="owner-ai-messages">

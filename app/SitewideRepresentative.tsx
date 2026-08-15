@@ -23,7 +23,7 @@ export default function SitewideRepresentative() {
     <RepresentativeWidget
       title="WASCIK Digital Representative"
       greeting="Hi. I’m the WASCIK digital representative. What can I help you with today?"
-      position="right"
+      position="left"
       defaultOpen={false}
     />
   );

@@ -90,6 +90,28 @@ const brandPageCatalog: UnifiedAffiliateItem[] = [
     source: "brand-page",
     pagePath: "/affiliate-services/gearup",
   },
+  {
+    id: "arccaptain-store",
+    merchant: "ArcCaptain",
+    title: "ArcCaptain Welding Equipment",
+    category: "Welding Equipment & Accessories",
+    description: "Browse ArcCaptain MIG, TIG, stick, and plasma equipment, along with welding helmets and accessories through WASCIK's approved affiliate link.",
+    features: ["MIG welding", "TIG welding", "Stick and plasma equipment", "Welding helmets and accessories"],
+    affiliateUrl: "https://arccaptain.pxf.io/c/7587435/3898395/52929",
+    source: "brand-page",
+    pagePath: "/affiliate-services#arccaptain",
+  },
+  {
+    id: "ticketnetwork-store",
+    merchant: "TicketNetwork",
+    title: "TicketNetwork Concerts & Event Tickets",
+    category: "Concerts, Events & Tickets",
+    description: "Search current TicketNetwork listings for concerts and events through WASCIK's ticket affiliate page.",
+    features: ["Concert tickets", "Live events", "Current seat listings", "Ticket resale marketplace"],
+    affiliateUrl: "https://goto.ticketnetwork.com/c/7587435/120057/2322",
+    source: "brand-page",
+    pagePath: "/affiliate-services/ticketnetwork",
+  },
 ];
 
 export const unifiedAffiliateCatalog: UnifiedAffiliateItem[] = [

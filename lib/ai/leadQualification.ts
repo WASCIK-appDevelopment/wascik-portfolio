@@ -27,6 +27,15 @@ function firstMatch(text: string, pattern: RegExp) {
   return text.match(pattern)?.[1]?.trim();
 }
 
+function cleanBusiness(value?: string) {
+  if (!value) return undefined;
+  return value
+    .replace(/\s+(?:and|but)\s+i\s+(?:need|want|am looking|would like)\b.*$/i, "")
+    .replace(/\s+(?:because|so)\s+i\b.*$/i, "")
+    .trim()
+    .slice(0, 80) || undefined;
+}
+
 export function qualifyLead(turns: ConversationTurn[], existing: LeadProfile = {}): LeadQualification {
   const userText = turns.filter((turn) => turn.role === "user").map((turn) => turn.content).join("\n");
   const lower = userText.toLowerCase();
@@ -35,7 +44,25 @@ export function qualifyLead(turns: ConversationTurn[], existing: LeadProfile = {
   profile.email ||= userText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
   profile.phone ||= userText.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)?.[0];
   profile.name ||= firstMatch(userText, /(?:my name is|i(?:'m| am) called|this is)\s+([a-z][a-z .'-]{1,35}?)(?=\s+(?:and\s+i\b|and\s+we\b)|[,.!?\n]|$)/i);
-  profile.business ||= firstMatch(userText, /(?:my business is|company is|business called|i own|i run)\s+([^\n,.!?]{2,80})/i);
+
+  if (!profile.business) {
+    profile.business = cleanBusiness(
+      firstMatch(
+        userText,
+        /(?:my business is|my company is|company is|business called|i own|i run|i have)\s+([^\n,.!?]{2,100})/i
+      )
+    );
+  }
+
+  // If the visitor describes a business category instead of a company name, preserve that context.
+  if (!profile.business) {
+    const category = firstMatch(
+      userText,
+      /(?:for|with)\s+(?:my|our|a|an)\s+([a-z][a-z &'/-]{2,60}?)(?=\s+(?:business|company|practice|store|shop|restaurant|service)\b|[,.!?\n]|$)/i
+    );
+    if (category) profile.business = cleanBusiness(category);
+  }
+
   profile.budget ||= firstMatch(userText, /(?:budget(?: is| around| about)?|spend(?:ing)?|looking to spend)\s*(?:of\s*)?([^\n,.!?]{1,60})/i);
   profile.timeline ||= firstMatch(userText, /(?:need it|launch|ready|timeline|deadline)(?: by| in| is| around)?\s+([^\n,.!?]{2,60})/i);
 
@@ -49,7 +76,6 @@ export function qualifyLead(turns: ConversationTurn[], existing: LeadProfile = {
     profile.projectType = projectTypes.find(([, terms]) => terms.some((term) => lower.includes(term)))?.[0];
   }
 
-  // Keep qualification lightweight. These are the only details required before a human handoff.
   const missingFields: string[] = [];
   if (!profile.projectType) missingFields.push("projectType");
   if (!profile.business) missingFields.push("business");

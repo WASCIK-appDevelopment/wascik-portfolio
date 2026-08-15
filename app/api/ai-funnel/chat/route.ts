@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     ? [
         `Lead status: ${leadQualification.status}; score: ${leadQualification.score}/100.`,
         `Known lead profile: ${JSON.stringify(leadQualification.profile)}.`,
-        `Missing qualification fields: ${leadQualification.missingFields.join(", ") || "none"}.`,
+        `Missing core qualification fields: ${leadQualification.missingFields.join(", ") || "none"}.`,
         leadQualification.nextQuestion ? `Preferred next qualification question: ${leadQualification.nextQuestion}` : "The lead is ready for handoff.",
       ].join("\n")
     : "";
@@ -100,9 +100,12 @@ export async function POST(request: Request) {
     knowledgeText,
     leadText ? "LEAD QUALIFICATION STATE:" : "",
     leadText,
-    "Remember information already provided in the conversation. Do not ask the visitor for the same detail twice.",
-    "If the visitor is discussing a potential WASCIK project, naturally qualify the lead one missing field at a time rather than interrogating them with a form.",
-    "If the lead is handoff-ready, briefly summarize what WASCIK knows and ask permission to proceed to the project/contact handoff.",
+    "Remember information already provided in the conversation. Never ask for a detail that is already present in the known lead profile or conversation history.",
+    "Keep lead qualification light and natural. Only project type, business/project context, and one contact method are core handoff requirements.",
+    "Budget and timeline are useful optional details: remember them when volunteered or when directly relevant to the visitor's question, but do not automatically interrogate every visitor for them.",
+    "Ask at most one qualification question in a reply. Prefer answering the visitor's current question first. Do not turn the conversation into a questionnaire.",
+    "If the visitor has already answered a qualification question, acknowledge/use that answer before asking anything else. Only revisit a detail if their earlier answer was genuinely ambiguous.",
+    "If the lead is handoff-ready, stop qualification questions, briefly summarize what WASCIK knows, and ask permission to proceed to the project/contact handoff.",
     "If a visitor asks for a fact that is not in the approved knowledge, say you do not have that detail yet and guide them toward the appropriate WASCIK contact or page.",
     "Keep replies conversational and usually under 110 words unless the visitor clearly asks for more detail.",
     pageContext.mode === "shopping" ? "For specific product recommendations, use only the shopping-guide flow and supplied catalog data rather than inventing a product." : "",

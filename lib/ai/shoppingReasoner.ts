@@ -66,11 +66,9 @@ export function recommendAffiliateProducts(query: string, merchant?: string, lim
     .sort((a, b) => b.score - a.score)
     .slice(0, Math.max(1, Math.min(limit, 5)));
 
-  const fallback = ranked
-    .slice(0, Math.max(1, Math.min(limit, 5)))
-    .map((item) => ({ ...item, reasons: [item.product.category] }));
-
-  return (matches.length ? matches : fallback).map(({ product, score, reasons }) => ({
+  // Never substitute unrelated products when the query has no real catalog match.
+  // The route will return a clear no-match message instead.
+  return matches.map(({ product, score, reasons }) => ({
     id: product.id,
     merchant: product.merchant,
     title: product.title,

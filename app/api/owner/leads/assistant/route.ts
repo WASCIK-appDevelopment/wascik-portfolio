@@ -1,3 +1,4 @@
+import { createHmac } from "crypto";
 import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../../lib/ai/openaiConfig";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
@@ -19,6 +20,7 @@ type ActionProposal = {
   note?: string;
   nextAction?: string;
   followUpAt?: string;
+  confirmationToken?: string;
 };
 
 type AssistantEnvelope = { text: string; proposal?: ActionProposal | null };
@@ -76,6 +78,26 @@ function validateProposal(value: unknown, leadIds: Set<string>): ActionProposal 
   return { actionType, leadId, leadLabel, summary, ...(nextAction ? { nextAction } : {}), ...(followUpAt ? { followUpAt } : {}) };
 }
 
+function signedPayload(proposal: ActionProposal, expiresAt: number) {
+  return JSON.stringify({
+    actionType: proposal.actionType,
+    leadId: proposal.leadId,
+    status: proposal.status || "",
+    note: proposal.note || "",
+    nextAction: proposal.nextAction || "",
+    followUpAt: proposal.followUpAt || "",
+    expiresAt,
+  });
+}
+
+function signProposal(proposal: ActionProposal) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  if (!secret) return proposal;
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const signature = createHmac("sha256", secret).update(signedPayload(proposal, expiresAt)).digest("base64url");
+  return { ...proposal, confirmationToken: `${expiresAt}.${signature}` };
+}
+
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
@@ -99,16 +121,16 @@ export async function POST(request: Request) {
     "You are the private WASCIK Owner Lead Assistant.",
     "You are speaking only to the authenticated WASCIK owner inside the private console.",
     "Answer using only the supplied live lead data. Never invent facts or a lead identity.",
-    "You MAY now propose exactly one controlled database action, but you NEVER execute it. The interface requires the owner to confirm it separately.",
+    "You MAY propose exactly one controlled database action, but you NEVER execute it. The interface requires owner confirmation separately.",
     "Supported proposals only: change_status, append_note, set_follow_up.",
     "For a requested status change, choose the exact matching lead and propose one of: new, contacted, in_progress, closed.",
     "For an owner note, propose append_note with only the new note text; never overwrite existing notes.",
-    "For a follow-up, use set_follow_up and include nextAction and/or followUpAt. followUpAt must be an ISO date-time. If the requested date/time is ambiguous, ask a short clarification question and return no proposal.",
+    "For a follow-up, use set_follow_up and include nextAction and/or followUpAt. followUpAt must be an ISO date-time. If ambiguous, ask a short clarification question and return no proposal.",
     `Current server time is ${now}. Use it only to interpret explicit relative dates if unambiguous.`,
-    "If multiple leads could match the owner's wording, do not guess. Ask which lead and return no proposal.",
+    "If multiple leads could match, do not guess. Ask which lead and return no proposal.",
     "For ordinary analysis/questions, return no proposal.",
-    "DEFAULT RESPONSE STYLE: short, plain-English business briefing. Usually 3 to 6 short items and no more than about 180 words unless details are requested.",
-    "Never show UUIDs/internal IDs, database field names, or technical implementation details in the visible text.",
+    "DEFAULT RESPONSE STYLE: short, plain-English business briefing, usually no more than about 180 words unless details are requested.",
+    "Never show UUIDs/internal IDs, database field names, or technical implementation details in visible text.",
     "Identify leads by business name, person name, project type, or a short human label.",
     "When proposing a write action, visible text should briefly say what you are ready to change and that confirmation is required.",
     "OUTPUT FORMAT IS STRICT: return ONLY one valid JSON object, no markdown and no code fence.",
@@ -132,5 +154,5 @@ export async function POST(request: Request) {
   if (!raw) return NextResponse.json({ error: "The owner assistant returned an empty response." }, { status: 502 });
   const envelope = parseEnvelope(raw);
   const proposal = validateProposal(envelope.proposal, leadIds);
-  return NextResponse.json({ text: envelope.text, proposal, leadCount: leads.length, mode: "owner-leads-confirmed-actions" });
+  return NextResponse.json({ text: envelope.text, proposal: proposal ? signProposal(proposal) : null, leadCount: leads.length, mode: "owner-leads-confirmed-actions" });
 }

@@ -42,5 +42,5 @@ export default function TrackedAffiliateLink({ href, merchant, itemLabel, childr
     }
   }
 
-  return <a href={href} onClick={track} {...rest}>{children}</a>;
+  return <a href={href} onClick={track} data-wascik-tracked="true" {...rest}>{children}</a>;
 }

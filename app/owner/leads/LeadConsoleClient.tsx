@@ -27,6 +27,7 @@ type Lead = {
 };
 
 type Draft = { owner_notes: string; next_action: string; follow_up_at: string };
+type AssistantTurn = { role: "owner" | "assistant"; content: string };
 
 const labels: Record<Lead["status"], string> = {
   new: "New",
@@ -54,6 +55,11 @@ export default function LeadConsoleClient() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiTurns, setAiTurns] = useState<AssistantTurn[]>([
+    { role: "assistant", content: "I can analyze your live WASCIK leads. Ask me which leads are new, who needs follow-up, what a customer wants, or which leads mention a specific service." },
+  ]);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("wascik-owner-console-key") || "";
@@ -147,6 +153,28 @@ export default function LeadConsoleClient() {
     }
   }
 
+  async function askOwnerAI(event: FormEvent) {
+    event.preventDefault();
+    const question = aiQuestion.trim();
+    if (!question || aiLoading) return;
+    setAiQuestion("");
+    setAiLoading(true);
+    setAiTurns((current) => [...current, { role: "owner", content: question }]);
+    const response = await fetch("/api/owner/leads/assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+      body: JSON.stringify({ question }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setAiTurns((current) => [...current, { role: "assistant", content: data.error || "I could not analyze the leads right now." }]);
+      setAiLoading(false);
+      return;
+    }
+    setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
+    setAiLoading(false);
+  }
+
   const counts = useMemo(() => ({
     all: leads.length,
     new: leads.filter((lead) => lead.status === "new").length,
@@ -163,6 +191,22 @@ export default function LeadConsoleClient() {
 
   return <main className="owner-shell">
     <header className="owner-header"><div><div className="owner-kicker">WASCIK PRIVATE CONSOLE</div><h1>Lead Inbox</h1><p>Captured by the AI representative and stored in Supabase.</p></div><button className="owner-refresh" onClick={() => void loadLeads()}>{loading ? "Refreshing…" : "Refresh"}</button></header>
+
+    <nav className="owner-console-nav" aria-label="Owner console modules">
+      <a className="active" href="/owner/leads">Leads</a>
+      <span>Social & Ads</span><span>Affiliate Search</span><span>Click Analytics</span><span>Product Status</span>
+    </nav>
+
+    <section className="owner-ai-panel">
+      <div className="owner-ai-heading"><div><div className="owner-kicker">OWNER AI</div><h2>Lead Assistant</h2><p>Read-only for now. It analyzes the live lead database but cannot change records yet.</p></div><span className="owner-ai-live">LIVE DATA · {leads.length} LEADS</span></div>
+      <div className="owner-ai-messages">
+        {aiTurns.map((turn, index) => <div className={`owner-ai-turn ${turn.role}`} key={`${turn.role}-${index}`}><strong>{turn.role === "owner" ? "You" : "WASCIK Owner AI"}</strong><p>{turn.content}</p></div>)}
+        {aiLoading && <div className="owner-ai-turn assistant"><strong>WASCIK Owner AI</strong><p>Analyzing your leads…</p></div>}
+      </div>
+      <form className="owner-ai-form" onSubmit={askOwnerAI}><input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask: Which new leads need my attention?"/><button type="submit" disabled={aiLoading}>{aiLoading ? "Thinking…" : "Ask Owner AI"}</button></form>
+      <div className="owner-ai-prompts"><button onClick={() => setAiQuestion("Which leads need my attention first and why?")}>Priority leads</button><button onClick={() => setAiQuestion("Which leads are still new and have not been contacted?")}>Uncontacted</button><button onClick={() => setAiQuestion("Summarize my current lead pipeline by status and project type.")}>Pipeline summary</button></div>
+    </section>
+
     <section className="owner-stats">
       {(["all", "new", "contacted", "in_progress", "closed"] as const).map((status) => <button key={status} className={filter === status ? "active" : ""} onClick={() => setFilter(status)}><strong>{counts[status]}</strong><span>{status === "all" ? "All" : labels[status]}</span></button>)}
     </section>

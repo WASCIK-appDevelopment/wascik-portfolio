@@ -34,7 +34,7 @@ export function qualifyLead(turns: ConversationTurn[], existing: LeadProfile = {
 
   profile.email ||= userText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
   profile.phone ||= userText.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)?.[0];
-  profile.name ||= firstMatch(userText, /(?:my name is|i(?:'m| am) called|this is)\s+([a-z][a-z .'-]{1,50})/i);
+  profile.name ||= firstMatch(userText, /(?:my name is|i(?:'m| am) called|this is)\s+([a-z][a-z .'-]{1,35}?)(?=\s+(?:and\s+i\b|and\s+we\b)|[,.!?\n]|$)/i);
   profile.business ||= firstMatch(userText, /(?:my business is|company is|business called|i own|i run)\s+([^\n,.!?]{2,80})/i);
   profile.budget ||= firstMatch(userText, /(?:budget(?: is| around| about)?|spend(?:ing)?|looking to spend)\s*(?:of\s*)?([^\n,.!?]{1,60})/i);
   profile.timeline ||= firstMatch(userText, /(?:need it|launch|ready|timeline|deadline)(?: by| in| is| around)?\s+([^\n,.!?]{2,60})/i);
@@ -49,23 +49,26 @@ export function qualifyLead(turns: ConversationTurn[], existing: LeadProfile = {
     profile.projectType = projectTypes.find(([, terms]) => terms.some((term) => lower.includes(term)))?.[0];
   }
 
+  // Keep qualification lightweight. These are the only details required before a human handoff.
   const missingFields: string[] = [];
   if (!profile.projectType) missingFields.push("projectType");
   if (!profile.business) missingFields.push("business");
-  if (!profile.budget) missingFields.push("budget");
-  if (!profile.timeline) missingFields.push("timeline");
   if (!profile.email && !profile.phone) missingFields.push("contact");
 
-  const known = 5 - missingFields.length;
-  const score = Math.max(0, Math.min(100, known * 20));
-  const status: LeadQualification["status"] = score >= 80 ? "handoff-ready" : score >= 40 ? "qualifying" : "discovery";
+  const coreKnown = 3 - missingFields.length;
+  let score = coreKnown * 25;
+  if (profile.budget) score += 10;
+  if (profile.timeline) score += 10;
+  if (profile.name) score += 5;
+  score = Math.max(0, Math.min(100, score));
+
+  const status: LeadQualification["status"] =
+    missingFields.length === 0 ? "handoff-ready" : coreKnown >= 1 ? "qualifying" : "discovery";
 
   const questions: Record<string, string> = {
     projectType: "What would you like WASCIK to build for you — a website, app, AI automation, online store, or something else?",
     business: "What kind of business or project is this for?",
-    budget: "Do you have an approximate budget range in mind?",
-    timeline: "When would you ideally like this project ready?",
-    contact: "What email address or phone number should WASCIK use to follow up with you?",
+    contact: "If you'd like WASCIK to follow up, what email address or phone number should we use?",
   };
 
   return {

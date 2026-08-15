@@ -28,19 +28,26 @@ function merchantFromQuery(query: string) {
 }
 
 function asksForMerchantDirectory(query: string) {
-  const normalized = normalize(query);
-  return (
-    normalized.includes("affiliate services") ||
-    normalized.includes("all affiliates") ||
-    normalized.includes("what affiliates") ||
-    normalized.includes("which affiliates") ||
-    normalized.includes("list affiliates") ||
-    normalized.includes("affiliate brands") ||
-    normalized.includes("what brands") ||
-    normalized.includes("which brands") ||
-    normalized.includes("what merchants") ||
-    normalized.includes("which merchants")
-  );
+  const words = new Set(normalize(query).split(" "));
+  const mentionsPartners =
+    words.has("affiliate") ||
+    words.has("affiliates") ||
+    words.has("merchant") ||
+    words.has("merchants") ||
+    words.has("brand") ||
+    words.has("brands");
+  const asksForMany =
+    words.has("all") ||
+    words.has("list") ||
+    words.has("offer") ||
+    words.has("offers") ||
+    words.has("offered") ||
+    words.has("available") ||
+    words.has("different") ||
+    words.has("which") ||
+    words.has("what");
+
+  return mentionsPartners && asksForMany;
 }
 
 export async function POST(request: Request) {
@@ -71,12 +78,19 @@ export async function POST(request: Request) {
   }
 
   const merchant = namedMerchant?.name ?? pageContext.merchant ?? requestedMerchant;
-  const recommendations = recommendAffiliateProducts(query, merchant, 3);
+  const recommendations = recommendAffiliateProducts(query, merchant, merchant === "TicketNetwork" ? 12 : 5);
 
   let guidance: string;
-  if (namedMerchant) {
+  if (merchant === "TicketNetwork" && recommendations.length) {
+    const advertisedEvents = recommendations
+      .filter((item) => item.id !== "ticketnetwork-store")
+      .map((item) => item.description);
+    guidance = advertisedEvents.length
+      ? "WASCIK is currently advertising these TicketNetwork concerts: " + advertisedEvents.join(" ") + " Event schedules, performers, ticket inventory, and pricing can change, so confirm current details on TicketNetwork."
+      : "WASCIK’s TicketNetwork page helps visitors search current concerts, live events, and available ticket listings.";
+  } else if (namedMerchant) {
     guidance = recommendations.length
-      ? `${namedMerchant.name} is WASCIK’s affiliate partner for ${namedMerchant.summary}. These results are limited to approved ${namedMerchant.name} listings.`
+      ? `${namedMerchant.name} is WASCIK’s affiliate partner for ${namedMerchant.summary}. Here are the matching products or offers currently advertised by WASCIK.`
       : `${namedMerchant.name} is WASCIK’s affiliate partner for ${namedMerchant.summary}. I do not have a strong approved product match for that exact request yet, so I won’t substitute unrelated products.`;
   } else if (pageContext.role === "affiliate-brand" && pageContext.merchant) {
     guidance = recommendations.length

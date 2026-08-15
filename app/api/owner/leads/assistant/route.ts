@@ -10,6 +10,19 @@ type ResponsesPayload = {
   error?: { message?: string } | null;
 };
 
+type ActionProposal = {
+  actionType: "change_status" | "append_note" | "set_follow_up";
+  leadId: string;
+  leadLabel: string;
+  summary: string;
+  status?: "new" | "contacted" | "in_progress" | "closed";
+  note?: string;
+  nextAction?: string;
+  followUpAt?: string;
+};
+
+type AssistantEnvelope = { text: string; proposal?: ActionProposal | null };
+
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
@@ -27,6 +40,42 @@ function extractResponseText(payload: ResponsesPayload) {
   return parts.filter((item) => item.type === "output_text" && typeof item.text === "string").map((item) => item.text?.trim()).filter(Boolean).join("\n").trim();
 }
 
+function parseEnvelope(raw: string): AssistantEnvelope {
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  try {
+    const value = JSON.parse(cleaned) as AssistantEnvelope;
+    if (value && typeof value.text === "string") return value;
+  } catch {}
+  return { text: raw, proposal: null };
+}
+
+function validateProposal(value: unknown, leadIds: Set<string>): ActionProposal | null {
+  if (!value || typeof value !== "object") return null;
+  const proposal = value as Record<string, unknown>;
+  const actionType = proposal.actionType;
+  const leadId = typeof proposal.leadId === "string" ? proposal.leadId : "";
+  const leadLabel = typeof proposal.leadLabel === "string" ? proposal.leadLabel.trim().slice(0, 160) : "Lead";
+  const summary = typeof proposal.summary === "string" ? proposal.summary.trim().slice(0, 500) : "Proposed lead update";
+  if (!leadIds.has(leadId)) return null;
+  if (actionType !== "change_status" && actionType !== "append_note" && actionType !== "set_follow_up") return null;
+
+  if (actionType === "change_status") {
+    const status = proposal.status;
+    if (status !== "new" && status !== "contacted" && status !== "in_progress" && status !== "closed") return null;
+    return { actionType, leadId, leadLabel, summary, status };
+  }
+  if (actionType === "append_note") {
+    const note = typeof proposal.note === "string" ? proposal.note.trim().slice(0, 2000) : "";
+    if (!note) return null;
+    return { actionType, leadId, leadLabel, summary, note };
+  }
+  const nextAction = typeof proposal.nextAction === "string" ? proposal.nextAction.trim().slice(0, 500) : "";
+  const followUpAt = typeof proposal.followUpAt === "string" ? proposal.followUpAt.trim().slice(0, 80) : "";
+  if (!nextAction && !followUpAt) return null;
+  if (followUpAt && Number.isNaN(new Date(followUpAt).getTime())) return null;
+  return { actionType, leadId, leadLabel, summary, ...(nextAction ? { nextAction } : {}), ...(followUpAt ? { followUpAt } : {}) };
+}
+
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
@@ -42,29 +91,36 @@ export async function POST(request: Request) {
   const url = `${stage6.supabaseUrl}/rest/v1/leads?select=${select}&order=created_at.desc&limit=200`;
   const leadResponse = await fetch(url, { headers: supabaseHeaders(stage6.supabaseServerKey, stage6.supabaseKeyKind), cache: "no-store" });
   const leads = await leadResponse.json().catch(() => []);
-  if (!leadResponse.ok) return NextResponse.json({ error: "Could not load lead data for the owner assistant." }, { status: 502 });
+  if (!leadResponse.ok || !Array.isArray(leads)) return NextResponse.json({ error: "Could not load lead data for the owner assistant." }, { status: 502 });
+  const leadIds = new Set(leads.map((lead) => typeof lead?.id === "string" ? lead.id : "").filter(Boolean));
 
+  const now = new Date().toISOString();
   const instructions = [
     "You are the private WASCIK Owner Lead Assistant.",
     "You are speaking only to the authenticated WASCIK owner inside the private console.",
-    "Answer using only the supplied live lead data. Never invent facts.",
-    "This version is READ-ONLY. Never claim you changed, contacted, emailed, scheduled, deleted, or updated anything.",
-    "DEFAULT RESPONSE STYLE: short, plain-English business briefing. Usually 3 to 6 short items and no more than about 180 words unless the owner explicitly asks for details.",
-    "Never show database field names such as qualification_score, next_action, source_path, handoff_ready, created_at, or internal lead IDs unless the owner specifically asks for technical/database details.",
-    "Never identify a lead by UUID/internal ID in a normal answer. Identify it by business name, person name, project type, or a short human label such as 'Landscaping website lead'.",
-    "Translate statuses and database facts into natural language. Example: say 'New lead' rather than 'status = new'. Say 'Follow-up scheduled for Tuesday' rather than exposing a follow_up_at field.",
-    "For priority questions, start with a one-line count such as '3 leads need attention.' Then give each lead a short label, priority level, and one-sentence reason/action.",
-    "Prefer actionable wording: 'Call this lead', 'Review their request', 'Follow up today', or 'No action needed yet'.",
-    "Do not dump all available lead data. Give the minimum useful answer and invite the owner to ask for details on a particular lead when appropriate.",
-    "If the owner asks you to change data, say write actions are not enabled yet and briefly state the proposed change.",
-    "When asked who needs attention, prioritize genuinely new/uncontacted leads, overdue follow-ups, explicit owner follow-up actions, and stronger opportunities. Do not treat a demonstration/test lead as important if the supplied data clearly identifies it as a test.",
+    "Answer using only the supplied live lead data. Never invent facts or a lead identity.",
+    "You MAY now propose exactly one controlled database action, but you NEVER execute it. The interface requires the owner to confirm it separately.",
+    "Supported proposals only: change_status, append_note, set_follow_up.",
+    "For a requested status change, choose the exact matching lead and propose one of: new, contacted, in_progress, closed.",
+    "For an owner note, propose append_note with only the new note text; never overwrite existing notes.",
+    "For a follow-up, use set_follow_up and include nextAction and/or followUpAt. followUpAt must be an ISO date-time. If the requested date/time is ambiguous, ask a short clarification question and return no proposal.",
+    `Current server time is ${now}. Use it only to interpret explicit relative dates if unambiguous.`,
+    "If multiple leads could match the owner's wording, do not guess. Ask which lead and return no proposal.",
+    "For ordinary analysis/questions, return no proposal.",
+    "DEFAULT RESPONSE STYLE: short, plain-English business briefing. Usually 3 to 6 short items and no more than about 180 words unless details are requested.",
+    "Never show UUIDs/internal IDs, database field names, or technical implementation details in the visible text.",
+    "Identify leads by business name, person name, project type, or a short human label.",
+    "When proposing a write action, visible text should briefly say what you are ready to change and that confirmation is required.",
+    "OUTPUT FORMAT IS STRICT: return ONLY one valid JSON object, no markdown and no code fence.",
+    "Shape: {\"text\":\"plain English response\",\"proposal\":null} for normal answers.",
+    "For a write request use: {\"text\":\"...\",\"proposal\":{\"actionType\":\"change_status|append_note|set_follow_up\",\"leadId\":\"EXACT ID FROM LIVE DATA\",\"leadLabel\":\"human label\",\"summary\":\"what will change\",\"status\":\"optional\",\"note\":\"optional\",\"nextAction\":\"optional\",\"followUpAt\":\"optional ISO datetime\"}}.",
     "Do not expose passcodes, API keys, Supabase secrets, environment configuration, or internal implementation details.",
   ].join("\n");
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${openAI.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: openAI.model, instructions, input: [{ role: "user", content: `LIVE LEAD DATA:\n${JSON.stringify(leads)}\n\nOWNER QUESTION:\n${question}` }], reasoning: { effort: "minimal" }, max_output_tokens: 500, store: false }),
+    body: JSON.stringify({ model: openAI.model, instructions, input: [{ role: "user", content: `LIVE LEAD DATA:\n${JSON.stringify(leads)}\n\nOWNER QUESTION:\n${question}` }], reasoning: { effort: "minimal" }, max_output_tokens: 650, store: false }),
   });
 
   const data = (await response.json().catch(() => ({}))) as ResponsesPayload;
@@ -72,7 +128,9 @@ export async function POST(request: Request) {
     console.error("Owner lead assistant OpenAI error", response.status, data);
     return NextResponse.json({ error: "The owner assistant could not answer right now." }, { status: 502 });
   }
-  const text = extractResponseText(data);
-  if (!text) return NextResponse.json({ error: "The owner assistant returned an empty response." }, { status: 502 });
-  return NextResponse.json({ text, leadCount: Array.isArray(leads) ? leads.length : 0, mode: "owner-leads-read-only" });
+  const raw = extractResponseText(data);
+  if (!raw) return NextResponse.json({ error: "The owner assistant returned an empty response." }, { status: 502 });
+  const envelope = parseEnvelope(raw);
+  const proposal = validateProposal(envelope.proposal, leadIds);
+  return NextResponse.json({ text: envelope.text, proposal, leadCount: leads.length, mode: "owner-leads-confirmed-actions" });
 }

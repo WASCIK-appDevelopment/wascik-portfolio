@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
 
@@ -12,10 +13,41 @@ type LeadRow = {
   follow_up_at?: string | null;
 };
 
-function authorized(request: Request) {
+function headerAuthorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
   return Boolean(expected && provided && provided === expected);
+}
+
+function cleanText(value: unknown, max: number) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function signedPayload(body: Record<string, unknown>, expiresAt: number) {
+  return JSON.stringify({
+    actionType: cleanText(body.actionType, 40),
+    leadId: cleanText(body.leadId, 80),
+    status: cleanText(body.status, 30),
+    note: cleanText(body.note, 2000),
+    nextAction: cleanText(body.nextAction, 500),
+    followUpAt: cleanText(body.followUpAt, 80),
+    expiresAt,
+  });
+}
+
+function tokenAuthorized(body: Record<string, unknown>) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  const token = cleanText(body.confirmationToken, 300);
+  if (!secret || !token) return false;
+  const dot = token.indexOf(".");
+  if (dot <= 0) return false;
+  const expiresAt = Number(token.slice(0, dot));
+  const provided = token.slice(dot + 1);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt || !provided) return false;
+  const expected = createHmac("sha256", secret).update(signedPayload(body, expiresAt)).digest("base64url");
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
@@ -24,14 +56,10 @@ function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
   return headers;
 }
 
-function cleanText(value: unknown, max: number) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-
 export async function POST(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!headerAuthorized(request) && !tokenAuthorized(body)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json().catch(() => ({}));
   const leadId = cleanText(body.leadId, 80);
   const actionType = cleanText(body.actionType, 40);
   if (!leadId || !actionType) return NextResponse.json({ error: "Missing lead or action." }, { status: 400 });

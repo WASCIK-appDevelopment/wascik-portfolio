@@ -64,7 +64,7 @@ export function recommendAffiliateProducts(query: string, merchant?: string, lim
   const matches = ranked
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, Math.max(1, Math.min(limit, 5)));
+    .slice(0, Math.max(1, Math.min(limit, 12)));
 
   // Never substitute unrelated products when the query has no real catalog match.
   // The route will return a clear no-match message instead.

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const merchant = pageContext.merchant ?? namedMerchant?.name ?? requestedMerchant;
+  const merchant = namedMerchant?.name ?? pageContext.merchant ?? requestedMerchant;
   const recommendations = recommendAffiliateProducts(query, merchant, 3);
 
   let guidance: string;

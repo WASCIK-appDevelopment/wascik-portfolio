@@ -6,6 +6,7 @@ import "./code-atmosphere.css";
 import "./representative-mobile.css";
 import HomepageAffiliateLink from "./HomepageAffiliateLink";
 import PortfolioVisitTracker from "./PortfolioVisitTracker";
+import AffiliateClickAutoTracker from "./affiliate-services/AffiliateClickAutoTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full">
         <PortfolioVisitTracker />
+        <AffiliateClickAutoTracker />
         {children}
         <HomepageAffiliateLink />
       </body>

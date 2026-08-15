@@ -84,8 +84,8 @@ function WascikRepresentativeCharacter({ compact = false }: { compact?: boolean 
         <span style={{ position: "absolute", top: 20, left: 8, width: 62, height: 8, borderRadius: "52% 58% 45% 52%", background: "linear-gradient(180deg,#182b44,#07111f)", borderBottom: "1px solid rgba(69,175,255,.42)", boxShadow: "0 4px 7px rgba(0,0,0,.3)", transform: "rotate(-2deg)", zIndex: 7 }} />
         <span style={{ position: "absolute", top: 51, left: 31, width: 16, height: 15, background: "linear-gradient(#c58b69,#a86e50)", zIndex: 2 }} />
 
-        <span style={{ position: "absolute", top: 64, left: 9, width: 60, height: 91, borderRadius: "20px 20px 12px 12px", background: "linear-gradient(165deg,#1c3150,#07111f 78%)", border: "1px solid rgba(89,183,255,.42)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.08),0 8px 20px rgba(0,0,0,.24)" }}>
-          <span style={{ position: "absolute", left: 3, top: 10, width: 54, height: 50, borderRadius: 12, background: "#020812", border: "1px solid rgba(126,214,255,.72)", boxShadow: "0 0 20px rgba(28,143,255,.5),inset 0 0 13px rgba(44,155,255,.26)", overflow: "hidden" }}>
+        <span style={{ position: "absolute", top: 64, left: 7, width: 64, height: 91, borderRadius: "22px 22px 16px 16px", clipPath: "polygon(18% 0,82% 0,100% 15%,92% 78%,78% 100%,22% 100%,8% 78%,0 15%)", background: "linear-gradient(165deg,#213a5d 0%,#10233b 48%,#07111f 82%)", border: "1px solid rgba(89,183,255,.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.1),inset 10px 0 18px rgba(50,111,180,.08),inset -10px 0 18px rgba(0,0,0,.2),0 8px 20px rgba(0,0,0,.24)" }}>
+          <span style={{ position: "absolute", left: 5, top: 10, width: 54, height: 50, borderRadius: 12, background: "#020812", border: "1px solid rgba(126,214,255,.72)", boxShadow: "0 0 20px rgba(28,143,255,.5),inset 0 0 13px rgba(44,155,255,.26)", overflow: "hidden" }}>
             <span style={{ position: "absolute", inset: 3, borderRadius: 9, border: "1px solid rgba(102,207,255,.3)", zIndex: 2, pointerEvents: "none" }} />
             <img src="/wascik-logo-v2.png" alt="" style={{ position: "absolute", width: 72, height: 72, maxWidth: "none", left: -9, top: -11, objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(90,190,255,1)) brightness(1.22) contrast(1.12)" }} />
           </span>
@@ -221,8 +221,8 @@ export default function RepresentativeWidget({
   return (
     <aside aria-label={title} style={{ position: "fixed", bottom: 3, zIndex: 70, ...sideStyle, width: compact ? 282 : "min(360px, calc(100vw - 12px))", fontFamily: "inherit", pointerEvents: "none" }}>
       {open ? (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 82px", alignItems: "end", gap: 5, pointerEvents: "auto" }}>
-          <div style={{ minWidth: 0, paddingBottom: 38 }}>
+        <div style={{ display: "grid", gridTemplateColumns: position === "left" ? "82px minmax(0,1fr)" : "minmax(0,1fr) 82px", alignItems: "end", gap: 5, pointerEvents: "auto" }}>
+          <div style={{ minWidth: 0, paddingBottom: 38, order: position === "left" ? 2 : 1 }}>
             <div style={{ position: "relative", border: "1px solid rgba(126,198,255,.28)", borderRadius: 21, background: "rgba(5,13,24,.97)", color: "white", boxShadow: "0 18px 56px rgba(0,0,0,.4)", backdropFilter: "blur(18px)", overflow: "visible" }}>
               <span aria-hidden="true" style={{ position: "absolute", bottom: 28, [bubbleTailSide]: -10, width: 19, height: 19, background: "rgba(5,13,24,.97)", borderRight: bubbleTailSide === "right" ? "1px solid rgba(126,198,255,.28)" : undefined, borderBottom: bubbleTailSide === "right" ? "1px solid rgba(126,198,255,.28)" : undefined, borderLeft: bubbleTailSide === "left" ? "1px solid rgba(126,198,255,.28)" : undefined, borderTop: bubbleTailSide === "left" ? "1px solid rgba(126,198,255,.28)" : undefined, transform: "rotate(45deg)" }} />
 
@@ -249,12 +249,12 @@ export default function RepresentativeWidget({
             </div>
           </div>
 
-          <div style={{ position: "relative", height: 218, display: "flex", alignItems: "end", justifyContent: "center" }}>
+          <div style={{ position: "relative", height: 218, display: "flex", alignItems: "end", justifyContent: "center", order: position === "left" ? 1 : 2 }}>
             <WascikRepresentativeCharacter />
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setOpen(true)} style={{ pointerEvents: "auto", marginLeft: position === "right" ? "auto" : 0, display: "flex", alignItems: "end", gap: 6, border: 0, background: "transparent", color: "white", cursor: "pointer" }}>
+        <button type="button" onClick={() => setOpen(true)} style={{ pointerEvents: "auto", marginLeft: position === "right" ? "auto" : 0, display: "flex", flexDirection: position === "left" ? "row-reverse" : "row", alignItems: "end", gap: 6, border: 0, background: "transparent", color: "white", cursor: "pointer" }}>
           <span style={{ maxWidth: 170, border: "1px solid rgba(126,198,255,.28)", borderRadius: 16, padding: "8px 10px", background: "rgba(5,13,24,.96)", boxShadow: "0 14px 38px rgba(0,0,0,.34)", fontSize: 11, textAlign: "left" }}><strong style={{ display: "block" }}>{affiliateMode ? "Need help choosing?" : leadStatus === "handoff-ready" ? "Ready to continue?" : "Need some help?"}</strong><small style={{ color: "#92a8bd" }}>{history.length ? "Tap to continue your conversation." : "Tap to talk with the WASCIK representative."}</small></span>
           <WascikRepresentativeCharacter compact />
         </button>

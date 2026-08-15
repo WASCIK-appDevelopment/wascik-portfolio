@@ -56,7 +56,15 @@ export function resolveAssistantPageContext(pathname?: string): AssistantPageCon
     };
   }
 
-  if (path === "/" || path.startsWith("/start-project") || path.startsWith("/sample-project")) {
+  // Portfolio/service pages plus the dedicated AI-funnel test surfaces must run
+  // the same service lead-qualification and Stage 6 persistence flow.
+  if (
+    path === "/" ||
+    path.startsWith("/start-project") ||
+    path.startsWith("/sample-project") ||
+    path.startsWith("/ai-funnel/widget-preview") ||
+    path.startsWith("/ai-funnel/live")
+  ) {
     return {
       pathname: path,
       role: "portfolio",

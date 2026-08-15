@@ -9,43 +9,21 @@ type ResponsesPayload = {
   status?: string;
   incomplete_details?: { reason?: string } | null;
   error?: { message?: string } | null;
-  output?: Array<{
-    content?: Array<{
-      type?: string;
-      text?: string;
-      refusal?: string;
-    }>;
-  }>;
+  output?: Array<{ content?: Array<{ type?: string; text?: string; refusal?: string }> }>;
 };
 
 function extractResponseText(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
   const data = payload as ResponsesPayload;
   const parts = (data.output ?? []).flatMap((item) => item.content ?? []);
-  const text = parts
-    .filter((item) => item.type === "output_text" && typeof item.text === "string")
-    .map((item) => item.text?.trim())
-    .filter(Boolean)
-    .join("\n")
-    .trim();
+  const text = parts.filter((item) => item.type === "output_text" && typeof item.text === "string").map((item) => item.text?.trim()).filter(Boolean).join("\n").trim();
   if (text) return text;
-  return parts
-    .filter((item) => item.type === "refusal" && typeof item.refusal === "string")
-    .map((item) => item.refusal?.trim())
-    .filter(Boolean)
-    .join("\n")
-    .trim();
+  return parts.filter((item) => item.type === "refusal" && typeof item.refusal === "string").map((item) => item.refusal?.trim()).filter(Boolean).join("\n").trim();
 }
 
 function sanitizeHistory(value: unknown): ConversationTurn[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .filter((item) => item && typeof item === "object")
-    .map((item) => item as { role?: unknown; content?: unknown })
-    .filter((item) => (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
-    .map((item) => ({ role: item.role as "user" | "assistant", content: (item.content as string).trim().slice(0, 1200) }))
-    .filter((item) => item.content)
-    .slice(-10);
+  return value.filter((item) => item && typeof item === "object").map((item) => item as { role?: unknown; content?: unknown }).filter((item) => (item.role === "user" || item.role === "assistant") && typeof item.content === "string").map((item) => ({ role: item.role as "user" | "assistant", content: (item.content as string).trim().slice(0, 1200) })).filter((item) => item.content).slice(-10);
 }
 
 function explicitHandoffRequested(text: string) {
@@ -59,133 +37,56 @@ export async function POST(request: Request) {
   const history = sanitizeHistory(body.history);
   const existingLead = body.lead && typeof body.lead === "object" ? (body.lead as LeadProfile) : {};
   const pageContext = resolveAssistantPageContext(pathname);
-
-  if (!message) {
-    return NextResponse.json({ error: "A visitor message is required." }, { status: 400 });
-  }
+  if (!message) return NextResponse.json({ error: "A visitor message is required." }, { status: 400 });
 
   const config = getOpenAIConfig();
-  if (!config.configured || !config.apiKey) {
-    return NextResponse.json(
-      { error: "The AI service is not configured yet.", setup: "Add OPENAI_API_KEY to the server environment and restart the app." },
-      { status: 503 }
-    );
-  }
+  if (!config.configured || !config.apiKey) return NextResponse.json({ error: "The AI service is not configured yet.", setup: "Add OPENAI_API_KEY to the server environment and restart the app." }, { status: 503 });
 
   const fullConversation: ConversationTurn[] = [...history, { role: "user", content: message }];
   const leadQualification = pageContext.mode === "services" ? qualifyLead(fullConversation, existingLead) : undefined;
-  const knowledge = retrieveWascikKnowledge(
-    `${message} ${history.filter((turn) => turn.role === "user").map((turn) => turn.content).join(" ")}`,
-    pageContext.allowedTopics,
-    5
-  );
-
-  const knowledgeText = knowledge.length
-    ? knowledge.map((fact) => `- ${fact.text}`).join("\n")
-    : "- No additional approved WASCIK facts were retrieved for this request.";
-
   const hasContact = Boolean(leadQualification?.profile?.email || leadQualification?.profile?.phone);
   const handoffRequested = explicitHandoffRequested(fullConversation.filter((turn) => turn.role === "user").map((turn) => turn.content).join("\n"));
-
-  const leadText = leadQualification
-    ? [
-        `Lead status: ${leadQualification.status}; score: ${leadQualification.score}/100.`,
-        `Known lead profile: ${JSON.stringify(leadQualification.profile)}.`,
-        `Missing core qualification fields: ${leadQualification.missingFields.join(", ") || "none"}.`,
-        hasContact ? "A contact method has been provided, so the lead is being captured now even if qualification is incomplete." : "No contact method has been provided yet.",
-        handoffRequested ? "The visitor explicitly requested follow-up/handoff. Do not ask further qualification questions unless a contact method is still missing." : "",
-        leadQualification.nextQuestion ? `Preferred next qualification question: ${leadQualification.nextQuestion}` : "The lead is ready for handoff.",
-      ].filter(Boolean).join("\n")
-    : "";
+  const knowledge = retrieveWascikKnowledge(`${message} ${history.filter((turn) => turn.role === "user").map((turn) => turn.content).join(" ")}`, pageContext.allowedTopics, 5);
+  const knowledgeText = knowledge.length ? knowledge.map((fact) => `- ${fact.text}`).join("\n") : "- No additional approved WASCIK facts were retrieved for this request.";
+  const leadText = leadQualification ? [
+    `Lead status: ${leadQualification.status}; score: ${leadQualification.score}/100.`,
+    `Known lead profile: ${JSON.stringify(leadQualification.profile)}.`,
+    `Missing core qualification fields: ${leadQualification.missingFields.join(", ") || "none"}.`,
+    hasContact ? "IMPORTANT: A contact method is known. The backend will capture/update this lead on this response. Do not ask permission to start an inquiry or to pass the information along; that has already happened." : "No contact method has been provided yet.",
+    handoffRequested ? "The visitor explicitly requested follow-up. If contact is known, confirm the handoff and do not ask another qualification question." : "",
+  ].filter(Boolean).join("\n") : "";
 
   const instructions = [
     "You are the WASCIK Digital Representative, a concise, helpful website representative.",
-    `Current page role: ${pageContext.role}.`,
-    `Current page path: ${pageContext.pathname}.`,
-    pageContext.merchant ? `Current affiliate merchant: ${pageContext.merchant}.` : "",
-    `Allowed topics: ${pageContext.allowedTopics.join(", ")}.`,
-    `Preferred actions: ${pageContext.preferredActions.join(", ")}.`,
+    `Current page role: ${pageContext.role}.`, `Current page path: ${pageContext.pathname}.`, pageContext.merchant ? `Current affiliate merchant: ${pageContext.merchant}.` : "",
+    `Allowed topics: ${pageContext.allowedTopics.join(", ")}.`, `Preferred actions: ${pageContext.preferredActions.join(", ")}.`,
     "Use the approved knowledge below as the source of truth for WASCIK business facts. Do not invent prices, products, guarantees, policies, availability, client results, or capabilities not present in the approved knowledge or page context.",
-    "APPROVED WASCIK KNOWLEDGE:",
-    knowledgeText,
-    leadText ? "LEAD QUALIFICATION STATE:" : "",
-    leadText,
-    "Remember information already provided in the conversation. Never ask for a detail that is already present in the known lead profile or conversation history.",
-    "Keep lead qualification light and natural. Project type and business/project context are helpful, but a usable email address or phone number is enough for WASCIK to capture a lead for follow-up.",
-    "As soon as the visitor provides a usable email address or phone number, treat that contact information as captured. You may continue the conversation naturally and gather more detail, but do not imply that the lead is still waiting to be handed off.",
-    "If the visitor explicitly asks WASCIK to contact them, send their information over, follow up, call, or email them and a contact method is already known, stop qualification questions immediately. Confirm that their information has been passed along for follow-up.",
-    "If the visitor says they are busy, do not have time, are leaving, or otherwise wants to stop, do not pressure them for more information. If contact details are known, confirm follow-up. If not, ask only for one contact method.",
-    "Budget and timeline are useful optional details: remember them when volunteered or when directly relevant to the visitor's question, but do not automatically interrogate every visitor for them.",
-    "Ask at most one qualification question in a reply. Prefer answering the visitor's current question first. Do not turn the conversation into a questionnaire.",
-    "If the visitor has already answered a qualification question, acknowledge/use that answer before asking anything else. Only revisit a detail if their earlier answer was genuinely ambiguous.",
-    "If a visitor asks for a fact that is not in the approved knowledge, say you do not have that detail yet and guide them toward the appropriate WASCIK contact or page.",
-    "Keep replies conversational and usually under 110 words unless the visitor clearly asks for more detail.",
+    "APPROVED WASCIK KNOWLEDGE:", knowledgeText, leadText ? "LEAD CAPTURE STATE:" : "", leadText,
+    "Remember information already provided. Never ask for a detail already present in the known profile or conversation.",
+    "A usable email address or phone number is enough to capture a lead. Project type and business context are helpful enrichment, not prerequisites.",
+    "Once contact information is known, never say 'would you like me to start an inquiry', 'would you like me to pass this along', or anything implying another permission step. The system is already capturing the lead.",
+    "After contact is captured, acknowledge it plainly: tell the visitor that the information they have provided so far has been passed to WASCIK for follow-up. They may continue chatting if they want, but further questions are optional.",
+    "If the visitor explicitly requests contact/follow-up and contact information is known, confirm the handoff and ask no more qualification questions in that reply.",
+    "If the visitor is busy, leaving, or wants to stop, do not pressure them. If contact is known, confirm follow-up; otherwise ask only for one contact method.",
+    "Budget and timeline are optional. Do not automatically ask for them after contact capture.",
+    "Before contact capture, ask at most one light qualification question per reply and answer the visitor's immediate question first.",
+    "Keep replies conversational and usually under 110 words unless the visitor asks for more detail.",
     pageContext.mode === "shopping" ? "For specific product recommendations, use only the shopping-guide flow and supplied catalog data rather than inventing a product." : "",
     pageContext.disclosureRequired ? "When discussing affiliate shopping, clearly acknowledge that WASCIK may earn a commission through affiliate links at no additional cost to the shopper." : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ].filter(Boolean).join("\n");
 
   const input = fullConversation.map((turn) => ({ role: turn.role, content: turn.content }));
-
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: config.model,
-        instructions,
-        input,
-        reasoning: { effort: "minimal" },
-        max_output_tokens: 800,
-        store: false,
-      }),
-    });
-
+    const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: config.model, instructions, input, reasoning: { effort: "minimal" }, max_output_tokens: 800, store: false }) });
     const data = (await response.json().catch(() => ({}))) as ResponsesPayload;
-    if (!response.ok) {
-      console.error("OpenAI Responses API error", response.status, data);
-      return NextResponse.json({ error: "The representative could not respond right now." }, { status: 502 });
-    }
-
+    if (!response.ok) { console.error("OpenAI Responses API error", response.status, data); return NextResponse.json({ error: "The representative could not respond right now." }, { status: 502 }); }
     const text = extractResponseText(data);
-    if (!text) {
-      console.error("OpenAI response contained no visible text", {
-        status: data.status,
-        incompleteReason: data.incomplete_details?.reason,
-        apiError: data.error?.message,
-      });
-      return NextResponse.json(
-        { error: data.status === "incomplete" ? "The representative ran out of response capacity. Please try again." : "The representative returned an empty response." },
-        { status: 502 }
-      );
-    }
+    if (!text) return NextResponse.json({ error: data.status === "incomplete" ? "The representative ran out of response capacity. Please try again." : "The representative returned an empty response." }, { status: 502 });
 
     let leadPersistence: Awaited<ReturnType<typeof persistQualifiedLead>> | undefined;
-    if (leadQualification && hasContact) {
-      leadPersistence = await persistQualifiedLead({
-        profile: leadQualification.profile,
-        pathname,
-        summary: text,
-        conversation: [...fullConversation, { role: "assistant", content: text }],
-        qualificationScore: leadQualification.score,
-        qualificationStatus: leadQualification.status,
-        sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined,
-        referrer: request.headers.get("referer") || undefined,
-      });
-    }
+    if (leadQualification && hasContact) leadPersistence = await persistQualifiedLead({ profile: leadQualification.profile, pathname, summary: text, conversation: [...fullConversation, { role: "assistant", content: text }], qualificationScore: leadQualification.score, qualificationStatus: leadQualification.status, sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined, referrer: request.headers.get("referer") || undefined });
 
-    return NextResponse.json({
-      text,
-      pageContext,
-      leadQualification,
-      leadPersistence,
-      contactCaptured: Boolean(leadPersistence?.saved),
-      explicitHandoffRequested: handoffRequested,
-      knowledgeIds: knowledge.map((fact) => fact.id),
-      mode: "live-openai-stage6-contact-capture",
-      handoffReady: leadQualification?.status === "handoff-ready" || hasContact || false,
-    });
+    return NextResponse.json({ text, pageContext, leadQualification, leadPersistence, contactCaptured: Boolean(leadPersistence?.saved), explicitHandoffRequested: handoffRequested, knowledgeIds: knowledge.map((fact) => fact.id), mode: "live-openai-stage6-contact-capture", handoffReady: leadQualification?.status === "handoff-ready" || hasContact || false });
   } catch (error) {
     console.error("WASCIK AI assistant request failed", error);
     return NextResponse.json({ error: "The representative could not respond right now." }, { status: 502 });

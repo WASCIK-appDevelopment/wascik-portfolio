@@ -22,16 +22,10 @@ function clean(value: unknown, max = 500) {
 }
 
 function captureKey(input: PersistLeadInput) {
-  const source = [
-    clean(input.sessionId, 160),
-    clean(input.profile.email, 320).toLowerCase(),
-    clean(input.profile.phone, 80),
-    clean(input.profile.business, 180).toLowerCase(),
-    clean(input.profile.projectType, 120).toLowerCase(),
-  ]
-    .filter(Boolean)
-    .join("|");
-
+  const email = clean(input.profile.email, 320).toLowerCase();
+  const phone = clean(input.profile.phone, 80).replace(/\D/g, "");
+  const sessionId = clean(input.sessionId, 160);
+  const source = email || phone ? `${sessionId}|${email}|${phone}` : "";
   if (!source) return undefined;
   return createHash("sha256").update(source).digest("hex");
 }
@@ -47,8 +41,10 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
   const business = clean(input.profile.business, 180);
   const projectType = clean(input.profile.projectType, 120);
 
-  if (!business || !projectType || (!email && !phone)) {
-    return { saved: false, configured: true, reason: "lead_not_handoff_ready" };
+  // Stage 6 capture rule: a usable contact method is enough to create the lead.
+  // Additional project details enrich the same row as the conversation continues.
+  if (!email && !phone) {
+    return { saved: false, configured: true, reason: "contact_not_available" };
   }
 
   const key = captureKey(input);
@@ -59,8 +55,8 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     name: clean(input.profile.name, 160) || null,
     email: email || null,
     phone: phone || null,
-    business,
-    project_type: projectType,
+    business: business || null,
+    project_type: projectType || null,
     goals: Array.isArray(input.profile.goals) ? input.profile.goals.slice(0, 20).map((item) => clean(item, 240)).filter(Boolean) : [],
     features: Array.isArray(input.profile.features) ? input.profile.features.slice(0, 20).map((item) => clean(item, 240)).filter(Boolean) : [],
     budget: clean(input.profile.budget, 160) || null,
@@ -68,7 +64,7 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     source_page: clean(input.pathname, 500) || "/",
     source_path: clean(input.pathname, 500) || "/",
     source_referrer: clean(input.referrer, 1000) || null,
-    summary: clean(input.summary, 1600) || `${business} is interested in a ${projectType} project.`,
+    summary: clean(input.summary, 1600) || (projectType ? `Visitor is interested in a ${projectType} project.` : "Visitor provided contact information for WASCIK follow-up."),
     conversation: input.conversation.slice(-12),
     qualification_score: typeof input.qualificationScore === "number" ? Math.max(0, Math.min(100, Math.round(input.qualificationScore))) : null,
     qualification_status: clean(input.qualificationStatus, 80) || null,
@@ -112,7 +108,6 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     lastStatus = response.status;
     lastDetail = await response.text().catch(() => "");
 
-    // A duplicate on the fallback insert means the original upsert effectively found an existing lead.
     if (response.status === 409 && key) {
       return { saved: true, configured: true };
     }

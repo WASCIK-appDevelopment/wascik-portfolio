@@ -5,6 +5,7 @@ import "./tech-background.css";
 import "./code-atmosphere.css";
 import "./representative-mobile.css";
 import HomepageAffiliateLink from "./HomepageAffiliateLink";
+import PortfolioVisitTracker from "./PortfolioVisitTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,17 +37,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <head>
-
-       <meta
-
-         name="impact-site-verification"
-
-         content="b92be5b8-e61a-476b-a19c-8ff91bfc0e95"
-
+        <meta
+          name="impact-site-verification"
+          content="b92be5b8-e61a-476b-a19c-8ff91bfc0e95"
         />
-
       </head>
-     <body className="min-h-full">
+      <body className="min-h-full">
+        <PortfolioVisitTracker />
         {children}
         <HomepageAffiliateLink />
       </body>

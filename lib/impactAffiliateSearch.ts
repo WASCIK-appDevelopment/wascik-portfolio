@@ -110,14 +110,14 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   };
 }
 
-async function impactRequest(keyword: string, pageSize: number) {
+async function impactRequest(keyword: string, pageSize: number, page = 1) {
   const accountSid = process.env.IMPACT_ACCOUNT_SID?.trim();
   const authToken = process.env.IMPACT_AUTH_TOKEN?.trim();
   if (!accountSid || !authToken) throw new Error("Impact credentials are not configured.");
 
   const url = new URL(`https://api.impact.com/Mediapartners/${encodeURIComponent(accountSid)}/Catalogs/ItemSearch`);
   url.searchParams.set("Keyword", keyword);
-  url.searchParams.set("Page", "1");
+  url.searchParams.set("Page", String(page));
   url.searchParams.set("PageSize", String(Math.min(100, Math.max(pageSize, AFFILIATE_BATCH_SIZE))));
 
   const response = await fetch(url, {
@@ -183,8 +183,11 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    const payload = await impactRequest(query, 60);
-    for (const record of arrayValue(payload)) {
+    for (let page = 1; page <= 3 && results.length < batchSize; page += 1) {
+      const payload = await impactRequest(query, 100, page);
+      const records = arrayValue(payload);
+      if (!records.length) break;
+      for (const record of records) {
       const searchable = recordText(record);
       if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;
       if (selectedBrands.length && !selectedBrands.some((brand) => brand.aliases.some((alias) => searchable.includes(alias)))) continue;
@@ -206,6 +209,8 @@ export async function searchImpactCategory(
       used.add(item.id);
       results.push(item);
       if (results.length >= batchSize) break;
+      }
+      if (records.length < 100) break;
     }
   }
 

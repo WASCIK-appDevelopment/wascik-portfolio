@@ -11,6 +11,7 @@ const modules = [
   ["Social & Ads", "/owner/social-ads"],
   ["Brand Discovery", "/owner/brand-discovery"],
   ["Affiliate Search", "/owner/affiliate-search"],
+  ["Published Products", "/owner/published-products"],
   ["Click Analytics", "/owner/click-analytics"],
   ["Product Status", "/owner/product-status"],
 ] as const;

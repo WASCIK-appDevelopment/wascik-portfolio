@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchCategories, AffiliateSearchCategoryId } from "../../../lib/affiliateSearch";
 
 const SESSION_KEY = "wascik-owner-console-key";
+const SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
 
 type ProductCandidate = {
   id: string;
@@ -23,6 +24,8 @@ export default function AffiliateSearchClient() {
   const [selected, setSelected] = useState<AffiliateSearchCategoryId[]>([]);
   const [providers, setProviders] = useState({ impact: false, awin: false });
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ProductCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -30,11 +33,28 @@ export default function AffiliateSearchClient() {
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
     if (!key) return;
-    void fetch("/api/owner/affiliate-search", { headers: { "x-wascik-owner-key": key }, cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("status")))
-      .then((data) => setProviders(data.providers || { impact: false, awin: false }))
-      .catch(() => setError("Could not check affiliate network connections."));
+    const timer = window.setTimeout(() => {
+      const savedSearch = sessionStorage.getItem(SEARCH_SESSION_KEY);
+      if (savedSearch) {
+        try {
+          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown };
+          if (Array.isArray(parsed.seenIds)) setSeenIds(parsed.seenIds.filter((id): id is string => typeof id === "string"));
+          if (Array.isArray(parsed.selectedProducts)) setSelectedProducts(parsed.selectedProducts as ProductCandidate[]);
+        } catch {
+          sessionStorage.removeItem(SEARCH_SESSION_KEY);
+        }
+      }
+      void fetch("/api/owner/affiliate-search", { headers: { "x-wascik-owner-key": key }, cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("status")))
+        .then((data) => setProviders(data.providers || { impact: false, awin: false }))
+        .catch(() => setError("Could not check affiliate network connections."));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
+
+  function saveSearchSession(nextSeenIds: string[], nextSelectedProducts: ProductCandidate[]) {
+    sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({ seenIds: nextSeenIds, selectedProducts: nextSelectedProducts }));
+  }
 
   function toggle(categoryId: AffiliateSearchCategoryId) {
     setSelected((current) => current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId]);
@@ -51,11 +71,16 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ categories: selected, batchSize: AFFILIATE_BATCH_SIZE }),
+        body: JSON.stringify({ categories: selected, batchSize: AFFILIATE_BATCH_SIZE, excludeIds: seenIds }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Affiliate search failed.");
-      setBatches(Array.isArray(data.batches) ? data.batches : []);
+      const nextBatches = Array.isArray(data.batches) ? data.batches as Batch[] : [];
+      setBatches(nextBatches);
+      const returnedIds = nextBatches.flatMap((batch) => batch.items.map((item) => item.id));
+      const nextSeenIds = Array.from(new Set([...seenIds, ...returnedIds]));
+      setSeenIds(nextSeenIds);
+      saveSearchSession(nextSeenIds, selectedProducts);
       setProviders(data.providers || providers);
       setNotice(data.notice || "Review batch prepared.");
     } catch (reason) {
@@ -65,11 +90,28 @@ export default function AffiliateSearchClient() {
     }
   }
 
+  function removeCandidate(itemId: string) {
+    setBatches((current) => current.map((batch) => ({ ...batch, items: batch.items.filter((item) => item.id !== itemId) })));
+  }
+
+  function chooseProduct(item: ProductCandidate) {
+    const nextSelected = selectedProducts.some((product) => product.id === item.id) ? selectedProducts : [...selectedProducts, item];
+    setSelectedProducts(nextSelected);
+    saveSearchSession(seenIds, nextSelected);
+    removeCandidate(item.id);
+    setNotice(`${item.title} added to your current-session approval queue.`);
+  }
+
+  function skipProduct(item: ProductCandidate) {
+    removeCandidate(item.id);
+    setNotice(`${item.title} skipped for this console session. It will not appear in another search until you sign out.`);
+  }
+
   return <div style={{ display: "grid", gap: 18 }}>
     <section style={{ padding: 16, border: "1px solid rgba(105,214,255,.28)", borderRadius: 18, background: "linear-gradient(135deg,rgba(34,132,255,.13),rgba(0,205,218,.06))" }}>
       <div style={{ color: "#72e0ff", fontWeight: 900, fontSize: 11, letterSpacing: ".12em" }}>AFFILIATE SEARCH WORKFLOW</div>
       <h2 style={{ margin: "8px 0 7px" }}>Choose categories → fetch 20 each → review before approval</h2>
-      <p style={{ margin: 0, color: "#aec4d2", lineHeight: 1.6 }}>You select the categories. Owner AI will search only connected, approved affiliate-network data and prepare up to {AFFILIATE_BATCH_SIZE} real product candidates for every selected category. Nothing is published automatically—you decide what belongs on WASCIK affiliate pages.</p>
+      <p style={{ margin: 0, color: "#aec4d2", lineHeight: 1.6 }}>You select the categories. Owner AI will search only connected, approved affiliate-network data and prepare up to {AFFILIATE_BATCH_SIZE} real product candidates for every selected category. Products already shown are excluded from later searches during this signed-in session. Nothing is published automatically—you decide what belongs on WASCIK affiliate pages.</p>
     </section>
 
     <section style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
@@ -91,10 +133,16 @@ export default function AffiliateSearchClient() {
     {error && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
     {notice && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#102d22", color: "#bdf4cd" }}>{notice}</p>}
 
+    <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(255,214,92,.32)", background: "rgba(84,65,6,.14)" }}>
+      <h2 style={{ margin: "0 0 5px" }}>Selected for Affiliate Services · {selectedProducts.length}</h2>
+      <p style={{ margin: 0, color: "#c9bb82", lineHeight: 1.5 }}>Your choices stay in this console session while you continue searching. The publication stage will show one final confirmation before approved products are added to the public Affiliate Services catalog.</p>
+      {selectedProducts.length > 0 && <div style={{ display: "grid", gap: 7, marginTop: 12 }}>{selectedProducts.map((item) => <div key={item.id} style={{ padding: 10, borderRadius: 10, background: "rgba(0,0,0,.22)" }}><strong>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div>)}</div>}
+    </section>
+
     {batches.map((batch) => <section key={batch.categoryId} style={{ display: "grid", gap: 10 }}>
       <div><h2 style={{ margin: 0 }}>{batch.categoryLabel}</h2><p style={{ margin: "4px 0 0", color: "#91aebe" }}>{batch.items.length} of {batch.requestedCount} currently available for review</p></div>
       {batch.items.length === 0 ? <div style={{ padding: 15, borderRadius: 14, border: "1px dashed rgba(255,255,255,.2)", color: "#a7bdca" }}>No approved local items match yet. A live Impact or Awin feed connection is required to fill this 20-product batch.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 10 }}>
-        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3><p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small></article>)}
+        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3><p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button></div></article>)}
       </div>}
     </section>)}
   </div>;

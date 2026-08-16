@@ -4,7 +4,7 @@ import ApprovedCatalogPublisher from "../affiliate-search/ApprovedCatalogPublish
 export default function PublishedProductsPage() {
   return <OwnerModuleClient
     title="Published Products"
-    description="Review every affiliate product currently published on WASCIK pages. View its public placement, unpublish it back to Affiliate Search, or remove it from the approved catalog."
+    description="Review every affiliate product currently published on WASCIK pages, including the original website catalog and products added through Affiliate Search."
     currentPath="/owner/published-products"
   >
     <ApprovedCatalogPublisher mode="published" />

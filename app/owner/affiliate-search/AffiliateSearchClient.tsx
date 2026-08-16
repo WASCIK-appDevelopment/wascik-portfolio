@@ -31,6 +31,7 @@ export default function AffiliateSearchClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -39,13 +40,17 @@ export default function AffiliateSearchClient() {
       const savedSearch = sessionStorage.getItem(SEARCH_SESSION_KEY);
       if (savedSearch) {
         try {
-          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown };
+          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; batches?: unknown; notice?: unknown };
           if (Array.isArray(parsed.seenIds)) setSeenIds(parsed.seenIds.filter((id): id is string => typeof id === "string"));
           if (Array.isArray(parsed.selectedProducts)) setSelectedProducts(parsed.selectedProducts as ProductCandidate[]);
+          if (Array.isArray(parsed.selectedCategories)) setSelected(parsed.selectedCategories.filter((id): id is AffiliateSearchCategoryId => typeof id === "string" && affiliateSearchCategories.some((category) => category.id === id)));
+          if (Array.isArray(parsed.batches)) setBatches(parsed.batches as Batch[]);
+          if (typeof parsed.notice === "string") setNotice(parsed.notice);
         } catch {
           sessionStorage.removeItem(SEARCH_SESSION_KEY);
         }
       }
+      setHydrated(true);
       void fetch("/api/owner/affiliate-search", { headers: { "x-wascik-owner-key": key }, cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error("status")))
         .then((data) => setProviders(data.providers || { impact: false, awin: false }))
@@ -54,9 +59,16 @@ export default function AffiliateSearchClient() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  function saveSearchSession(nextSeenIds: string[], nextSelectedProducts: ProductCandidate[]) {
-    sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({ seenIds: nextSeenIds, selectedProducts: nextSelectedProducts }));
-  }
+  useEffect(() => {
+    if (!hydrated) return;
+    sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({
+      seenIds,
+      selectedProducts,
+      selectedCategories: selected,
+      batches,
+      notice,
+    }));
+  }, [hydrated, seenIds, selectedProducts, selected, batches, notice]);
 
   function toggle(categoryId: AffiliateSearchCategoryId) {
     setSelected((current) => current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId]);
@@ -82,7 +94,6 @@ export default function AffiliateSearchClient() {
       const returnedIds = nextBatches.flatMap((batch) => batch.items.map((item) => item.id));
       const nextSeenIds = Array.from(new Set([...seenIds, ...returnedIds]));
       setSeenIds(nextSeenIds);
-      saveSearchSession(nextSeenIds, selectedProducts);
       setProviders(data.providers || providers);
       setNotice(data.notice || "Review batch prepared.");
     } catch (reason) {
@@ -99,7 +110,6 @@ export default function AffiliateSearchClient() {
   function chooseProduct(item: ProductCandidate) {
     const nextSelected = selectedProducts.some((product) => product.id === item.id) ? selectedProducts : [...selectedProducts, item];
     setSelectedProducts(nextSelected);
-    saveSearchSession(seenIds, nextSelected);
     removeCandidate(item.id);
     setNotice(`${item.title} added to your current-session approval queue.`);
   }

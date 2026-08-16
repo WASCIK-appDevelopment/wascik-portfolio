@@ -54,7 +54,10 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   const imageUrl = textValue(record, ["ImageUrl", "ImageURL", "Image", "ThumbnailUrl"]) || null;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
   const stock = textValue(record, ["StockAvailability", "Availability"]);
-  const features = [price ? `Price: ${price}` : "", stock ? `Availability: ${stock}` : ""].filter(Boolean);
+  const eventDate = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
+  const venue = textValue(record, ["Venue", "VenueName"]);
+  const location = [textValue(record, ["City", "VenueCity"]), textValue(record, ["State", "StateCode", "VenueState"])].filter(Boolean).join(", ");
+  const features = [price ? `Price: ${price}` : "", stock ? `Availability: ${stock}` : "", eventDate ? `Date: ${eventDate}` : "", venue ? `Venue: ${venue}` : "", location ? `Location: ${location}` : ""].filter(Boolean);
 
   return {
     id,
@@ -71,7 +74,7 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   };
 }
 
-async function impactRequest(keyword: string) {
+async function impactRequest(keyword: string, pageSize: number) {
   const accountSid = process.env.IMPACT_ACCOUNT_SID?.trim();
   const authToken = process.env.IMPACT_AUTH_TOKEN?.trim();
   if (!accountSid || !authToken) throw new Error("Impact credentials are not configured.");
@@ -79,7 +82,7 @@ async function impactRequest(keyword: string) {
   const url = new URL(`https://api.impact.com/Mediapartners/${encodeURIComponent(accountSid)}/Catalogs/ItemSearch`);
   url.searchParams.set("Keyword", keyword);
   url.searchParams.set("Page", "1");
-  url.searchParams.set("PageSize", String(AFFILIATE_BATCH_SIZE));
+  url.searchParams.set("PageSize", String(Math.min(100, Math.max(pageSize, AFFILIATE_BATCH_SIZE))));
 
   const response = await fetch(url, {
     headers: {
@@ -103,36 +106,69 @@ function recordText(record: ImpactRecord) {
     .toLowerCase();
 }
 
+type ImpactSearchOptions = {
+  brandIds?: AffiliateSearchBrandId[];
+  batchSize?: number;
+  ticketStateCode?: string;
+  ticketStateName?: string;
+  ticketStartDate?: string;
+  ticketEndDate?: string;
+};
+
+function recordDate(record: ImpactRecord) {
+  const raw = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
+  if (!raw) return null;
+  const value = Date.parse(raw);
+  return Number.isNaN(value) ? null : value;
+}
+
 export async function searchImpactCategory(
   categoryId: AffiliateSearchCategoryId,
   excludeIds: Set<string>,
-  brandIds: AffiliateSearchBrandId[] = [],
+  options: ImpactSearchOptions = {},
 ) {
   const category = affiliateSearchCategories.find((entry) => entry.id === categoryId);
   if (!category) return [];
 
-  const selectedBrands = affiliateSearchBrands.filter((brand) => brandIds.includes(brand.id));
+  const batchSize = Math.min(AFFILIATE_BATCH_SIZE, Math.max(5, options.batchSize || AFFILIATE_BATCH_SIZE));
+  const selectedBrands = affiliateSearchBrands.filter((brand) => (options.brandIds || []).includes(brand.id));
   const queryPrefixes = selectedBrands.length ? selectedBrands.map((brand) => brand.label) : [""];
+  const ticketLocation = options.ticketStateName || options.ticketStateCode || "";
   const queries = queryPrefixes.flatMap((brand) =>
-    [category.label, ...category.keywords.slice(0, 3)].map((term) => [brand, term].filter(Boolean).join(" ")),
+    [category.label, ...category.keywords.slice(0, 3)].map((term) =>
+      [brand, term, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" "),
+    ),
   );
 
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
+  const startDate = options.ticketStartDate ? Date.parse(`${options.ticketStartDate}T00:00:00`) : null;
+  const endDate = options.ticketEndDate ? Date.parse(`${options.ticketEndDate}T23:59:59`) : null;
 
   for (const query of queries) {
-    if (results.length >= AFFILIATE_BATCH_SIZE) break;
-    const payload = await impactRequest(query);
+    if (results.length >= batchSize) break;
+    const payload = await impactRequest(query, options.ticketStateCode || startDate || endDate ? 60 : batchSize);
     for (const record of arrayValue(payload)) {
       const searchable = recordText(record);
       if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;
       if (selectedBrands.length && !selectedBrands.some((brand) => brand.aliases.some((alias) => searchable.includes(alias)))) continue;
 
+      const isTicketNetwork = searchable.includes("ticketnetwork") || searchable.includes("ticket network");
+      if (isTicketNetwork && options.ticketStateCode) {
+        const code = options.ticketStateCode.toLowerCase();
+        const name = (options.ticketStateName || "").toLowerCase();
+        if (!searchable.includes(code) && (!name || !searchable.includes(name))) continue;
+      }
+      if (isTicketNetwork && (startDate || endDate)) {
+        const eventDate = recordDate(record);
+        if (!eventDate || (startDate && eventDate < startDate) || (endDate && eventDate > endDate)) continue;
+      }
+
       const item = mapImpactProduct(record, category.label);
       if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
       used.add(item.id);
       results.push(item);
-      if (results.length >= AFFILIATE_BATCH_SIZE) break;
+      if (results.length >= batchSize) break;
     }
   }
 

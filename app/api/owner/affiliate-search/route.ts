@@ -23,6 +23,7 @@ function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<
     .filter((item) => !brands.length || brands.some((brand) => brand.aliases.some((alias) => searchableText(item).includes(alias))))
     .filter((item) => !ticketStateCode || !searchableText(item).includes("ticketnetwork") || new RegExp(`\\b${ticketStateCode}\\b`, "i").test(searchableText(item)))
     .filter((item) => !excludeIds.has(item.id))
+    .filter((item) => Boolean(item.imageUrl))
     .slice(0, batchSize)
     .map((item) => ({
       id: item.id,
@@ -32,6 +33,7 @@ function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<
       description: item.description,
       features: item.features,
       affiliateUrl: item.affiliateUrl,
+      imageUrl: item.imageUrl || null,
       pagePath: item.pagePath || null,
       source: "WASCIK approved catalog",
     }));

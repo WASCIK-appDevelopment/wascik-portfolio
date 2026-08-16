@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchCategories, AffiliateSearchCategoryId, isAffiliateSearchCategory } from "../../../../lib/affiliateSearch";
+import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 
 const OWNER_HEADER = "x-wascik-owner-key";
@@ -14,6 +15,25 @@ function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
   return [item.title, item.category, item.merchant, item.description, ...item.features].join(" ").toLowerCase();
 }
 
+function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>): AffiliateProductCandidate[] {
+  const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
+  return unifiedAffiliateCatalog
+    .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
+    .filter((item) => !excludeIds.has(item.id))
+    .slice(0, AFFILIATE_BATCH_SIZE)
+    .map((item) => ({
+      id: item.id,
+      merchant: item.merchant,
+      title: item.title,
+      category: item.category,
+      description: item.description,
+      features: item.features,
+      affiliateUrl: item.affiliateUrl,
+      pagePath: item.pagePath || null,
+      source: "WASCIK approved catalog",
+    }));
+}
+
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   return NextResponse.json({
@@ -23,13 +43,13 @@ export async function GET(request: Request) {
       impact: Boolean(process.env.IMPACT_ACCOUNT_SID?.trim() && process.env.IMPACT_AUTH_TOKEN?.trim()),
       awin: Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim()),
     },
-    mode: "approved-catalog-foundation",
+    mode: "impact-live",
   });
 }
 
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json().catch(() => ({}))) as { categories?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; excludeIds?: unknown };
   const candidates = Array.isArray(body.categories) ? body.categories : [];
   const requested: AffiliateSearchCategoryId[] = candidates
     .filter((value: unknown): value is string => typeof value === "string")
@@ -37,43 +57,49 @@ export async function POST(request: Request) {
     .slice(0, 10);
   if (!requested.length) return NextResponse.json({ error: "Select at least one category." }, { status: 400 });
 
-  const rawExcludeIds = (body as { excludeIds?: unknown }).excludeIds;
   const excludeIds = new Set(
-    (Array.isArray(rawExcludeIds) ? rawExcludeIds : [])
+    (Array.isArray(body.excludeIds) ? body.excludeIds : [])
       .filter((value: unknown): value is string => typeof value === "string")
       .map((value) => value.trim().slice(0, 200))
       .filter(Boolean)
       .slice(0, 2000),
   );
 
-  const batches = requested.map((categoryId) => {
-    const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
-    const items = unifiedAffiliateCatalog
-      .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
-      .filter((item) => !excludeIds.has(item.id))
-      .slice(0, AFFILIATE_BATCH_SIZE)
-      .map((item) => ({
-        id: item.id,
-        merchant: item.merchant,
-        title: item.title,
-        category: item.category,
-        description: item.description,
-        features: item.features,
-        affiliateUrl: item.affiliateUrl,
-        pagePath: item.pagePath || null,
-        source: "WASCIK approved catalog",
-      }));
-    return { categoryId, categoryLabel: category.label, requestedCount: AFFILIATE_BATCH_SIZE, items };
-  });
-
   const impactConnected = Boolean(process.env.IMPACT_ACCOUNT_SID?.trim() && process.env.IMPACT_AUTH_TOKEN?.trim());
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
+  let impactFailed = false;
+
+  const batches = await Promise.all(requested.map(async (categoryId) => {
+    const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
+    let impactItems: AffiliateProductCandidate[] = [];
+
+    if (impactConnected) {
+      try {
+        impactItems = await searchImpactCategory(categoryId, excludeIds);
+      } catch (error) {
+        impactFailed = true;
+        console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
+      }
+    }
+
+    const ids = new Set(impactItems.map((item) => item.id));
+    const localItems = localCandidates(categoryId, excludeIds)
+      .filter((item) => !ids.has(item.id))
+      .slice(0, Math.max(0, AFFILIATE_BATCH_SIZE - impactItems.length));
+    const items = [...impactItems, ...localItems].slice(0, AFFILIATE_BATCH_SIZE);
+
+    return { categoryId, categoryLabel: category.label, requestedCount: AFFILIATE_BATCH_SIZE, items };
+  }));
+
+  let notice = "Showing real items already approved in the WASCIK catalog.";
+  if (impactConnected && !impactFailed) notice = "Live Impact marketplace results are ready for review.";
+  if (impactConnected && impactFailed) notice = "Impact is connected, but its product search did not respond. Existing WASCIK catalog matches are shown instead.";
+  if (!impactConnected && !awinConnected) notice = "Connect Impact or Awin server credentials to fetch new network products.";
+
   return NextResponse.json({
     batches,
     providers: { impact: impactConnected, awin: awinConnected },
-    notice: impactConnected || awinConnected
-      ? "Approved-network connection detected. Live feed adapters are the next implementation step."
-      : "Showing real items already approved in the WASCIK catalog. Connect Impact and/or Awin server credentials to fetch new 20-product network batches.",
-    mode: "approved-catalog-foundation",
+    notice,
+    mode: impactConnected ? "impact-live" : "approved-catalog-foundation",
   });
 }

@@ -1,4 +1,5 @@
 import OwnerModuleClient from "../OwnerModuleClient";
+import BrandDiscoveryClient from "./BrandDiscoveryClient";
 
 const steps = [
   ["1 · FIND", "Search Impact and Awin for brands matching your chosen categories, audience, products, commission needs, and promotional methods."],
@@ -10,6 +11,7 @@ const steps = [
 export default function BrandDiscoveryPage() {
   return <OwnerModuleClient title="Brand Discovery" description="Find suitable affiliate brands, review their contracts, approve applications, and bring accepted brands into the WASCIK product-search workflow." currentPath="/owner/brand-discovery">
     <div style={{ display: "grid", gap: 16 }}>
+      <BrandDiscoveryClient />
       <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(105,214,255,.3)", background: "linear-gradient(135deg,rgba(30,119,180,.15),rgba(3,26,43,.35))" }}>
         <div style={{ color: "#72e0ff", fontSize: 11, fontWeight: 950, letterSpacing: ".13em" }}>OWNER-CONTROLLED BRAND ACQUISITION</div>
         <h2 style={{ margin: "8px 0 6px" }}>AI does the research and preparation. You control every application.</h2>

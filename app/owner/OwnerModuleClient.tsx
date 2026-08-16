@@ -9,6 +9,7 @@ const modules = [
   ["Home", "/owner"],
   ["Leads", "/owner/leads"],
   ["Social & Ads", "/owner/social-ads"],
+  ["Brand Discovery", "/owner/brand-discovery"],
   ["Affiliate Search", "/owner/affiliate-search"],
   ["Click Analytics", "/owner/click-analytics"],
   ["Product Status", "/owner/product-status"],

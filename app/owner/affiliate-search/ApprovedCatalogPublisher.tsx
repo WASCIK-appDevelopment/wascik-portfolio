@@ -26,6 +26,8 @@ type ApprovedProduct = {
   published_at?: string | null;
 };
 
+type ManagementAction = "unpublish" | "remove";
+
 function suggestedDestination(merchant: string) {
   const name = merchant.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (name.includes("aquacurve")) return "/affiliate-services/aquacurve";
@@ -46,6 +48,10 @@ export default function ApprovedCatalogPublisher() {
   const [destinationById, setDestinationById] = useState<Record<string, string>>({});
   const [confirmationToken, setConfirmationToken] = useState("");
   const [confirmationSummary, setConfirmationSummary] = useState("");
+  const [managementAction, setManagementAction] = useState<ManagementAction | null>(null);
+  const [managementId, setManagementId] = useState("");
+  const [managementToken, setManagementToken] = useState("");
+  const [managementSummary, setManagementSummary] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -136,6 +142,60 @@ export default function ApprovedCatalogPublisher() {
     }
   }
 
+  async function prepareManagement(action: ManagementAction, item: ApprovedProduct) {
+    if (loading) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setLoading(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: `propose_${action}`, ids: [item.id] }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Could not prepare ${action}.`);
+      setManagementAction(action);
+      setManagementId(item.id);
+      setManagementToken(data.confirmationToken || "");
+      setManagementSummary(`${item.title}\n\n${data.summary || "Confirm this change."}`);
+      setConfirmationToken("");
+      setConfirmationSummary("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : `Could not prepare ${action}.`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function confirmManagement() {
+    if (!managementAction || !managementId || !managementToken || loading) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: `confirm_${managementAction}`, ids: [managementId], confirmationToken: managementToken }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Could not ${managementAction} product.`);
+      setSelected((current) => current.filter((id) => id !== managementId));
+      setManagementAction(null);
+      setManagementId("");
+      setManagementToken("");
+      setManagementSummary("");
+      setNotice(data.message || "Approved product updated.");
+      await loadProducts(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : `Could not ${managementAction} product.`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(105,214,255,.32)", background: "rgba(14,49,66,.2)" }}>
     <button type="button" onClick={toggleOpen} disabled={loading} style={{ width: "100%", minHeight: 48, borderRadius: 12, border: "1px solid #65d8ff", background: "#123f53", color: "#d8f7ff", fontWeight: 900, opacity: loading ? .6 : 1 }}>{loading && !open ? "Loading approved products…" : open ? "Close Approved Products" : "View Approved Products"}</button>
     {error && <p style={{ margin: "10px 0 0", padding: 10, borderRadius: 10, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
@@ -152,12 +212,18 @@ export default function ApprovedCatalogPublisher() {
           {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : <div style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}
           <div style={{ display: "grid", gap: 7, minWidth: 0 }}><div><strong style={{ display: "block", lineHeight: 1.3 }}>{item.title}</strong><span style={{ display: "block", color: "#82cfe8", fontSize: 12, marginTop: 3 }}>{item.merchant}{item.category ? ` · ${item.category}` : ""}</span>{item.price && <span style={{ display: "block", color: "#8ff0b6", fontSize: 12, fontWeight: 900 }}>{item.price}</span>}{item.published_at && <span style={{ display: "block", color: "#ffd77e", fontSize: 11, marginTop: 2 }}>Currently published</span>}</div>
             <label style={{ display: "grid", gap: 4, fontSize: 12 }}><span>Destination page</span><select value={destinationById[item.id] || suggestedDestination(item.merchant)} onChange={(event) => { setDestinationById((current) => ({ ...current, [item.id]: event.target.value })); setConfirmationToken(""); }} style={{ minHeight: 40, borderRadius: 9, border: "1px solid rgba(255,255,255,.18)", background: "#07151d", color: "white", padding: "6px 8px", fontSize: 16 }}>{destinations.map(([path, label]) => <option key={path} value={path}>{label}</option>)}</select></label>
-            <button type="button" onClick={() => toggleProduct(item.id)} style={{ minHeight: 40, borderRadius: 9, border: active ? "1px solid #7fe7ff" : "1px solid #5d7480", background: active ? "#175c78" : "#17232a", color: "white", fontWeight: 900 }}>{active ? "✓ Selected to publish" : "Select to publish"}</button>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6 }}>
+              <a href={item.affiliate_url} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #49b976", background: "#113523", color: "#c8f9d9", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>Open affiliate link ↗</a>
+              {item.published_at && item.page_path ? <a href={item.page_path} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #5d8de1", background: "#142b51", color: "#d8e6ff", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>View public page ↗</a> : <button type="button" onClick={() => toggleProduct(item.id)} style={{ minHeight: 40, borderRadius: 9, border: active ? "1px solid #7fe7ff" : "1px solid #5d7480", background: active ? "#175c78" : "#17232a", color: "white", fontWeight: 900 }}>{active ? "✓ Selected" : "Select to publish"}</button>}
+              {item.published_at && <button type="button" onClick={() => prepareManagement("unpublish", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: loading ? .6 : 1 }}>Unpublish</button>}
+              <button type="button" onClick={() => prepareManagement("remove", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #c85b68", background: "#3b151b", color: "#ffd9de", fontWeight: 900, opacity: loading ? .6 : 1 }}>Remove from list</button>
+            </div>
           </div>
         </article>;
       })}
       {selected.length > 0 && !confirmationToken && <button type="button" onClick={preparePublication} disabled={loading} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: loading ? .6 : 1 }}>{loading ? "Preparing confirmation…" : `Review publication for ${selected.length} product${selected.length === 1 ? "" : "s"}`}</button>}
       {confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM PUBLICATION</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmPublication} disabled={loading} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: loading ? .6 : 1 }}>{loading ? "Publishing…" : "Confirm and publish to development pages"}</button></div>}
+      {managementToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM PRODUCT CHANGE</div><p style={{ lineHeight: 1.5, whiteSpace: "pre-line" }}>{managementSummary}</p><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><button type="button" onClick={() => { setManagementAction(null); setManagementId(""); setManagementToken(""); setManagementSummary(""); }} style={{ minHeight: 46, borderRadius: 11, border: "1px solid #e2c96e", background: "transparent", color: "#fff4bd", fontWeight: 900 }}>Cancel</button><button type="button" onClick={confirmManagement} disabled={loading} style={{ minHeight: 46, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: loading ? .6 : 1 }}>{loading ? "Applying…" : managementAction === "remove" ? "Confirm removal" : "Confirm unpublish"}</button></div></div>}
     </div>}
   </section>;
 }

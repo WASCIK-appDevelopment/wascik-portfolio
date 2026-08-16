@@ -77,17 +77,38 @@ function normalizedId(record: ImpactRecord) {
   return raw ? `impact:${encodeURIComponent(raw).slice(0, 180)}` : "";
 }
 
+function partnerIdentityText(record: ImpactRecord) {
+  return ["CampaignName", "AdvertiserName", "CatalogName", "ProgramName", "PartnerName"]
+    .map((key) => textValue(record, [key]))
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function commissionEligible(record: ImpactRecord) {
+  const relationship = textValue(record, ["PartnershipStatus", "ContractStatus", "RelationshipStatus", "CampaignStatus"]).toLowerCase();
+  if (relationship && ["inactive", "expired", "declined", "rejected", "not joined", "not active", "terminated"].some((value) => relationship.includes(value))) return false;
+
+  for (const key of ["Commission", "CommissionRate", "Payout", "PayoutRate", "SaleCommission", "DefaultCommission"]) {
+    if (!(key in record)) continue;
+    const value = String(record[key] ?? "").trim().toLowerCase();
+    if (!value) continue;
+    if (value.includes("no commission") || value === "none" || /^\$?0+(?:\.0+)?%?$/.test(value)) return false;
+  }
+  return true;
+}
+
 function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): AffiliateProductCandidate | null {
   const id = normalizedId(record);
   const title = textValue(record, ["Name", "Title", "ProductName"]);
   if (!id || !title) return null;
 
-  const merchant = textValue(record, ["CampaignName", "AdvertiserName", "Brand", "Manufacturer", "CatalogName"]) || "Impact merchant";
+  const merchant = textValue(record, ["CampaignName", "AdvertiserName", "CatalogName", "ProgramName", "PartnerName"]) || "Impact merchant";
   const category = textValue(record, ["Category", "ProductCategory", "CategoryName"]) || fallbackCategory;
   const description = textValue(record, ["Description", "ShortDescription", "ProductDescription"]) || `${title} from ${merchant}.`;
-  const affiliateUrl = textValue(record, ["TrackingLink", "Url", "ProductUrl", "Link", "DeepLink"]);
+  const affiliateUrl = textValue(record, ["TrackingLink", "DeepLink"]);
   const imageUrl = imageValue(record) || null;
-  if (!imageUrl) return null;
+  if (!affiliateUrl || !imageUrl || !commissionEligible(record)) return null;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
   const stock = textValue(record, ["StockAvailability", "Availability"]);
   const eventDate = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
@@ -188,27 +209,28 @@ export async function searchImpactCategory(
       const records = arrayValue(payload);
       if (!records.length) break;
       for (const record of records) {
-      const searchable = recordText(record);
-      if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;
-      if (selectedBrands.length && !selectedBrands.some((brand) => brand.aliases.some((alias) => searchable.includes(alias)))) continue;
+        const searchable = recordText(record);
+        const partnerIdentity = partnerIdentityText(record);
+        if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;
+        if (selectedBrands.length && !selectedBrands.some((brand) => brand.aliases.some((alias) => partnerIdentity.includes(alias)))) continue;
 
-      const isTicketNetwork = searchable.includes("ticketnetwork") || searchable.includes("ticket network");
-      if (isTicketNetwork && options.ticketStateCode) {
-        const code = options.ticketStateCode.toLowerCase();
-        const name = (options.ticketStateName || "").toLowerCase();
-        const codeMatch = new RegExp(`\\b${code}\\b`, "i").test(searchable);
-        if (!codeMatch && (!name || !searchable.includes(name))) continue;
-      }
-      if (isTicketNetwork && (startDate || endDate)) {
-        const eventDate = recordDate(record);
-        if (!eventDate || (startDate && eventDate < startDate) || (endDate && eventDate > endDate)) continue;
-      }
+        const isTicketNetwork = partnerIdentity.includes("ticketnetwork") || partnerIdentity.includes("ticket network");
+        if (isTicketNetwork && options.ticketStateCode) {
+          const code = options.ticketStateCode.toLowerCase();
+          const name = (options.ticketStateName || "").toLowerCase();
+          const codeMatch = new RegExp(`\\b${code}\\b`, "i").test(searchable);
+          if (!codeMatch && (!name || !searchable.includes(name))) continue;
+        }
+        if (isTicketNetwork && (startDate || endDate)) {
+          const eventDate = recordDate(record);
+          if (!eventDate || (startDate && eventDate < startDate) || (endDate && eventDate > endDate)) continue;
+        }
 
-      const item = mapImpactProduct(record, category.label);
-      if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
-      used.add(item.id);
-      results.push(item);
-      if (results.length >= batchSize) break;
+        const item = mapImpactProduct(record, category.label);
+        if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
+        used.add(item.id);
+        results.push(item);
+        if (results.length >= batchSize) break;
       }
       if (records.length < 100) break;
     }

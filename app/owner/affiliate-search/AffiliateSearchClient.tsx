@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { AFFILIATE_BATCH_SIZE, affiliateSearchCategories, AffiliateSearchCategoryId } from "../../../lib/affiliateSearch";
+import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, AffiliateSearchBrandId, AffiliateSearchCategoryId } from "../../../lib/affiliateSearch";
 
 const SESSION_KEY = "wascik-owner-console-key";
 const SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
@@ -24,6 +24,7 @@ type Batch = { categoryId: string; categoryLabel: string; requestedCount: number
 
 export default function AffiliateSearchClient() {
   const [selected, setSelected] = useState<AffiliateSearchCategoryId[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<AffiliateSearchBrandId[]>([]);
   const [providers, setProviders] = useState({ impact: false, awin: false });
   const [batches, setBatches] = useState<Batch[]>([]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
@@ -40,10 +41,11 @@ export default function AffiliateSearchClient() {
       const savedSearch = sessionStorage.getItem(SEARCH_SESSION_KEY);
       if (savedSearch) {
         try {
-          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; batches?: unknown; notice?: unknown };
+          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; selectedBrands?: unknown; batches?: unknown; notice?: unknown };
           if (Array.isArray(parsed.seenIds)) setSeenIds(parsed.seenIds.filter((id): id is string => typeof id === "string"));
           if (Array.isArray(parsed.selectedProducts)) setSelectedProducts(parsed.selectedProducts as ProductCandidate[]);
           if (Array.isArray(parsed.selectedCategories)) setSelected(parsed.selectedCategories.filter((id): id is AffiliateSearchCategoryId => typeof id === "string" && affiliateSearchCategories.some((category) => category.id === id)));
+          if (Array.isArray(parsed.selectedBrands)) setSelectedBrands(parsed.selectedBrands.filter((id): id is AffiliateSearchBrandId => typeof id === "string" && affiliateSearchBrands.some((brand) => brand.id === id)));
           if (Array.isArray(parsed.batches)) setBatches(parsed.batches as Batch[]);
           if (typeof parsed.notice === "string") setNotice(parsed.notice);
         } catch {
@@ -65,13 +67,18 @@ export default function AffiliateSearchClient() {
       seenIds,
       selectedProducts,
       selectedCategories: selected,
+      selectedBrands,
       batches,
       notice,
     }));
-  }, [hydrated, seenIds, selectedProducts, selected, batches, notice]);
+  }, [hydrated, seenIds, selectedProducts, selected, selectedBrands, batches, notice]);
 
   function toggle(categoryId: AffiliateSearchCategoryId) {
     setSelected((current) => current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId]);
+  }
+
+  function toggleBrand(brandId: AffiliateSearchBrandId) {
+    setSelectedBrands((current) => current.includes(brandId) ? current.filter((id) => id !== brandId) : [...current, brandId]);
   }
 
   async function search(event: FormEvent) {
@@ -85,7 +92,7 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ categories: selected, batchSize: AFFILIATE_BATCH_SIZE, excludeIds: seenIds }),
+        body: JSON.stringify({ categories: selected, brands: selectedBrands, batchSize: AFFILIATE_BATCH_SIZE, excludeIds: seenIds }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Affiliate search failed.");
@@ -132,6 +139,13 @@ export default function AffiliateSearchClient() {
     </section>
 
     <form onSubmit={search} style={{ display: "grid", gap: 13 }}>
+      <details style={{ padding: 13, borderRadius: 14, border: "1px solid rgba(105,214,255,.25)", background: "rgba(255,255,255,.025)" }}>
+        <summary style={{ cursor: "pointer", color: "#72e0ff", fontWeight: 900, fontSize: 17 }}>My Brands {selectedBrands.length ? `· ${selectedBrands.length} selected` : ""}</summary>
+        {selectedBrands.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 11 }}>{selectedBrands.map((id) => { const brand = affiliateSearchBrands.find((entry) => entry.id === id); return brand ? <span key={id} style={{ padding: "6px 9px", borderRadius: 999, background: "rgba(39,155,221,.22)", color: "#c9f4ff", fontSize: 12, fontWeight: 800 }}>{brand.label}</span> : null; })}</div>}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 8, marginTop: 12 }}>
+          {affiliateSearchBrands.map((brand) => { const active = selectedBrands.includes(brand.id); return <button type="button" key={brand.id} onClick={() => toggleBrand(brand.id)} aria-pressed={active} style={{ minHeight: 44, padding: "9px 10px", textAlign: "left", borderRadius: 11, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800 }}>{active ? "✓ " : ""}{brand.label}</button>; })}
+        </div>
+      </details>
       <div><h2 style={{ margin: "0 0 5px" }}>Select product categories</h2><p style={{ margin: 0, color: "#9fb6c5" }}>Each selected category requests a separate batch of {AFFILIATE_BATCH_SIZE} products.</p></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 9 }}>
         {affiliateSearchCategories.map((category) => {

@@ -37,6 +37,10 @@ export default function AffiliateSearchClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [confirmationToken, setConfirmationToken] = useState("");
+  const [confirmationSummary, setConfirmationSummary] = useState("");
+  const [savingApproval, setSavingApproval] = useState(false);
 
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -138,6 +142,59 @@ export default function AffiliateSearchClient() {
     setNotice(`${item.title} skipped for this console session. It will not appear in another search until you sign out.`);
   }
 
+  function removeSelectedProduct(itemId: string) {
+    setSelectedProducts((current) => current.filter((item) => item.id !== itemId));
+    setConfirmationToken("");
+    setConfirmationSummary("");
+  }
+
+  async function prepareApproval() {
+    if (!selectedProducts.length || savingApproval) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setSavingApproval(true);
+    setError("");
+    try {
+      const response = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: "propose", products: selectedProducts }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not prepare the approval.");
+      setConfirmationToken(data.confirmationToken || "");
+      setConfirmationSummary(data.summary || "Confirm these products for the private approved catalog.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not prepare the approval.");
+    } finally {
+      setSavingApproval(false);
+    }
+  }
+
+  async function confirmApproval() {
+    if (!confirmationToken || !selectedProducts.length || savingApproval) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setSavingApproval(true);
+    setError("");
+    try {
+      const response = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: "confirm", confirmationToken, products: selectedProducts }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not save the approved products.");
+      setSelectedProducts([]);
+      setConfirmationToken("");
+      setConfirmationSummary("");
+      setReviewOpen(false);
+      setNotice(data.message || "Products saved to the private approved catalog. Nothing was published.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not save the approved products.");
+    } finally {
+      setSavingApproval(false);
+    }
+  }
+
   return <div style={{ display: "grid", gap: 18 }}>
     <section style={{ padding: 16, border: "1px solid rgba(105,214,255,.28)", borderRadius: 18, background: "linear-gradient(135deg,rgba(34,132,255,.13),rgba(0,205,218,.06))" }}>
       <div style={{ color: "#72e0ff", fontWeight: 900, fontSize: 11, letterSpacing: ".12em" }}>AFFILIATE SEARCH WORKFLOW</div>
@@ -180,10 +237,16 @@ export default function AffiliateSearchClient() {
     {error && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
     {notice && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#102d22", color: "#bdf4cd" }}>{notice}</p>}
 
-    <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(255,214,92,.32)", background: "rgba(84,65,6,.14)" }}>
+    <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(255,214,92,.42)", background: "rgba(84,65,6,.18)" }}>
       <h2 style={{ margin: "0 0 5px" }}>Selected for Affiliate Services · {selectedProducts.length}</h2>
-      <p style={{ margin: 0, color: "#c9bb82", lineHeight: 1.5 }}>Your choices stay in this console session while you continue searching. The publication stage will show one final confirmation before approved products are added to the public Affiliate Services catalog.</p>
-      {selectedProducts.length > 0 && <div style={{ display: "grid", gap: 7, marginTop: 12 }}>{selectedProducts.map((item) => <div key={item.id} style={{ padding: 10, borderRadius: 10, background: "rgba(0,0,0,.22)" }}><strong>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div>)}</div>}
+      <p style={{ margin: 0, color: "#c9bb82", lineHeight: 1.5 }}>These choices are waiting for your review. Saving them creates a private approved catalog record only—it does not publish anything to the public website.</p>
+      {selectedProducts.length > 0 && <button type="button" onClick={() => { setReviewOpen((open) => !open); setConfirmationToken(""); setConfirmationSummary(""); }} style={{ width: "100%", minHeight: 48, marginTop: 12, borderRadius: 12, border: "1px solid #ffd45c", background: "#5b4608", color: "#fff3bd", fontWeight: 900 }}>{reviewOpen ? "Close review" : `Review ${selectedProducts.length} selected product${selectedProducts.length === 1 ? "" : "s"}`}</button>}
+      {reviewOpen && selectedProducts.length > 0 && <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
+        {selectedProducts.map((item) => <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center", padding: 10, borderRadius: 10, background: "rgba(0,0,0,.25)" }}><div><strong>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div><button type="button" onClick={() => removeSelectedProduct(item.id)} style={{ minHeight: 38, borderRadius: 9, border: "1px solid #7a8790", background: "#17232a", color: "#e3edf1", fontWeight: 800 }}>Remove</button></div>)}
+        {!confirmationToken && <button type="button" onClick={prepareApproval} disabled={savingApproval} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: savingApproval ? .6 : 1 }}>{savingApproval ? "Preparing confirmation…" : "Prepare approval"}</button>}
+        {confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM CATALOG SAVE</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmApproval} disabled={savingApproval} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: savingApproval ? .6 : 1 }}>{savingApproval ? "Saving…" : "Confirm and save privately"}</button></div>}
+      </div>}
+      {selectedProducts.length === 0 && <p style={{ margin: "10px 0 0", color: "#8fa7b5" }}>Choose products from the search results to build a review list.</p>}
     </section>
 
     {batches.map((batch) => <section key={`${batch.brandId || "all"}:${batch.categoryId}`} style={{ display: "grid", gap: 10 }}>

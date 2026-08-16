@@ -100,7 +100,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const batches = await Promise.all(searchTargets.map(async ({ categoryId, brandId }) => {
+  const batches: { brandId: AffiliateSearchBrandId | null; brandLabel: string | null; categoryId: AffiliateSearchCategoryId; categoryLabel: string; requestedCount: number; items: AffiliateProductCandidate[] }[] = [];
+  const requestUsedIds = new Set<string>();
+  for (const { categoryId, brandId } of searchTargets) {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
     const brand = brandId ? affiliateSearchBrands.find((entry) => entry.id === brandId) : null;
     const targetBrands: AffiliateSearchBrandId[] = brandId ? [brandId] : [];
@@ -108,7 +110,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, excludeIds, { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
+        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -116,23 +118,28 @@ export async function POST(request: Request) {
     }
 
     const ids = new Set(impactItems.map((item) => item.id));
-    const localItems = localCandidates(categoryId, excludeIds, targetBrands, batchSize, ticketStateCode)
+    const localItems = localCandidates(categoryId, new Set([...excludeIds, ...requestUsedIds]), targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems].slice(0, batchSize);
+    items.forEach((item) => requestUsedIds.add(item.id));
 
-    return {
+    batches.push({
       brandId,
       brandLabel: brand?.label || null,
       categoryId,
       categoryLabel: category.label,
       requestedCount: batchSize,
       items,
-    };
-  }));
+    });
+  }
 
   let notice = "Showing real items already approved in the WASCIK catalog.";
-  if (impactConnected && !impactFailed) notice = "Live Impact marketplace results are ready for review.";
+  const requestedTotal = searchTargets.length * batchSize;
+  const returnedTotal = batches.reduce((total, batch) => total + batch.items.length, 0);
+  if (impactConnected && !impactFailed) notice = returnedTotal >= requestedTotal
+    ? `${returnedTotal} live Impact products are ready: ${batchSize} for each selected brand/category.`
+    : `${returnedTotal} of ${requestedTotal} requested products were available with matching images. Results remain separated by category.`;
   if (impactConnected && impactFailed) notice = "Impact is connected, but its product search did not respond. Existing WASCIK catalog matches are shown instead.";
   if (!impactConnected && !awinConnected) notice = "Connect Impact or Awin server credentials to fetch new network products.";
 

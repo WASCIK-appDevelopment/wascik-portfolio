@@ -1,4 +1,4 @@
-import { AFFILIATE_BATCH_SIZE, affiliateSearchCategories, AffiliateSearchCategoryId } from "./affiliateSearch";
+import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, AffiliateSearchBrandId, AffiliateSearchCategoryId } from "./affiliateSearch";
 
 export type AffiliateProductCandidate = {
   id: string;
@@ -96,18 +96,38 @@ async function impactRequest(keyword: string) {
   return response.json() as Promise<unknown>;
 }
 
-export async function searchImpactCategory(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>) {
+function recordText(record: ImpactRecord) {
+  return Object.values(record)
+    .filter((value) => typeof value === "string" || typeof value === "number")
+    .join(" ")
+    .toLowerCase();
+}
+
+export async function searchImpactCategory(
+  categoryId: AffiliateSearchCategoryId,
+  excludeIds: Set<string>,
+  brandIds: AffiliateSearchBrandId[] = [],
+) {
   const category = affiliateSearchCategories.find((entry) => entry.id === categoryId);
   if (!category) return [];
 
+  const selectedBrands = affiliateSearchBrands.filter((brand) => brandIds.includes(brand.id));
+  const queryPrefixes = selectedBrands.length ? selectedBrands.map((brand) => brand.label) : [""];
+  const queries = queryPrefixes.flatMap((brand) =>
+    [category.label, ...category.keywords.slice(0, 3)].map((term) => [brand, term].filter(Boolean).join(" ")),
+  );
+
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
-  const queries = [category.label, ...category.keywords].slice(0, 4);
 
   for (const query of queries) {
     if (results.length >= AFFILIATE_BATCH_SIZE) break;
     const payload = await impactRequest(query);
     for (const record of arrayValue(payload)) {
+      const searchable = recordText(record);
+      if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;
+      if (selectedBrands.length && !selectedBrands.some((brand) => brand.aliases.some((alias) => searchable.includes(alias)))) continue;
+
       const item = mapImpactProduct(record, category.label);
       if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
       used.add(item.id);

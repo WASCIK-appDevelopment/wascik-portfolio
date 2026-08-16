@@ -21,8 +21,7 @@ export function isAffiliateSearchCategory(value: string): value is AffiliateSear
 
 export const affiliateSearchBrands = [
   { id: "eurooptic", label: "EuroOptic", aliases: ["eurooptic", "euro optic"] },
-  { id: "focus-camera", label: "Focus Camera", aliases: ["focus camera"] },
-  { id: "lifestyle-focus", label: "Lifestyle by Focus", aliases: ["lifestyle by focus", "lifestyle focus"] },
+  { id: "focus-camera", label: "Focus Camera", aliases: ["focus camera", "lifestyle by focus", "lifestyle focus", "focus by lifestyle"] },
   { id: "aquacurve", label: "AquaCurve", aliases: ["aquacurve", "aqua curve"] },
   { id: "ticketnetwork", label: "TicketNetwork", aliases: ["ticketnetwork", "ticket network"] },
   { id: "gearup", label: "GearUP", aliases: ["gearup", "gear up"] },

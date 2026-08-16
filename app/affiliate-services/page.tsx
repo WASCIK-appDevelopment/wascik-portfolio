@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { affiliateProducts, merchantOrder } from "./products";
 import { suppliedProductImageUrls } from "./revo-image-urls";
-import PublishedAffiliateProducts from "./PublishedAffiliateProducts";
+import PublishedAffiliateProducts, { affiliateProductCategoryOrder } from "./PublishedAffiliateProducts";
 
 const merchantMeta = {
   DHgate: { kicker: "Tech & everyday gadgets", copy: "Compact technology, creator tools, travel gear, and practical accessories selected for useful everyday applications.", mark: "DH" },
@@ -42,7 +42,7 @@ function ProductCard({ product }: { product: (typeof affiliateProducts)[number] 
               : [];
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">
+    <article style={{ order: affiliateProductCategoryOrder(product.category) }} className="group flex h-full flex-col overflow-hidden rounded-3xl border border-sky-800/70 bg-gradient-to-br from-[#09283b] to-[#03101b] shadow-[0_20px_55px_rgba(0,0,0,.28)] transition duration-300 hover:-translate-y-1 hover:border-sky-400/80">
       <div className="relative min-h-64 overflow-hidden border-b border-sky-800/60 bg-[radial-gradient(circle_at_50%_45%,rgba(32,190,255,.20),transparent_34%),linear-gradient(135deg,#071e2e,#03101a)] p-5">
         <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(72,198,255,.16)_1px,transparent_1px),linear-gradient(90deg,rgba(72,198,255,.16)_1px,transparent_1px)] [background-size:28px_28px]" />
         {productImages.length ? (

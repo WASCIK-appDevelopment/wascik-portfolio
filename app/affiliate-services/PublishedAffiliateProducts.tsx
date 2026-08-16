@@ -18,6 +18,18 @@ function serverHeaders(key: string, kind?: "secret" | "service_role") {
   return headers;
 }
 
+export function affiliateProductCategoryOrder(category?: string | null) {
+  const value = (category || "").toLowerCase();
+  if (/electronic|smart tech|computer|phone|software|gaming/.test(value)) return 10;
+  if (/audio|video|camera|creator|record|music/.test(value)) return 20;
+  if (/home|security|smart home|kitchen|furniture|pool/.test(value)) return 30;
+  if (/outdoor|camp|hunting|optic|sport|travel/.test(value)) return 40;
+  if (/tool|weld|workshop|hardware|automotive/.test(value)) return 50;
+  if (/health|beauty|skin|wellness|recovery|fitness|massage/.test(value)) return 60;
+  if (/ticket|concert|event|theater/.test(value)) return 70;
+  return 90;
+}
+
 type PublishedAffiliateProductsProps = {
   pagePath: string;
   merchant?: string;
@@ -45,7 +57,7 @@ export default async function PublishedAffiliateProducts({ pagePath, merchant, e
   const products = await response.json().catch(() => []) as PublishedProduct[];
   if (!Array.isArray(products) || products.length === 0) return null;
 
-  const cards = products.map((product) => <article key={product.id} className="flex h-full flex-col overflow-hidden rounded-3xl border border-cyan-400/25 bg-gradient-to-br from-[#092238] to-[#020a12] shadow-[0_22px_60px_rgba(0,0,0,.3)]">
+  const cards = products.map((product) => <article key={product.id} style={{ order: affiliateProductCategoryOrder(product.category) }} className="flex h-full flex-col overflow-hidden rounded-3xl border border-cyan-400/25 bg-gradient-to-br from-[#092238] to-[#020a12] shadow-[0_22px_60px_rgba(0,0,0,.3)]">
     <div className="grid min-h-56 place-items-center bg-white p-4">{product.image_url ? <img src={product.image_url} alt={product.title} className="max-h-56 w-full object-contain" /> : <div className="text-sm font-bold text-slate-500">Product image unavailable</div>}</div>
     <div className="flex flex-1 flex-col p-6">
       <p className="text-xs font-black uppercase tracking-[.18em] text-cyan-300">{product.merchant}{product.category ? ` · ${product.category}` : ""}</p>

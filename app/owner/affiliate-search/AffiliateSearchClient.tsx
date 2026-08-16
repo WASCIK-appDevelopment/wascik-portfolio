@@ -22,6 +22,19 @@ type ProductCandidate = {
 
 type Batch = { brandId?: string | null; brandLabel?: string | null; categoryId: string; categoryLabel: string; requestedCount: number; items: ProductCandidate[] };
 
+type ApprovedProductRecord = {
+  id: string;
+  merchant: string;
+  title: string;
+  category?: string | null;
+  description?: string | null;
+  affiliate_url: string;
+  image_url?: string | null;
+  price?: string | null;
+  approval_status?: string | null;
+  approved_at?: string | null;
+};
+
 export default function AffiliateSearchClient() {
   const [selected, setSelected] = useState<AffiliateSearchCategoryId[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<AffiliateSearchBrandId[]>([]);
@@ -41,6 +54,9 @@ export default function AffiliateSearchClient() {
   const [confirmationToken, setConfirmationToken] = useState("");
   const [confirmationSummary, setConfirmationSummary] = useState("");
   const [savingApproval, setSavingApproval] = useState(false);
+  const [approvedProducts, setApprovedProducts] = useState<ApprovedProductRecord[]>([]);
+  const [approvedOpen, setApprovedOpen] = useState(false);
+  const [loadingApproved, setLoadingApproved] = useState(false);
 
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -195,6 +211,30 @@ export default function AffiliateSearchClient() {
     }
   }
 
+  async function toggleApprovedProducts() {
+    if (approvedOpen) {
+      setApprovedOpen(false);
+      return;
+    }
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setLoadingApproved(true);
+    setError("");
+    try {
+      const response = await fetch("/api/owner/affiliate-search/approved", {
+        headers: { "x-wascik-owner-key": key },
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not load approved products.");
+      setApprovedProducts(Array.isArray(data.products) ? data.products : []);
+      setApprovedOpen(true);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not load approved products.");
+    } finally {
+      setLoadingApproved(false);
+    }
+  }
+
   return <div style={{ display: "grid", gap: 18 }}>
     <section style={{ padding: 16, border: "1px solid rgba(105,214,255,.28)", borderRadius: 18, background: "linear-gradient(135deg,rgba(34,132,255,.13),rgba(0,205,218,.06))" }}>
       <div style={{ color: "#72e0ff", fontWeight: 900, fontSize: 11, letterSpacing: ".12em" }}>AFFILIATE SEARCH WORKFLOW</div>
@@ -247,6 +287,14 @@ export default function AffiliateSearchClient() {
         {confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM CATALOG SAVE</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmApproval} disabled={savingApproval} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: savingApproval ? .6 : 1 }}>{savingApproval ? "Saving…" : "Confirm and save privately"}</button></div>}
       </div>}
       {selectedProducts.length === 0 && <p style={{ margin: "10px 0 0", color: "#8fa7b5" }}>Choose products from the search results to build a review list.</p>}
+    </section>
+
+    <section style={{ padding: 15, borderRadius: 16, border: "1px solid rgba(105,214,255,.32)", background: "rgba(14,49,66,.2)" }}>
+      <button type="button" onClick={toggleApprovedProducts} disabled={loadingApproved} style={{ width: "100%", minHeight: 48, borderRadius: 12, border: "1px solid #65d8ff", background: "#123f53", color: "#d8f7ff", fontWeight: 900, opacity: loadingApproved ? .6 : 1 }}>{loadingApproved ? "Loading approved products…" : approvedOpen ? "Close Approved Products" : "View Approved Products"}</button>
+      {approvedOpen && <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+        <div><h2 style={{ margin: 0 }}>Private Approved Products · {approvedProducts.length}</h2><p style={{ margin: "5px 0 0", color: "#9fb8c5" }}>Saved privately. These products are not automatically published.</p></div>
+        {approvedProducts.length === 0 ? <p style={{ margin: 0, color: "#9fb8c5" }}>No approved products were found.</p> : approvedProducts.map((item) => <article key={item.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 11, alignItems: "center", padding: 10, borderRadius: 11, background: "rgba(0,0,0,.24)" }}>{item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : <div aria-label="No product image available" style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}<div style={{ minWidth: 0 }}><strong style={{ display: "block", lineHeight: 1.3 }}>{item.title}</strong><span style={{ display: "block", color: "#82cfe8", fontSize: 12, marginTop: 3 }}>{item.merchant}{item.category ? ` · ${item.category}` : ""}</span>{item.price && <span style={{ display: "block", color: "#8ff0b6", fontSize: 12, fontWeight: 900, marginTop: 3 }}>{item.price}</span>}<span style={{ display: "block", color: "#92aab6", fontSize: 11, marginTop: 3 }}>Approved{item.approved_at ? ` · ${new Date(item.approved_at).toLocaleDateString()}` : ""}</span></div></article>)}
+      </div>}
     </section>
 
     {batches.map((batch) => <section key={`${batch.brandId || "all"}:${batch.categoryId}`} style={{ display: "grid", gap: 10 }}>

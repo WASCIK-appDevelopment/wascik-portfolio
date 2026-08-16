@@ -241,6 +241,7 @@ export default function FocusCameraPage() {
         </div>
       </section>
 
+      <PublishedAffiliateProducts pagePath="/affiliate-services/focus-camera" />
       <section className="relative z-10 px-5 py-14 md:px-8">
         <div className="mx-auto max-w-4xl rounded-3xl border border-yellow-300/25 bg-yellow-300/[.06] p-7 sm:p-9">
           <p className="font-black text-yellow-200">Affiliate disclosure</p>
@@ -249,7 +250,6 @@ export default function FocusCameraPage() {
         <div className="mx-auto mt-8 max-w-4xl text-center"><a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-blue-400 px-7 py-4 text-center font-black text-blue-100 transition hover:bg-blue-500/10 sm:w-auto">Browse All Focus Camera Products →</a></div>
       </section>
 
-      <PublishedAffiliateProducts pagePath="/affiliate-services/focus-camera" />
       <footer className="relative z-10 border-t border-blue-950 bg-[#04060a] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · Focus Camera partner page.</footer>
     </main>
   );

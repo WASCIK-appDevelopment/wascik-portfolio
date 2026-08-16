@@ -29,6 +29,7 @@ type ApprovedProduct = {
 };
 
 type Publication = { id: string; pagePath: string };
+type ManagementAction = "unpublish" | "remove";
 
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
@@ -94,6 +95,38 @@ function sanitizePublications(value: unknown): Publication[] {
     if (id && PUBLISH_PATHS.has(pagePath)) unique.set(id, { id, pagePath });
   }
   return Array.from(unique.values()).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function sanitizeIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.slice(0, MAX_PRODUCTS).map((id) => cleanText(id, 240)).filter(Boolean))).sort();
+}
+
+function managementPayload(action: ManagementAction, ids: string[], expiresAt: number) {
+  return JSON.stringify({ action, ids, expiresAt });
+}
+
+function createManagementToken(action: ManagementAction, ids: string[]) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  if (!secret) return "";
+  const expiresAt = Date.now() + TOKEN_TTL_MS;
+  const signature = createHmac("sha256", secret).update(managementPayload(action, ids, expiresAt)).digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
+function managementTokenAuthorized(action: ManagementAction, ids: string[], tokenValue: unknown) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  const token = cleanText(tokenValue, 500);
+  if (!secret || !token) return false;
+  const dot = token.indexOf(".");
+  if (dot <= 0) return false;
+  const expiresAt = Number(token.slice(0, dot));
+  const provided = token.slice(dot + 1);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt || !provided) return false;
+  const expected = createHmac("sha256", secret).update(managementPayload(action, ids, expiresAt)).digest("base64url");
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function publicationPayload(publications: Publication[], expiresAt: number) {
@@ -178,6 +211,36 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  if (["propose_unpublish", "confirm_unpublish", "propose_remove", "confirm_remove"].includes(String(body.action))) {
+    const action: ManagementAction = String(body.action).includes("remove") ? "remove" : "unpublish";
+    const confirming = String(body.action).startsWith("confirm_");
+    const ids = sanitizeIds(body.ids);
+    if (!ids.length) return NextResponse.json({ error: "Select at least one approved product." }, { status: 400 });
+    if (!confirming) {
+      const confirmationToken = createManagementToken(action, ids);
+      if (!confirmationToken) return NextResponse.json({ error: "Owner confirmation is not configured." }, { status: 503 });
+      const verb = action === "remove" ? "Remove" : "Unpublish";
+      const outcome = action === "remove" ? "It will disappear from the approved list and any public affiliate page." : "It will return to Ready to Publish and disappear from its public affiliate page.";
+      return NextResponse.json({ confirmationToken, summary: `${verb} ${ids.length} approved product${ids.length === 1 ? "" : "s"}? ${outcome}` });
+    }
+    if (!managementTokenAuthorized(action, ids, body.confirmationToken)) return NextResponse.json({ error: "Unauthorized or unconfirmed product change." }, { status: 401 });
+    const config = getStage6Config();
+    if (!config.databaseConfigured || !config.supabaseServerKey) return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    const changed: unknown[] = [];
+    for (const id of ids) {
+      const response = await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(id)}&approval_status=eq.approved`, {
+        method: action === "remove" ? "DELETE" : "PATCH",
+        headers: { ...supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), Prefer: "return=representation" },
+        ...(action === "unpublish" ? { body: JSON.stringify({ published_at: null, updated_at: new Date().toISOString() }) } : {}),
+      });
+      const rows = await response.json().catch(() => []);
+      if (!response.ok) return NextResponse.json({ error: `Could not ${action} the approved product.`, detail: rows }, { status: 502 });
+      if (Array.isArray(rows)) changed.push(...rows);
+    }
+    if (changed.length !== ids.length) return NextResponse.json({ error: "One or more approved products could not be found." }, { status: 409 });
+    return NextResponse.json({ success: true, changedCount: changed.length, message: action === "remove" ? "Product removed from the approved list and public affiliate pages." : "Product unpublished and returned to Ready to Publish." });
+  }
 
   if (body.action === "propose_publish" || body.action === "confirm_publish") {
     const publications = sanitizePublications(body.publications);

@@ -89,13 +89,21 @@ export async function POST(request: Request) {
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
 
-  const batches = await Promise.all(requested.map(async (categoryId) => {
+  const searchTargets = requested.flatMap((categoryId) =>
+    requestedBrands.length
+      ? requestedBrands.map((brandId) => ({ categoryId, brandId }))
+      : [{ categoryId, brandId: null }],
+  );
+
+  const batches = await Promise.all(searchTargets.map(async ({ categoryId, brandId }) => {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
+    const brand = brandId ? affiliateSearchBrands.find((entry) => entry.id === brandId) : null;
+    const targetBrands: AffiliateSearchBrandId[] = brandId ? [brandId] : [];
     let impactItems: AffiliateProductCandidate[] = [];
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, excludeIds, { brandIds: requestedBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
+        impactItems = await searchImpactCategory(categoryId, excludeIds, { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -103,12 +111,19 @@ export async function POST(request: Request) {
     }
 
     const ids = new Set(impactItems.map((item) => item.id));
-    const localItems = localCandidates(categoryId, excludeIds, requestedBrands, batchSize, ticketStateCode)
+    const localItems = localCandidates(categoryId, excludeIds, targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems].slice(0, batchSize);
 
-    return { categoryId, categoryLabel: category.label, requestedCount: batchSize, items };
+    return {
+      brandId,
+      brandLabel: brand?.label || null,
+      categoryId,
+      categoryLabel: category.label,
+      requestedCount: batchSize,
+      items,
+    };
   }));
 
   let notice = "Showing real items already approved in the WASCIK catalog.";

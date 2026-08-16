@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AFFILIATE_BATCH_SIZE, affiliateSearchCategories, AffiliateSearchCategoryId, isAffiliateSearchCategory } from "../../../../lib/affiliateSearch";
+import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory } from "../../../../lib/affiliateSearch";
 import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 
@@ -15,10 +15,12 @@ function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
   return [item.title, item.category, item.merchant, item.description, ...item.features].join(" ").toLowerCase();
 }
 
-function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>): AffiliateProductCandidate[] {
+function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>, brandIds: AffiliateSearchBrandId[]): AffiliateProductCandidate[] {
   const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
+  const brands = affiliateSearchBrands.filter((brand) => brandIds.includes(brand.id));
   return unifiedAffiliateCatalog
     .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
+    .filter((item) => !brands.length || brands.some((brand) => brand.aliases.some((alias) => searchableText(item).includes(alias))))
     .filter((item) => !excludeIds.has(item.id))
     .slice(0, AFFILIATE_BATCH_SIZE)
     .map((item) => ({
@@ -49,13 +51,18 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; excludeIds?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; brands?: unknown; excludeIds?: unknown };
   const candidates = Array.isArray(body.categories) ? body.categories : [];
   const requested: AffiliateSearchCategoryId[] = candidates
     .filter((value: unknown): value is string => typeof value === "string")
     .filter(isAffiliateSearchCategory)
     .slice(0, 10);
   if (!requested.length) return NextResponse.json({ error: "Select at least one category." }, { status: 400 });
+
+  const requestedBrands: AffiliateSearchBrandId[] = (Array.isArray(body.brands) ? body.brands : [])
+    .filter((value: unknown): value is string => typeof value === "string")
+    .filter(isAffiliateSearchBrand)
+    .slice(0, affiliateSearchBrands.length);
 
   const excludeIds = new Set(
     (Array.isArray(body.excludeIds) ? body.excludeIds : [])
@@ -75,7 +82,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, excludeIds);
+        impactItems = await searchImpactCategory(categoryId, excludeIds, requestedBrands);
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -83,7 +90,7 @@ export async function POST(request: Request) {
     }
 
     const ids = new Set(impactItems.map((item) => item.id));
-    const localItems = localCandidates(categoryId, excludeIds)
+    const localItems = localCandidates(categoryId, excludeIds, requestedBrands)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, AFFILIATE_BATCH_SIZE - impactItems.length));
     const items = [...impactItems, ...localItems].slice(0, AFFILIATE_BATCH_SIZE);
@@ -99,6 +106,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     batches,
     providers: { impact: impactConnected, awin: awinConnected },
+    selectedBrands: requestedBrands.map((id) => affiliateSearchBrands.find((brand) => brand.id === id)?.label).filter(Boolean),
     notice,
     mode: impactConnected ? "impact-live" : "approved-catalog-foundation",
   });

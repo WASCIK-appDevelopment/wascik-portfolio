@@ -5,6 +5,15 @@ import { getStage6Config } from "../../../../../lib/ai/stage6Config";
 const OWNER_HEADER = "x-wascik-owner-key";
 const MAX_PRODUCTS = 100;
 const TOKEN_TTL_MS = 5 * 60 * 1000;
+const PUBLISH_PATHS = new Set([
+  "/affiliate-services",
+  "/affiliate-services/aquacurve",
+  "/affiliate-services/dhgate",
+  "/affiliate-services/eurooptic",
+  "/affiliate-services/focus-camera",
+  "/affiliate-services/gearup",
+  "/affiliate-services/ticketnetwork",
+]);
 
 type ApprovedProduct = {
   id: string;
@@ -19,6 +28,8 @@ type ApprovedProduct = {
   pagePath: string | null;
   source: string;
 };
+
+type Publication = { id: string; pagePath: string };
 
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
@@ -71,6 +82,46 @@ function sanitizeProducts(value: unknown): ApprovedProduct[] {
     });
   }
   return Array.from(unique.values()).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function sanitizePublications(value: unknown): Publication[] {
+  if (!Array.isArray(value)) return [];
+  const unique = new Map<string, Publication>();
+  for (const raw of value.slice(0, MAX_PRODUCTS)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const id = cleanText(item.id, 240);
+    const pagePath = cleanText(item.pagePath, 1000);
+    if (id && PUBLISH_PATHS.has(pagePath)) unique.set(id, { id, pagePath });
+  }
+  return Array.from(unique.values()).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function publicationPayload(publications: Publication[], expiresAt: number) {
+  return JSON.stringify({ publications, expiresAt });
+}
+
+function createPublicationToken(publications: Publication[]) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  if (!secret) return "";
+  const expiresAt = Date.now() + TOKEN_TTL_MS;
+  const signature = createHmac("sha256", secret).update(publicationPayload(publications, expiresAt)).digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
+function publicationTokenAuthorized(publications: Publication[], tokenValue: unknown) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  const token = cleanText(tokenValue, 500);
+  if (!secret || !token) return false;
+  const dot = token.indexOf(".");
+  if (dot <= 0) return false;
+  const expiresAt = Number(token.slice(0, dot));
+  const provided = token.slice(dot + 1);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt || !provided) return false;
+  const expected = createHmac("sha256", secret).update(publicationPayload(publications, expiresAt)).digest("base64url");
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function signedPayload(products: ApprovedProduct[], expiresAt: number) {
@@ -128,6 +179,34 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  if (body.action === "propose_publish" || body.action === "confirm_publish") {
+    const publications = sanitizePublications(body.publications);
+    if (!publications.length) return NextResponse.json({ error: "Select at least one approved product and destination." }, { status: 400 });
+    if (body.action === "propose_publish") {
+      const confirmationToken = createPublicationToken(publications);
+      if (!confirmationToken) return NextResponse.json({ error: "Owner confirmation is not configured." }, { status: 503 });
+      return NextResponse.json({ confirmationToken, count: publications.length, summary: `Publish ${publications.length} approved product${publications.length === 1 ? "" : "s"} to the selected WASCIK affiliate pages. Existing product IDs will be updated, not duplicated.` });
+    }
+    if (!publicationTokenAuthorized(publications, body.confirmationToken)) return NextResponse.json({ error: "Unauthorized or unconfirmed publication change." }, { status: 401 });
+    const config = getStage6Config();
+    if (!config.databaseConfigured || !config.supabaseServerKey) return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    const now = new Date().toISOString();
+    const published: unknown[] = [];
+    for (const publication of publications) {
+      const response = await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(publication.id)}&approval_status=eq.approved`, {
+        method: "PATCH",
+        headers: { ...supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), Prefer: "return=representation" },
+        body: JSON.stringify({ page_path: publication.pagePath, published_at: now, updated_at: now }),
+      });
+      const rows = await response.json().catch(() => []);
+      if (!response.ok) return NextResponse.json({ error: "Could not publish the approved products.", detail: rows }, { status: 502 });
+      if (Array.isArray(rows)) published.push(...rows);
+    }
+    if (published.length !== publications.length) return NextResponse.json({ error: "One or more approved products could not be found. Nothing new was duplicated." }, { status: 409 });
+    return NextResponse.json({ success: true, publishedCount: published.length, products: published, message: "Products published to their selected development affiliate pages." });
+  }
+
   const products = sanitizeProducts(body.products);
   if (!products.length) return NextResponse.json({ error: "Select at least one valid product." }, { status: 400 });
 

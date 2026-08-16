@@ -44,6 +44,7 @@ body {
 .wascik-brand small { display:block; color:#58c9ff; font-size:.55rem; letter-spacing:.24em; }
 .wascik-logo { display:block; width:auto; object-fit:contain; filter:drop-shadow(0 0 14px #008fd8aa); }
 .wascik-logo-nav { width:154px; height:58px; }
+.wascik-tm{align-self:flex-start;margin:8px 0 0 -8px;color:#8edcff;font-size:.62rem;font-weight:900;line-height:1;text-shadow:0 0 8px #079ddd}
 .wascik-logo-hero { width:min(100%,620px); height:auto; max-height:245px; object-position:left center; }
 .brand-words { display:none; }
 .wascik-nav nav { display:flex; gap:24px; }

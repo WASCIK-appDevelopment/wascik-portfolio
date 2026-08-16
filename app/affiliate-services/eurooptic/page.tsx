@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import PublishedAffiliateProducts from "../PublishedAffiliateProducts";
 
 const watchLink = "https://eurooptic.sjv.io/WOEqjX";
 const storeLink = "https://eurooptic.sjv.io/c/7587435/2973190/35464";
@@ -191,6 +192,7 @@ export default function EuroOpticPage() {
         </div>
       </section>
 
+      <PublishedAffiliateProducts pagePath="/affiliate-services/eurooptic" />
       <footer className="relative z-10 border-t border-emerald-950 bg-[#010504] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · EuroOptic partner page.</footer>
     </main>
   );

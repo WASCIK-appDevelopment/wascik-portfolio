@@ -212,6 +212,12 @@ export async function GET(request: Request) {
   );
   const suppressionRows = suppressionResponse.ok ? await suppressionResponse.json().catch(() => []) : [];
   const suppressed = new Set(Array.isArray(suppressionRows) ? suppressionRows.map((row) => String(row.product_id || "")) : []);
+  const imageOverrideResponse = await fetch(
+    `${config.supabaseUrl}/rest/v1/affiliate_catalog_image_overrides?select=product_id,image_url&limit=1000`,
+    { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+  );
+  const imageOverrideRows = imageOverrideResponse.ok ? await imageOverrideResponse.json().catch(() => []) : [];
+  const imageOverrides = new Map(Array.isArray(imageOverrideRows) ? imageOverrideRows.map((row) => [String(row.product_id || ""), String(row.image_url || "")]) : []);
   const builtInProducts = unifiedAffiliateCatalog
     .filter((item) => !suppressed.has(item.id))
     .map((item) => ({
@@ -222,7 +228,7 @@ export async function GET(request: Request) {
       description: item.description,
       features: item.features,
       affiliate_url: item.affiliateUrl,
-      image_url: item.imageUrl || null,
+      image_url: imageOverrides.get(item.id) || item.imageUrl || null,
       price: null,
       page_path: item.pagePath || "/affiliate-services",
       source: item.source,

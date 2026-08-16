@@ -60,6 +60,67 @@ function imageValue(record: ImpactRecord) {
   return "";
 }
 
+function safePublicUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    if (host === 'localhost' || host.endsWith('.local') || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host)) return null;
+    const private172 = host.match(/^172\.(\d+)\./);
+    if (private172 && Number(private172[1]) >= 16 && Number(private172[1]) <= 31) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function decodeHtmlUrl(value: string) {
+  return value.replaceAll('&amp;', '&').replaceAll('&#x2F;', '/').replaceAll('\\/', '/').trim();
+}
+
+function pageImageFromHtml(html: string, pageUrl: string) {
+  const tags = html.match(/<meta\b[^>]*>/gi) || [];
+  for (const tag of tags) {
+    const property = tag.match(/(?:property|name)=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    if (!['og:image', 'og:image:url', 'twitter:image', 'twitter:image:src'].includes(property || '')) continue;
+    const content = tag.match(/content=["']([^"']+)["']/i)?.[1];
+    if (!content) continue;
+    try {
+      const resolved = new URL(decodeHtmlUrl(content), pageUrl).toString();
+      if (safePublicUrl(resolved)) return resolved;
+    } catch { /* Ignore malformed merchant metadata. */ }
+  }
+  const imageSrc = html.match(/<link\b[^>]*rel=["']image_src["'][^>]*href=["']([^"']+)["']/i)?.[1];
+  const jsonImage = html.match(/["']image["']\s*:\s*["']([^"']+)["']/i)?.[1];
+  const candidate = imageSrc || jsonImage;
+  if (!candidate) return '';
+  try {
+    const resolved = new URL(decodeHtmlUrl(candidate), pageUrl).toString();
+    return safePublicUrl(resolved) ? resolved : '';
+  } catch { return ''; }
+}
+
+async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) {
+  const directProductUrl = textValue(record, ['ProductUrl', 'ProductURL', 'LandingPageUrl', 'ProductPageUrl', 'Url', 'Link']);
+  const startingUrl = safePublicUrl(directProductUrl)?.toString() || safePublicUrl(affiliateUrl)?.toString();
+  if (!startingUrl) return '';
+  try {
+    const response = await fetch(startingUrl, {
+      redirect: 'follow',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000),
+      headers: { Accept: 'text/html,application/xhtml+xml', 'User-Agent': 'WASCIK-Affiliate-Catalog/1.0' },
+    });
+    if (!response.ok || !safePublicUrl(response.url)) return '';
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return '';
+    const html = (await response.text()).slice(0, 1_500_000);
+    return pageImageFromHtml(html, response.url);
+  } catch {
+    return '';
+  }
+}
+
 function arrayValue(payload: unknown): ImpactRecord[] {
   if (Array.isArray(payload)) return payload.filter((item): item is ImpactRecord => Boolean(item) && typeof item === "object");
   if (!payload || typeof payload !== "object") return [];
@@ -108,7 +169,7 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   const description = textValue(record, ["Description", "ShortDescription", "ProductDescription"]) || `${title} from ${merchant}.`;
   const affiliateUrl = textValue(record, ["TrackingLink", "DeepLink"]);
   const imageUrl = imageValue(record) || null;
-  if (!affiliateUrl || !imageUrl || !commissionEligible(record)) return null;
+  if (!affiliateUrl || !commissionEligible(record)) return null;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
   const stock = textValue(record, ["StockAvailability", "Availability"]);
   const eventDate = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
@@ -199,6 +260,7 @@ export async function searchImpactCategory(
 
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
+  let imageEnrichmentAttempts = 0;
   const startDate = options.ticketStartDate ? Date.parse(`${options.ticketStartDate}T00:00:00`) : null;
   const endDate = options.ticketEndDate ? Date.parse(`${options.ticketEndDate}T23:59:59`) : null;
 
@@ -228,6 +290,12 @@ export async function searchImpactCategory(
 
         const item = mapImpactProduct(record, category.label);
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
+        if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
+          imageEnrichmentAttempts += 1;
+          item.imageUrl = await resolveMerchantImage(record, item.affiliateUrl) || null;
+          if (item.imageUrl) item.features.push('Official image recovered from the merchant product page');
+        }
+        if (!item.imageUrl) continue;
         used.add(item.id);
         results.push(item);
         if (results.length >= batchSize) break;

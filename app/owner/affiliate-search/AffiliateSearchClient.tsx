@@ -140,7 +140,7 @@ export default function AffiliateSearchClient() {
 
     <form onSubmit={search} style={{ display: "grid", gap: 13 }}>
       <details style={{ padding: 13, borderRadius: 14, border: "1px solid rgba(105,214,255,.25)", background: "rgba(255,255,255,.025)" }}>
-        <summary style={{ cursor: "pointer", color: "#72e0ff", fontWeight: 900, fontSize: 17 }}>My Brands {selectedBrands.length ? `· ${selectedBrands.length} selected` : ""}</summary>
+        <summary style={{ cursor: "pointer", color: "#72e0ff", fontWeight: 900, fontSize: 17 }}>My Brands {selectedBrands.length ? `· ${selectedBrands.map((id) => affiliateSearchBrands.find((brand) => brand.id === id)?.label).filter(Boolean).join(", ")}` : ""}</summary>
         {selectedBrands.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 11 }}>{selectedBrands.map((id) => { const brand = affiliateSearchBrands.find((entry) => entry.id === id); return brand ? <span key={id} style={{ padding: "6px 9px", borderRadius: 999, background: "rgba(39,155,221,.22)", color: "#c9f4ff", fontSize: 12, fontWeight: 800 }}>{brand.label}</span> : null; })}</div>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 8, marginTop: 12 }}>
           {affiliateSearchBrands.map((brand) => { const active = selectedBrands.includes(brand.id); return <button type="button" key={brand.id} onClick={() => toggleBrand(brand.id)} aria-pressed={active} style={{ minHeight: 44, padding: "9px 10px", textAlign: "left", borderRadius: 11, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800 }}>{active ? "✓ " : ""}{brand.label}</button>; })}

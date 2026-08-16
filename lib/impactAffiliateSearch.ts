@@ -25,6 +25,41 @@ function textValue(record: ImpactRecord, keys: string[]) {
   return "";
 }
 
+function normalizeImageUrl(value: unknown): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("//")) return `https:${trimmed}`;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const found = normalizeImageUrl(entry);
+      if (found) return found;
+    }
+  }
+  if (value && typeof value === "object") {
+    const record = value as ImpactRecord;
+    for (const key of ["Url", "URL", "url", "Src", "src", "Large", "Original"]) {
+      const found = normalizeImageUrl(record[key]);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+function imageValue(record: ImpactRecord) {
+  for (const key of ["ImageUrl", "ImageURL", "ImageUri", "ImageURI", "ProductImage", "PrimaryImage", "LargeImage", "ThumbnailUrl", "Thumbnail", "Image", "Images"]) {
+    const found = normalizeImageUrl(record[key]);
+    if (found) return found;
+  }
+  for (const [key, value] of Object.entries(record)) {
+    if (!key.toLowerCase().includes("image")) continue;
+    const found = normalizeImageUrl(value);
+    if (found) return found;
+  }
+  return "";
+}
+
 function arrayValue(payload: unknown): ImpactRecord[] {
   if (Array.isArray(payload)) return payload.filter((item): item is ImpactRecord => Boolean(item) && typeof item === "object");
   if (!payload || typeof payload !== "object") return [];
@@ -51,7 +86,8 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   const category = textValue(record, ["Category", "ProductCategory", "CategoryName"]) || fallbackCategory;
   const description = textValue(record, ["Description", "ShortDescription", "ProductDescription"]) || `${title} from ${merchant}.`;
   const affiliateUrl = textValue(record, ["TrackingLink", "Url", "ProductUrl", "Link", "DeepLink"]);
-  const imageUrl = textValue(record, ["ImageUrl", "ImageURL", "Image", "ThumbnailUrl"]) || null;
+  const imageUrl = imageValue(record) || null;
+  if (!imageUrl) return null;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
   const stock = textValue(record, ["StockAvailability", "Availability"]);
   const eventDate = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
@@ -147,7 +183,7 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    const payload = await impactRequest(query, options.ticketStateCode || startDate || endDate ? 60 : batchSize);
+    const payload = await impactRequest(query, 60);
     for (const record of arrayValue(payload)) {
       const searchable = recordText(record);
       if (!category.keywords.some((keyword) => searchable.includes(keyword.toLowerCase()))) continue;

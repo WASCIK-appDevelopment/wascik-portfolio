@@ -1,0 +1,186 @@
+import { createHmac, timingSafeEqual } from "crypto";
+import { NextResponse } from "next/server";
+import { getStage6Config } from "../../../../../lib/ai/stage6Config";
+
+const OWNER_HEADER = "x-wascik-owner-key";
+const MAX_PRODUCTS = 100;
+const TOKEN_TTL_MS = 5 * 60 * 1000;
+
+type ApprovedProduct = {
+  id: string;
+  merchant: string;
+  title: string;
+  category: string;
+  description: string;
+  features: string[];
+  affiliateUrl: string;
+  imageUrl: string | null;
+  price: string | null;
+  pagePath: string | null;
+  source: string;
+};
+
+function authorized(request: Request) {
+  const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  const provided = request.headers.get(OWNER_HEADER)?.trim();
+  return Boolean(expected && provided && provided === expected);
+}
+
+function cleanText(value: unknown, max: number) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function cleanUrl(value: unknown, max: number) {
+  const text = cleanText(value, max);
+  if (!text) return "";
+  try {
+    const url = new URL(text);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function sanitizeProducts(value: unknown): ApprovedProduct[] {
+  if (!Array.isArray(value)) return [];
+  const unique = new Map<string, ApprovedProduct>();
+  for (const raw of value.slice(0, MAX_PRODUCTS)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const id = cleanText(item.id, 240);
+    const merchant = cleanText(item.merchant, 200);
+    const title = cleanText(item.title, 500);
+    const affiliateUrl = cleanUrl(item.affiliateUrl, 3000);
+    if (!id || !merchant || !title || !affiliateUrl) continue;
+    unique.set(id, {
+      id,
+      merchant,
+      title,
+      category: cleanText(item.category, 250),
+      description: cleanText(item.description, 5000),
+      features: (Array.isArray(item.features) ? item.features : [])
+        .filter((feature): feature is string => typeof feature === "string")
+        .map((feature) => feature.trim().slice(0, 500))
+        .filter(Boolean)
+        .slice(0, 30),
+      affiliateUrl,
+      imageUrl: cleanUrl(item.imageUrl, 3000) || null,
+      price: cleanText(item.price, 100) || null,
+      pagePath: cleanText(item.pagePath, 1000) || null,
+      source: cleanText(item.source, 250),
+    });
+  }
+  return Array.from(unique.values()).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function signedPayload(products: ApprovedProduct[], expiresAt: number) {
+  return JSON.stringify({ products, expiresAt });
+}
+
+function createConfirmationToken(products: ApprovedProduct[]) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  if (!secret) return "";
+  const expiresAt = Date.now() + TOKEN_TTL_MS;
+  const signature = createHmac("sha256", secret)
+    .update(signedPayload(products, expiresAt))
+    .digest("base64url");
+  return `${expiresAt}.${signature}`;
+}
+
+function tokenAuthorized(products: ApprovedProduct[], tokenValue: unknown) {
+  const secret = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
+  const token = cleanText(tokenValue, 500);
+  if (!secret || !token) return false;
+  const dot = token.indexOf(".");
+  if (dot <= 0) return false;
+  const expiresAt = Number(token.slice(0, dot));
+  const provided = token.slice(dot + 1);
+  if (!Number.isFinite(expiresAt) || Date.now() > expiresAt || !provided) return false;
+  const expected = createHmac("sha256", secret)
+    .update(signedPayload(products, expiresAt))
+    .digest("base64url");
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
+  if (kind === "service_role") headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
+export async function GET(request: Request) {
+  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const config = getStage6Config();
+  if (!config.databaseConfigured || !config.supabaseServerKey) {
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+  }
+  const response = await fetch(
+    `${config.supabaseUrl}/rest/v1/approved_affiliate_products?select=id,merchant,title,category,description,features,affiliate_url,image_url,price,page_path,source,approval_status,approved_at,published_at&order=approved_at.desc&limit=500`,
+    { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+  );
+  const products = await response.json().catch(() => []);
+  if (!response.ok) return NextResponse.json({ error: "Could not load approved products.", detail: products }, { status: 502 });
+  return NextResponse.json({ products });
+}
+
+export async function POST(request: Request) {
+  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const products = sanitizeProducts(body.products);
+  if (!products.length) return NextResponse.json({ error: "Select at least one valid product." }, { status: 400 });
+
+  if (body.action === "propose") {
+    const confirmationToken = createConfirmationToken(products);
+    if (!confirmationToken) return NextResponse.json({ error: "Owner confirmation is not configured." }, { status: 503 });
+    return NextResponse.json({
+      confirmationToken,
+      count: products.length,
+      summary: `Approve ${products.length} selected product${products.length === 1 ? "" : "s"} for the private affiliate catalog. Nothing will be published.`,
+    });
+  }
+
+  if (body.action !== "confirm" || !tokenAuthorized(products, body.confirmationToken)) {
+    return NextResponse.json({ error: "Unauthorized or unconfirmed catalog change." }, { status: 401 });
+  }
+
+  const config = getStage6Config();
+  if (!config.databaseConfigured || !config.supabaseServerKey) {
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+  }
+  const now = new Date().toISOString();
+  const rows = products.map((product) => ({
+    id: product.id,
+    merchant: product.merchant,
+    title: product.title,
+    category: product.category || null,
+    description: product.description || null,
+    features: product.features,
+    affiliate_url: product.affiliateUrl,
+    image_url: product.imageUrl,
+    price: product.price,
+    page_path: product.pagePath,
+    source: product.source || null,
+    approval_status: "approved",
+    approved_at: now,
+    published_at: null,
+    updated_at: now,
+  }));
+  const response = await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?on_conflict=id`, {
+    method: "POST",
+    headers: {
+      ...supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind),
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(rows),
+  });
+  const saved = await response.json().catch(() => []);
+  if (!response.ok) return NextResponse.json({ error: "Could not save the approved products.", detail: saved }, { status: 502 });
+  return NextResponse.json({
+    success: true,
+    savedCount: Array.isArray(saved) ? saved.length : products.length,
+    products: saved,
+    message: "Products saved to the private approved catalog. They have not been published.",
+  });
+}

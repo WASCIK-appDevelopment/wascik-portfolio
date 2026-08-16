@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import PublishedAffiliateProducts from "../PublishedAffiliateProducts";
 
 const storeLink = "https://aquacurve.sjv.io/c/7587435/3859681/51362?trafsrc=impact";
 
@@ -77,6 +78,7 @@ export default function AquaCurvePage() {
         </div>
         <div className="mx-auto mt-8 max-w-4xl text-center"><a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-cyan-300 px-8 py-4 text-center font-black text-slate-950 transition hover:bg-cyan-200 sm:w-auto">Visit the AquaCurve Main Store ↗</a></div>
       </section>
+      <PublishedAffiliateProducts pagePath="/affiliate-services/aquacurve" />
       <footer className="relative z-10 border-t border-cyan-950 bg-[#010709] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · AquaCurve partner page.</footer>
     </main>
   );

@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 
 const SESSION_KEY = "wascik-owner-console-key";
+const AFFILIATE_SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
 
 const modules = [
   ["Home", "/owner"],
@@ -44,8 +45,11 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY) || "";
-    if (saved) void verify(saved);
-    else setChecking(false);
+    const timer = window.setTimeout(() => {
+      if (saved) void verify(saved);
+      else setChecking(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   function unlock(event: FormEvent) {
@@ -54,6 +58,14 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
     if (!trimmed) return;
     sessionStorage.setItem(SESSION_KEY, trimmed);
     void verify(trimmed);
+  }
+
+  function signOut() {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(AFFILIATE_SEARCH_SESSION_KEY);
+    setKey("");
+    setInputKey("");
+    setError("");
   }
 
   const shell: React.CSSProperties = { minHeight: "100vh", background: "linear-gradient(180deg,#061423,#020913)", color: "#eaf6ff", padding: "22px 14px 60px", fontFamily: "inherit" };
@@ -76,10 +88,11 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
 
   return <main style={shell}>
     <div style={{ maxWidth: 1120, margin: "0 auto" }}>
-      <header style={{ marginBottom: 16 }}>
-        <div style={{ color: "#6bdcff", fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>{kicker}</div>
+      <header style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+        <div><div style={{ color: "#6bdcff", fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>{kicker}</div>
         <h1 style={{ margin: "8px 0 4px", fontSize: "clamp(30px,7vw,48px)" }}>{title}</h1>
-        <p style={{ color: "#a9bdcc", lineHeight: 1.6, maxWidth: 760, margin: 0 }}>{description}</p>
+        <p style={{ color: "#a9bdcc", lineHeight: 1.6, maxWidth: 760, margin: 0 }}>{description}</p></div>
+        <button type="button" onClick={signOut} style={{ flex: "0 0 auto", minHeight: 42, padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)", color: "#d5e8f2", fontWeight: 850 }}>Sign out</button>
       </header>
 
       <nav style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, marginBottom: 12 }} aria-label="Owner console modules">

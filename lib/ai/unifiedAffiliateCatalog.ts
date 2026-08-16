@@ -8,6 +8,7 @@ export type UnifiedAffiliateItem = {
   description: string;
   features: string[];
   affiliateUrl: string;
+  imageUrl?: string;
   source: "central-catalog" | "brand-page";
   pagePath?: string;
 };
@@ -20,6 +21,7 @@ const centralCatalog: UnifiedAffiliateItem[] = affiliateProducts.map((product) =
   description: product.description,
   features: product.features,
   affiliateUrl: product.affiliateUrl,
+  imageUrl: product.imageUrl,
   source: "central-catalog",
 }));
 

@@ -157,7 +157,8 @@ export async function searchImpactCategory(
       if (isTicketNetwork && options.ticketStateCode) {
         const code = options.ticketStateCode.toLowerCase();
         const name = (options.ticketStateName || "").toLowerCase();
-        if (!searchable.includes(code) && (!name || !searchable.includes(name))) continue;
+        const codeMatch = new RegExp(`\\b${code.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\        if (!searchable.includes(code) && (!name || !searchable.includes(name))) continue;")}\\b`, "i").test(searchable);
+        if (!codeMatch && (!name || !searchable.includes(name))) continue;
       }
       if (isTicketNetwork && (startDate || endDate)) {
         const eventDate = recordDate(record);

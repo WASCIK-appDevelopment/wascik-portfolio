@@ -37,6 +37,7 @@ type ActionProposal = {
   note?: string;
   nextAction?: string;
   followUpAt?: string;
+  confirmationToken?: string;
 };
 
 const labels: Record<Lead["status"], string> = {
@@ -80,12 +81,29 @@ export default function LeadConsoleClient() {
   const [pendingProposal, setPendingProposal] = useState<ActionProposal | null>(null);
   const [actionSaving, setActionSaving] = useState(false);
 
+  function clearOwnerSession(message = "Your owner session expired. Enter the passcode again.") {
+    sessionStorage.removeItem("wascik-owner-console-key");
+    setKey("");
+    setInputKey("");
+    setLeads([]);
+    setDrafts({});
+    setPendingProposal(null);
+    setLoading(false);
+    setAiLoading(false);
+    setActionSaving(false);
+    setError(message);
+  }
+
   useEffect(() => {
     const saved = sessionStorage.getItem("wascik-owner-console-key") || "";
-    if (saved) {
+    if (!saved) return;
+    const timer = window.setTimeout(() => {
       setKey(saved);
       void loadLeads(saved);
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // The owner key is restored once when this client mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function syncDrafts(nextLeads: Lead[]) {
@@ -108,9 +126,12 @@ export default function LeadConsoleClient() {
     setError("");
     const response = await fetch("/api/owner/leads", { headers: { "x-wascik-owner-key": ownerKey }, cache: "no-store" });
     if (!response.ok) {
+      if (response.status === 401) {
+        clearOwnerSession("That owner passcode was not accepted or the session expired.");
+        return;
+      }
       setLoading(false);
-      setError(response.status === 401 ? "That owner passcode was not accepted." : "Could not load leads right now.");
-      if (response.status === 401) sessionStorage.removeItem("wascik-owner-console-key");
+      setError("Could not load leads right now.");
       return;
     }
     const data = await response.json();
@@ -136,6 +157,10 @@ export default function LeadConsoleClient() {
       body: JSON.stringify({ id, ...patch }),
     });
     if (!response.ok) {
+      if (response.status === 401) {
+        clearOwnerSession();
+        return null;
+      }
       setError(failureMessage);
       return null;
     }
@@ -179,21 +204,37 @@ export default function LeadConsoleClient() {
     setAiQuestion("");
     setAiLoading(true);
     setPendingProposal(null);
-    setAiTurns((current) => [...current, { role: "owner", content: question }]);
-    const response = await fetch("/api/owner/leads/assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-      body: JSON.stringify({ question }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setAiTurns((current) => [...current, { role: "assistant", content: data.error || "I could not analyze the leads right now." }]);
+    const history = aiTurns.slice(-9);
+    setAiTurns([...history, { role: "owner", content: question }]);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch("/api/owner/leads/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ question, history }),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401) {
+          clearOwnerSession();
+          return;
+        }
+        setAiTurns((current) => [...current, { role: "assistant", content: data.error || "I could not analyze the leads right now." }]);
+        return;
+      }
+      setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
+      setPendingProposal(data.proposal || null);
+    } catch (error) {
+      const message = error instanceof DOMException && error.name === "AbortError"
+        ? "That request took too long. Please try again; your previous messages are still available."
+        : "The Owner AI connection stopped unexpectedly. Please try again.";
+      setAiTurns((current) => [...current, { role: "assistant", content: message }]);
+    } finally {
+      window.clearTimeout(timeout);
       setAiLoading(false);
-      return;
     }
-    setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
-    setPendingProposal(data.proposal || null);
-    setAiLoading(false);
   }
 
   async function confirmProposal() {
@@ -207,6 +248,10 @@ export default function LeadConsoleClient() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (response.status === 401) {
+        clearOwnerSession();
+        return;
+      }
       setError(data.error || "Could not apply the confirmed Owner AI change.");
       setActionSaving(false);
       return;

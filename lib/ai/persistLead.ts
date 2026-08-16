@@ -14,7 +14,7 @@ export type PersistLeadInput = {
 };
 
 export type PersistLeadResult =
-  | { saved: true; leadId?: string; configured: true }
+  | { saved: true; leadId?: string; alertSentAt?: string; configured: true }
   | { saved: false; configured: boolean; reason: string; detail?: string };
 
 function clean(value: unknown, max = 500) {
@@ -51,7 +51,6 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
   const record = {
     capture_key: key ?? null,
     session_id: clean(input.sessionId, 160) || null,
-    status: "new",
     name: clean(input.profile.name, 160) || null,
     email: email || null,
     phone: phone || null,
@@ -79,45 +78,109 @@ export async function persistQualifiedLead(input: PersistLeadInput): Promise<Per
     headers.Authorization = `Bearer ${config.supabaseServerKey}`;
   }
 
-  const attempts = [
-    {
-      url: `${config.supabaseUrl}/rest/v1/leads?on_conflict=capture_key`,
-      prefer: "resolution=merge-duplicates,return=representation",
-    },
-    {
-      url: `${config.supabaseUrl}/rest/v1/leads`,
-      prefer: "return=representation",
-    },
-  ];
+  const resultFromRows = (rows: Array<{ id?: string; alert_sent_at?: string | null }>): PersistLeadResult => ({
+    saved: true,
+    configured: true,
+    leadId: rows[0]?.id,
+    alertSentAt: rows[0]?.alert_sent_at || undefined,
+  });
 
-  let lastStatus = 0;
-  let lastDetail = "";
+  const patchExisting = async (leadId: string) => {
+    const response = await fetch(
+      `${config.supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`,
+      {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(record),
+      },
+    );
+    const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return { response, rows };
+  };
 
-  for (const attempt of attempts) {
-    const response = await fetch(attempt.url, {
-      method: "POST",
-      headers: { ...headers, Prefer: attempt.prefer },
-      body: JSON.stringify(record),
-    });
+  const findExisting = async () => {
+    if (!key) return undefined;
+    const response = await fetch(
+      `${config.supabaseUrl}/rest/v1/leads?capture_key=eq.${encodeURIComponent(key)}&select=id,alert_sent_at&limit=1`,
+      { headers, cache: "no-store" },
+    );
+    if (!response.ok) return undefined;
+    const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return rows[0];
+  };
 
-    if (response.ok) {
-      const rows = (await response.json().catch(() => [])) as Array<{ id?: string }>;
-      return { saved: true, configured: true, leadId: rows[0]?.id };
-    }
+  // Existing leads are patched without a status field. This guarantees that
+  // owner-managed workflow states survive later AI conversation enrichment.
+  const existing = await findExisting();
+  if (existing?.id) {
+    const { response, rows } = await patchExisting(existing.id);
+    if (response.ok) return resultFromRows(rows);
+    const detail = await response.text().catch(() => "");
+    console.error("Stage 6 lead enrichment failed", response.status, detail);
+    return { saved: false, configured: true, reason: "database_update_failed", detail: `${response.status}: ${detail.slice(0, 300)}` };
+  }
 
-    lastStatus = response.status;
-    lastDetail = await response.text().catch(() => "");
+  // Only a brand-new row receives the initial workflow status.
+  const insertResponse = await fetch(`${config.supabaseUrl}/rest/v1/leads`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({ ...record, status: "new" }),
+  });
+  if (insertResponse.ok) {
+    const rows = (await insertResponse.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+    return resultFromRows(rows);
+  }
 
-    if (response.status === 409 && key) {
-      return { saved: true, configured: true };
+  // A concurrent request may have inserted the capture key after our lookup.
+  // Resolve that race by finding and enriching the now-existing row.
+  if (insertResponse.status === 409 && key) {
+    const raced = await findExisting();
+    if (raced?.id) {
+      const { response, rows } = await patchExisting(raced.id);
+      if (response.ok) return resultFromRows(rows);
     }
   }
 
-  console.error("Stage 6 lead persistence failed", lastStatus, lastDetail);
+  const detail = await insertResponse.text().catch(() => "");
+  console.error("Stage 6 lead persistence failed", insertResponse.status, detail);
   return {
     saved: false,
     configured: true,
     reason: "database_insert_failed",
-    detail: `${lastStatus}${lastDetail ? `: ${lastDetail.slice(0, 300)}` : ""}`,
+    detail: `${insertResponse.status}${detail ? `: ${detail.slice(0, 300)}` : ""}`,
   };
+}
+
+
+export async function markLeadAlertSent(leadId: string, sentAt = new Date().toISOString()) {
+  const config = getStage6Config();
+  if (!config.databaseConfigured || !config.supabaseServerKey || !leadId) {
+    return { recorded: false, reason: "database_not_configured" };
+  }
+
+  const headers: Record<string, string> = {
+    apikey: config.supabaseServerKey,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+  if (config.supabaseKeyKind === "service_role") {
+    headers.Authorization = `Bearer ${config.supabaseServerKey}`;
+  }
+
+  const response = await fetch(
+    `${config.supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}&alert_sent_at=is.null`,
+    {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ alert_sent_at: sentAt }),
+    },
+  );
+  const rows = (await response.json().catch(() => [])) as Array<{ id?: string; alert_sent_at?: string | null }>;
+  if (!response.ok) {
+    const detail = JSON.stringify(rows).slice(0, 300);
+    console.error("Stage 6 alert timestamp update failed", response.status, detail);
+    return { recorded: false, reason: "database_update_failed", detail };
+  }
+
+  return { recorded: rows.length > 0, alreadyRecorded: rows.length === 0, alertSentAt: rows[0]?.alert_sent_at || sentAt };
 }

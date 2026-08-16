@@ -91,11 +91,14 @@ export async function POST(request: Request) {
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
 
-  const searchTargets: { categoryId: AffiliateSearchCategoryId; brandId: AffiliateSearchBrandId | null }[] = requested.flatMap((categoryId) =>
-    requestedBrands.length
-      ? requestedBrands.map((brandId) => ({ categoryId, brandId }))
-      : [{ categoryId, brandId: null }],
-  );
+  const searchTargets: { categoryId: AffiliateSearchCategoryId; brandId: AffiliateSearchBrandId | null }[] = [];
+  for (const categoryId of requested) {
+    if (requestedBrands.length) {
+      for (const brandId of requestedBrands) searchTargets.push({ categoryId, brandId });
+    } else {
+      searchTargets.push({ categoryId, brandId: null });
+    }
+  }
 
   const batches = await Promise.all(searchTargets.map(async ({ categoryId, brandId }) => {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;

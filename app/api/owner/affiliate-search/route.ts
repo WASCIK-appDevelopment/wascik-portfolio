@@ -37,10 +37,20 @@ export async function POST(request: Request) {
     .slice(0, 10);
   if (!requested.length) return NextResponse.json({ error: "Select at least one category." }, { status: 400 });
 
+  const rawExcludeIds = (body as { excludeIds?: unknown }).excludeIds;
+  const excludeIds = new Set(
+    (Array.isArray(rawExcludeIds) ? rawExcludeIds : [])
+      .filter((value: unknown): value is string => typeof value === "string")
+      .map((value) => value.trim().slice(0, 200))
+      .filter(Boolean)
+      .slice(0, 2000),
+  );
+
   const batches = requested.map((categoryId) => {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
     const items = unifiedAffiliateCatalog
       .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
+      .filter((item) => !excludeIds.has(item.id))
       .slice(0, AFFILIATE_BATCH_SIZE)
       .map((item) => ({
         id: item.id,

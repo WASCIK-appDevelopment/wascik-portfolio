@@ -62,6 +62,9 @@ export default function GearUpPage() {
 
       <section className="relative z-10 border-t border-violet-950 bg-[#020207] px-5 py-14 md:px-8"><div className="mx-auto max-w-4xl text-center"><p className="text-xs font-black uppercase tracking-[.28em] text-violet-300">Coming next</p><h2 className="mt-3 text-3xl font-black">One GearUP hub. More products as we add them.</h2><p className="mt-4 leading-7 text-slate-400">This page is structured to grow with additional approved GearUP offers, including Windows and network-hardware products, without crowding the main WASCIK affiliate catalog.</p><div className="mt-8 rounded-2xl border border-yellow-300/25 bg-yellow-300/[.06] p-6 text-left"><p className="font-black text-yellow-200">Affiliate disclosure</p><p className="mt-2 leading-7 text-slate-400">WASCIK may earn a commission when you purchase through a qualifying GearUP affiliate link, at no additional cost to you. Prices, eligibility, supported games, features, and promotions may change.</p></div><Link href="/affiliate-services" className="mt-8 inline-block font-bold text-violet-300 hover:text-violet-200">Explore all WASCIK affiliate picks →</Link></div></section>
       <PublishedAffiliateProducts pagePath="/affiliate-services/gearup" />
+      <footer className="relative z-10 border-t border-violet-950 bg-[#020207] px-5 py-6 text-center text-xs text-slate-500">
+        © 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.
+      </footer>
     </main>
   );
 }

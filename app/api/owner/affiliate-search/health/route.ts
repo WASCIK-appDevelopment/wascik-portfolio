@@ -146,7 +146,7 @@ export async function GET(request: Request) {
   });
   const imageRepairs = items.flatMap((item) => {
     const link = linkResults.get(item.affiliateUrl);
-    return !item.imageUrl && link?.discoveredImage ? [{ id: item.id, source: item.source, imageUrl: link.discoveredImage, sourcePageUrl: link.finalUrl }] : [];
+    return link?.discoveredImage && link.discoveredImage !== item.imageUrl ? [{ id: item.id, source: item.source, imageUrl: link.discoveredImage, sourcePageUrl: link.finalUrl }] : [];
   });
   return NextResponse.json({ imageRepairs, checkedAt: new Date().toISOString(), checkedCount: items.length, brandCount: new Set(items.map((item) => item.merchant)).size, candidates: candidateList, message: candidateList.length ? `${candidateList.length} item${candidateList.length === 1 ? "" : "s"} need your review.` : "No definitely expired, unavailable, missing, or duplicate items were found." });
 }
@@ -182,11 +182,11 @@ export async function POST(request: Request) {
     let repaired = 0;
     for (const repair of repairs) {
       const response = repair.source === "uploaded"
-        ? await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(repair.id)}&image_url=is.null`, { method: "PATCH", headers, body: JSON.stringify({ image_url: repair.imageUrl, updated_at: new Date().toISOString() }) })
+        ? await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(repair.id)}`, { method: "PATCH", headers, body: JSON.stringify({ image_url: repair.imageUrl, updated_at: new Date().toISOString() }) })
         : await fetch(`${config.supabaseUrl}/rest/v1/affiliate_catalog_image_overrides?on_conflict=product_id`, { method: "POST", headers: { ...headers, Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify({ product_id: repair.id, product_source: repair.source, image_url: repair.imageUrl, source_page_url: repair.sourcePageUrl, updated_at: new Date().toISOString() }) });
       if (response.ok) repaired += 1;
     }
-    return NextResponse.json({ success: true, repairedCount: repaired, message: `Repaired ${repaired} missing thumbnail${repaired === 1 ? "" : "s"} from merchant product pages.` });
+    return NextResponse.json({ success: true, repairedCount: repaired, message: `Refreshed ${repaired} thumbnail${repaired === 1 ? "" : "s"} from merchant product pages.` });
   }
   const ids = Array.from(new Set(items.map((item) => `${item.source}:${item.id}`))).sort();
   if (!ids.length) return NextResponse.json({ error: "Select at least one product." }, { status: 400 });

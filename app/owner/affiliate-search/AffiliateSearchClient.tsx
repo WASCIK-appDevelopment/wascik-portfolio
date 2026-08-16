@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, usStateOptions } from "../../../lib/affiliateSearch";
 import ApprovedCatalogPublisher from "./ApprovedCatalogPublisher";
+import ProductHealthMonitor from "./ProductHealthMonitor";
 
 const SESSION_KEY = "wascik-owner-console-key";
 const SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
@@ -197,6 +198,7 @@ export default function AffiliateSearchClient() {
   }
 
   return <div style={{ display: "grid", gap: 18 }}>
+    <ProductHealthMonitor />
     <section style={{ padding: 16, border: "1px solid rgba(105,214,255,.28)", borderRadius: 18, background: "linear-gradient(135deg,rgba(34,132,255,.13),rgba(0,205,218,.06))" }}>
       <div style={{ color: "#72e0ff", fontWeight: 900, fontSize: 11, letterSpacing: ".12em" }}>AFFILIATE SEARCH WORKFLOW</div>
       <h2 style={{ margin: "8px 0 7px" }}>Choose brands and categories → fetch 5–20 each → review</h2>

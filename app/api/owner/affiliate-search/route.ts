@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
 
-  const searchTargets = requested.flatMap((categoryId) =>
+  const searchTargets: { categoryId: AffiliateSearchCategoryId; brandId: AffiliateSearchBrandId | null }[] = requested.flatMap((categoryId) =>
     requestedBrands.length
       ? requestedBrands.map((brandId) => ({ categoryId, brandId }))
       : [{ categoryId, brandId: null }],

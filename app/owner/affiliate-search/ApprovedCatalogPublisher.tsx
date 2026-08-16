@@ -42,6 +42,7 @@ export default function ApprovedCatalogPublisher() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
+  const [view, setView] = useState<"ready" | "published" | "all">("ready");
   const [destinationById, setDestinationById] = useState<Record<string, string>>({});
   const [confirmationToken, setConfirmationToken] = useState("");
   const [confirmationSummary, setConfirmationSummary] = useState("");
@@ -85,6 +86,8 @@ export default function ApprovedCatalogPublisher() {
   function publications() {
     return selected.map((id) => ({ id, pagePath: destinationById[id] || "/affiliate-services" }));
   }
+
+  const displayedProducts = products.filter((item) => view === "all" || (view === "published" ? Boolean(item.published_at) : !item.published_at));
 
   async function preparePublication() {
     if (!selected.length || loading) return;
@@ -139,7 +142,11 @@ export default function ApprovedCatalogPublisher() {
     {notice && <p style={{ margin: "10px 0 0", padding: 10, borderRadius: 10, background: "#102d22", color: "#bdf4cd" }}>{notice}</p>}
     {open && <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
       <div><h2 style={{ margin: 0 }}>Private Approved Products · {products.length}</h2><p style={{ margin: "5px 0 0", color: "#9fb8c5" }}>Select products, verify their destination pages, then prepare the yellow publication confirmation.</p></div>
-      {products.length === 0 ? <p style={{ margin: 0, color: "#9fb8c5" }}>No approved products were found.</p> : products.map((item) => {
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+        {(["ready", "published", "all"] as const).map((option) => <button key={option} type="button" onClick={() => setView(option)} style={{ minHeight: 38, borderRadius: 999, border: view === option ? "1px solid #75e4ff" : "1px solid #49616d", background: view === option ? "#174e67" : "#101d24", color: "white", padding: "7px 12px", fontWeight: 900 }}>{option === "ready" ? "Ready to Publish" : option === "published" ? "Currently Published" : "All Approved"}</button>)}
+        {selected.length > 0 && <button type="button" onClick={() => { setSelected([]); setConfirmationToken(""); setConfirmationSummary(""); }} style={{ minHeight: 38, borderRadius: 999, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", padding: "7px 12px", fontWeight: 900 }}>Clear Selection</button>}
+      </div>
+      {displayedProducts.length === 0 ? <p style={{ margin: 0, color: "#9fb8c5" }}>{products.length === 0 ? "No approved products were found." : "No products are in this view."}</p> : displayedProducts.map((item) => {
         const active = selected.includes(item.id);
         return <article key={item.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 11, padding: 10, borderRadius: 11, border: active ? "1px solid #6fe1ff" : "1px solid transparent", background: active ? "rgba(24,111,148,.2)" : "rgba(0,0,0,.24)" }}>
           {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : <div style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}

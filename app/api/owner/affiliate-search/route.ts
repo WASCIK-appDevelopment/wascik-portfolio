@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory } from "../../../../lib/affiliateSearch";
+import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory, usStateOptions } from "../../../../lib/affiliateSearch";
 import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 
@@ -15,14 +15,15 @@ function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
   return [item.title, item.category, item.merchant, item.description, ...item.features].join(" ").toLowerCase();
 }
 
-function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>, brandIds: AffiliateSearchBrandId[]): AffiliateProductCandidate[] {
+function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>, brandIds: AffiliateSearchBrandId[], batchSize: number, ticketStateCode: string): AffiliateProductCandidate[] {
   const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
   const brands = affiliateSearchBrands.filter((brand) => brandIds.includes(brand.id));
   return unifiedAffiliateCatalog
     .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
     .filter((item) => !brands.length || brands.some((brand) => brand.aliases.some((alias) => searchableText(item).includes(alias))))
+    .filter((item) => !ticketStateCode || !searchableText(item).includes("ticketnetwork") || searchableText(item).includes(ticketStateCode.toLowerCase()))
     .filter((item) => !excludeIds.has(item.id))
-    .slice(0, AFFILIATE_BATCH_SIZE)
+    .slice(0, batchSize)
     .map((item) => ({
       id: item.id,
       merchant: item.merchant,
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; brands?: unknown; excludeIds?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; brands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; excludeIds?: unknown };
   const candidates = Array.isArray(body.categories) ? body.categories : [];
   const requested: AffiliateSearchCategoryId[] = candidates
     .filter((value: unknown): value is string => typeof value === "string")
@@ -63,6 +64,18 @@ export async function POST(request: Request) {
     .filter((value: unknown): value is string => typeof value === "string")
     .filter(isAffiliateSearchBrand)
     .slice(0, affiliateSearchBrands.length);
+
+  const requestedCount = Number(body.batchSize);
+  const batchSize = affiliateSearchResultCounts.some((count) => count === requestedCount) ? requestedCount : AFFILIATE_BATCH_SIZE;
+  const rawState = typeof body.ticketState === "string" ? body.ticketState.trim().toUpperCase() : "";
+  const state = usStateOptions.find(([code]) => code === rawState);
+  const ticketStateCode = state?.[0] || "";
+  const ticketStateName = state?.[1] || "";
+  const ticketStartDate = typeof body.ticketStartDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.ticketStartDate) ? body.ticketStartDate : "";
+  const ticketEndDate = typeof body.ticketEndDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.ticketEndDate) ? body.ticketEndDate : "";
+  if (ticketStartDate && ticketEndDate && ticketStartDate > ticketEndDate) {
+    return NextResponse.json({ error: "The ticket end date must be after the start date." }, { status: 400 });
+  }
 
   const excludeIds = new Set(
     (Array.isArray(body.excludeIds) ? body.excludeIds : [])
@@ -82,7 +95,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, excludeIds, requestedBrands);
+        impactItems = await searchImpactCategory(categoryId, excludeIds, { brandIds: requestedBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -90,12 +103,12 @@ export async function POST(request: Request) {
     }
 
     const ids = new Set(impactItems.map((item) => item.id));
-    const localItems = localCandidates(categoryId, excludeIds, requestedBrands)
+    const localItems = localCandidates(categoryId, excludeIds, requestedBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
-      .slice(0, Math.max(0, AFFILIATE_BATCH_SIZE - impactItems.length));
-    const items = [...impactItems, ...localItems].slice(0, AFFILIATE_BATCH_SIZE);
+      .slice(0, Math.max(0, batchSize - impactItems.length));
+    const items = [...impactItems, ...localItems].slice(0, batchSize);
 
-    return { categoryId, categoryLabel: category.label, requestedCount: AFFILIATE_BATCH_SIZE, items };
+    return { categoryId, categoryLabel: category.label, requestedCount: batchSize, items };
   }));
 
   let notice = "Showing real items already approved in the WASCIK catalog.";

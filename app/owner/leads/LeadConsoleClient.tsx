@@ -204,25 +204,37 @@ export default function LeadConsoleClient() {
     setAiQuestion("");
     setAiLoading(true);
     setPendingProposal(null);
-    setAiTurns((current) => [...current, { role: "owner", content: question }]);
-    const response = await fetch("/api/owner/leads/assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-      body: JSON.stringify({ question }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (response.status === 401) {
-        clearOwnerSession();
+    const history = aiTurns.slice(-9);
+    setAiTurns([...history, { role: "owner", content: question }]);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch("/api/owner/leads/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ question, history }),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401) {
+          clearOwnerSession();
+          return;
+        }
+        setAiTurns((current) => [...current, { role: "assistant", content: data.error || "I could not analyze the leads right now." }]);
         return;
       }
-      setAiTurns((current) => [...current, { role: "assistant", content: data.error || "I could not analyze the leads right now." }]);
+      setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
+      setPendingProposal(data.proposal || null);
+    } catch (error) {
+      const message = error instanceof DOMException && error.name === "AbortError"
+        ? "That request took too long. Please try again; your previous messages are still available."
+        : "The Owner AI connection stopped unexpectedly. Please try again.";
+      setAiTurns((current) => [...current, { role: "assistant", content: message }]);
+    } finally {
+      window.clearTimeout(timeout);
       setAiLoading(false);
-      return;
     }
-    setAiTurns((current) => [...current, { role: "assistant", content: data.text || "No answer returned." }]);
-    setPendingProposal(data.proposal || null);
-    setAiLoading(false);
   }
 
   async function confirmProposal() {

@@ -65,11 +65,12 @@ body {
 .wascik-cta.primary { background:var(--yellow); color:#07121d; box-shadow:0 0 24px #ffe60055; }
 .wascik-cta.primary:hover { transform:translateY(-2px); background:#fff36b; }
 .wascik-cta.secondary { border:1px solid #168ed0; color:white; background:#06325288; }
-.affiliate-hero-spotlight{display:flex;flex-direction:column;align-items:center;align-self:flex-start;gap:2px;margin-top:-38px;max-width:100%}
-.affiliate-hero-callout{position:relative;display:block;max-width:100%;padding:8px 12px;border:1px solid #ff5a5a;border-radius:999px;background:linear-gradient(135deg,#ef1f2f,#9e0714);box-shadow:0 0 18px #ff243f88;color:#fff;font-size:.72rem;font-weight:950;letter-spacing:.055em;text-align:center;text-transform:uppercase;animation:affiliate-callout-pulse 1.8s ease-in-out infinite}
-.affiliate-hero-arrow{height:24px;color:#ff4d5e;font-size:1.65rem;font-weight:950;line-height:24px;filter:drop-shadow(0 0 5px #ff2038)}
+.affiliate-hero-spotlight{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:2px 14px;width:100%;max-width:620px;margin-top:2px}
+.affiliate-hero-callout{position:relative;grid-column:1/-1;justify-self:start;display:block;max-width:100%;padding:8px 12px;border:1px solid #ff5a5a;border-radius:999px;background:linear-gradient(135deg,#ef1f2f,#9e0714);box-shadow:0 0 18px #ff243f88;color:#fff;font-size:.72rem;font-weight:950;letter-spacing:.055em;text-align:center;text-transform:uppercase;animation:affiliate-callout-pulse 1.8s ease-in-out infinite}
+.affiliate-hero-arrow{grid-column:1;justify-self:center;height:24px;color:#ff4d5e;font-size:1.65rem;font-weight:950;line-height:24px;filter:drop-shadow(0 0 5px #ff2038)}
 .wascik-cta.affiliate-hero-button{border:2px solid #ff4052;background:linear-gradient(135deg,#8d0915aa,#063252);box-shadow:0 0 20px #ff263d55}
 .wascik-cta.affiliate-hero-button:hover{transform:translateY(-2px);border-color:#ff8791;background:linear-gradient(135deg,#c80e1f,#084366)}
+.affiliate-hero-button,.affiliate-future-button{width:100%;min-width:0;padding-left:10px;padding-right:10px;text-align:center;white-space:normal}
 @keyframes affiliate-callout-pulse{0%,100%{transform:scale(1);box-shadow:0 0 15px #ff243f66}50%{transform:scale(1.035);box-shadow:0 0 25px #ff243faa}}
 @media (prefers-reduced-motion:reduce){.affiliate-hero-callout{animation:none}}
 .wascik-trust { display:flex; flex-wrap:wrap; gap:18px; margin-top:22px; color:#75d3ff; font-size:.83rem; font-weight:700; }

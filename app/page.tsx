@@ -112,7 +112,11 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <div className="wascik-actions">
                 <a href="/start-project" className="wascik-cta primary">Start My Project</a>
                 <a href="/sample-project" className="wascik-cta secondary">View Our Work</a>
-                <a href="/affiliate-services" className="wascik-cta secondary">Affiliate Services</a>
+                <div className="affiliate-hero-spotlight">
+                  <span className="affiliate-hero-callout">Check Out Our Affiliate Pages</span>
+                  <span className="affiliate-hero-arrow" aria-hidden="true">↓</span>
+                  <a href="/affiliate-services" className="wascik-cta secondary affiliate-hero-button">Affiliate Services</a>
+                </div>
                 <button type="button" className="wascik-cta future" disabled aria-disabled="true">What We&apos;re Working On</button>
               </div>
               <div className="wascik-trust"><span>✓ Mobile-first</span><span>✓ Custom-built</span><span>✓ Local support</span></div>

@@ -193,7 +193,7 @@ export default function EuroOpticPage() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-emerald-950 bg-[#010504] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · EuroOptic partner page.</footer>
+      <footer className="relative z-10 border-t border-emerald-950 bg-[#010504] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.</footer>
     </main>
   );
 }

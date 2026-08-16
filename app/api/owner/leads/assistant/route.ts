@@ -25,6 +25,8 @@ type ActionProposal = {
 
 type AssistantEnvelope = { text: string; proposal?: ActionProposal | null };
 
+type OwnerConversationTurn = { role: "owner" | "assistant"; content: string };
+
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
@@ -49,6 +51,20 @@ function parseEnvelope(raw: string): AssistantEnvelope {
     if (value && typeof value.text === "string") return value;
   } catch {}
   return { text: raw, proposal: null };
+}
+
+function sanitizeHistory(value: unknown): OwnerConversationTurn[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item && typeof item === "object")
+    .map((item) => item as { role?: unknown; content?: unknown })
+    .filter((item) => (item.role === "owner" || item.role === "assistant") && typeof item.content === "string")
+    .map((item) => ({
+      role: item.role as OwnerConversationTurn["role"],
+      content: (item.content as string).trim().slice(0, 1200),
+    }))
+    .filter((item) => item.content)
+    .slice(-10);
 }
 
 function validateProposal(value: unknown, leadIds: Set<string>): ActionProposal | null {
@@ -102,6 +118,7 @@ export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const question = typeof body.question === "string" ? body.question.trim().slice(0, 1200) : "";
+  const history = sanitizeHistory(body.history);
   if (!question) return NextResponse.json({ error: "Ask a question about your leads." }, { status: 400 });
 
   const openAI = getOpenAIConfig();
@@ -128,6 +145,7 @@ export async function POST(request: Request) {
     "For a follow-up, use set_follow_up and include nextAction and/or followUpAt. followUpAt must be an ISO date-time. If ambiguous, ask a short clarification question and return no proposal.",
     `Current server time is ${now}. Use it only to interpret explicit relative dates if unambiguous.`,
     "If multiple leads could match, do not guess. Ask which lead and return no proposal.",
+    "Use the supplied OWNER CONVERSATION to understand short clarification answers such as a business name. If your immediately previous reply asked which lead, resolve the owner's answer against the live lead data and continue the original requested action.",
     "For ordinary analysis/questions, return no proposal.",
     "DEFAULT RESPONSE STYLE: short, plain-English business briefing, usually no more than about 180 words unless details are requested.",
     "Never show UUIDs/internal IDs, database field names, or technical implementation details in visible text.",
@@ -142,7 +160,7 @@ export async function POST(request: Request) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${openAI.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: openAI.model, instructions, input: [{ role: "user", content: `LIVE LEAD DATA:\n${JSON.stringify(leads)}\n\nOWNER QUESTION:\n${question}` }], reasoning: { effort: "minimal" }, max_output_tokens: 650, store: false }),
+    body: JSON.stringify({ model: openAI.model, instructions, input: [{ role: "user", content: `LIVE LEAD DATA:\n${JSON.stringify(leads)}\n\nOWNER CONVERSATION:\n${JSON.stringify(history)}\n\nCURRENT OWNER MESSAGE:\n${question}` }], reasoning: { effort: "minimal" }, max_output_tokens: 650, store: false }),
   });
 
   const data = (await response.json().catch(() => ({}))) as ResponsesPayload;

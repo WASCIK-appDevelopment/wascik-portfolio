@@ -18,3 +18,22 @@ export type AffiliateSearchCategoryId = typeof affiliateSearchCategories[number]
 export function isAffiliateSearchCategory(value: string): value is AffiliateSearchCategoryId {
   return affiliateSearchCategories.some((category) => category.id === value);
 }
+
+export const affiliateSearchBrands = [
+  { id: "eurooptic", label: "EuroOptic", aliases: ["eurooptic", "euro optic"] },
+  { id: "focus-camera", label: "Focus Camera", aliases: ["focus camera"] },
+  { id: "lifestyle-focus", label: "Lifestyle by Focus", aliases: ["lifestyle by focus", "lifestyle focus"] },
+  { id: "aquacurve", label: "AquaCurve", aliases: ["aquacurve", "aqua curve"] },
+  { id: "ticketnetwork", label: "TicketNetwork", aliases: ["ticketnetwork", "ticket network"] },
+  { id: "gearup", label: "GearUP", aliases: ["gearup", "gear up"] },
+  { id: "dhgate", label: "DHgate", aliases: ["dhgate"] },
+  { id: "philips", label: "Philips", aliases: ["philips"] },
+  { id: "revomatic", label: "RevoMatic", aliases: ["revomatic", "revo matic"] },
+  { id: "arccaptain", label: "ArcCaptain", aliases: ["arccaptain", "arc captain"] },
+] as const;
+
+export type AffiliateSearchBrandId = typeof affiliateSearchBrands[number]["id"];
+
+export function isAffiliateSearchBrand(value: string): value is AffiliateSearchBrandId {
+  return affiliateSearchBrands.some((brand) => brand.id === value);
+}

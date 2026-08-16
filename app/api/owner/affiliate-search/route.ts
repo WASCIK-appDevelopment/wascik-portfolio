@@ -21,7 +21,7 @@ function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<
   return unifiedAffiliateCatalog
     .filter((item) => category.keywords.some((keyword) => searchableText(item).includes(keyword)))
     .filter((item) => !brands.length || brands.some((brand) => brand.aliases.some((alias) => searchableText(item).includes(alias))))
-    .filter((item) => !ticketStateCode || !searchableText(item).includes("ticketnetwork") || searchableText(item).includes(ticketStateCode.toLowerCase()))
+    .filter((item) => !ticketStateCode || !searchableText(item).includes("ticketnetwork") || new RegExp(`\\b${ticketStateCode}\\b`, "i").test(searchableText(item)))
     .filter((item) => !excludeIds.has(item.id))
     .slice(0, batchSize)
     .map((item) => ({

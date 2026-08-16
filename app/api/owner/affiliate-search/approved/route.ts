@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
+import { unifiedAffiliateCatalog } from "../../../../../lib/ai/unifiedAffiliateCatalog";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const MAX_PRODUCTS = 100;
@@ -205,7 +206,34 @@ export async function GET(request: Request) {
   );
   const products = await response.json().catch(() => []);
   if (!response.ok) return NextResponse.json({ error: "Could not load approved products.", detail: products }, { status: 502 });
-  return NextResponse.json({ products });
+  const suppressionResponse = await fetch(
+    `${config.supabaseUrl}/rest/v1/affiliate_catalog_suppressions?select=product_id&limit=1000`,
+    { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+  );
+  const suppressionRows = suppressionResponse.ok ? await suppressionResponse.json().catch(() => []) : [];
+  const suppressed = new Set(Array.isArray(suppressionRows) ? suppressionRows.map((row) => String(row.product_id || "")) : []);
+  const builtInProducts = unifiedAffiliateCatalog
+    .filter((item) => !suppressed.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      merchant: item.merchant,
+      title: item.title,
+      category: item.category,
+      description: item.description,
+      features: item.features,
+      affiliate_url: item.affiliateUrl,
+      image_url: item.imageUrl || null,
+      price: null,
+      page_path: item.pagePath || "/affiliate-services",
+      source: item.source,
+      approval_status: "published",
+      approved_at: null,
+      published_at: "built-in",
+      catalog_source: "builtin",
+    }));
+  const consoleProducts = Array.isArray(products) ? products.map((item) => ({ ...item, catalog_source: "console" })) : [];
+  const consoleIds = new Set(consoleProducts.map((item) => String(item.id || "")));
+  return NextResponse.json({ products: [...consoleProducts, ...builtInProducts.filter((item) => !consoleIds.has(item.id))] });
 }
 
 export async function POST(request: Request) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import PublishedAffiliateProducts from "../PublishedAffiliateProducts";
 
 export const metadata: Metadata = {
   title: "Concert Tickets & Upcoming Events | WASCIK Affiliate Services",
@@ -77,6 +78,7 @@ export default function TicketNetworkPage() {
         <div className="mx-auto max-w-4xl rounded-3xl border border-yellow-300/25 bg-yellow-300/[.06] p-7 sm:p-9"><p className="font-black text-yellow-200">Ticket and affiliate disclosure</p><p className="mt-3 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through TicketNetwork links on this page, at no additional cost to you. TicketNetwork is a resale marketplace, not the venue or box office, and ticket prices may be above or below face value. Event schedules, performers, availability, seat locations, fees, and prices may change. Review the merchant&apos;s current listing and purchase terms before ordering.</p></div>
         <div className="mx-auto mt-8 max-w-4xl text-center"><a href={ticketLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-fuchsia-400 px-8 py-4 text-center font-black text-slate-950 transition hover:bg-fuchsia-300 sm:w-auto">Browse All TicketNetwork Events ↗</a></div>
       </section>
+      <PublishedAffiliateProducts pagePath="/affiliate-services/ticketnetwork" />
       <footer className="relative z-10 border-t border-fuchsia-950 bg-[#050208] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · TicketNetwork event page.</footer>
     </main>
   );

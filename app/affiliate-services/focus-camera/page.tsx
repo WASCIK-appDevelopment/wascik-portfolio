@@ -250,7 +250,7 @@ export default function FocusCameraPage() {
         <div className="mx-auto mt-8 max-w-4xl text-center"><a href={storeLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-blue-400 px-7 py-4 text-center font-black text-blue-100 transition hover:bg-blue-500/10 sm:w-auto">Browse All Focus Camera Products →</a></div>
       </section>
 
-      <footer className="relative z-10 border-t border-blue-950 bg-[#04060a] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · Focus Camera partner page.</footer>
+      <footer className="relative z-10 border-t border-blue-950 bg-[#04060a] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.</footer>
     </main>
   );
 }

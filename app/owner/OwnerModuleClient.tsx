@@ -27,6 +27,7 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
   const [inputKey, setInputKey] = useState("");
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function verify(ownerKey: string) {
     setChecking(true);
@@ -95,8 +96,15 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
         <button type="button" onClick={signOut} style={{ flex: "0 0 auto", minHeight: 42, padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)", color: "#d5e8f2", fontWeight: 850 }}>Sign out</button>
       </header>
 
-      <nav style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, marginBottom: 12 }} aria-label="Owner console modules">
-        {modules.map(([label, href]) => <a key={href} href={href} style={{ whiteSpace: "nowrap", textDecoration: "none", color: currentPath === href ? "#03111b" : "#bfeaff", background: currentPath === href ? "#72dcff" : "rgba(45,160,220,.12)", border: "1px solid rgba(89,203,255,.35)", borderRadius: 999, padding: "9px 13px", fontWeight: 850, fontSize: 13 }}>{label}</a>)}
+      <nav style={{ marginBottom: 14 }} aria-label="Owner console modules">
+        <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="wascik-console-menu" style={{ width: "100%", display: "grid", gridTemplateColumns: "52px minmax(0,1fr) auto", gap: 11, alignItems: "center", minHeight: 64, padding: "8px 12px", borderRadius: 17, border: "1px solid rgba(91,216,255,.55)", background: "linear-gradient(135deg,rgba(15,73,111,.94),rgba(4,26,43,.96))", color: "white", boxShadow: "inset 0 0 24px rgba(52,189,255,.09),0 10px 28px rgba(0,0,0,.24)", textAlign: "left" }}>
+          <span aria-hidden="true" style={{ width: 48, height: 48, display: "grid", placeItems: "center", position: "relative", borderRadius: 15, border: "1px solid #65ddff", background: "radial-gradient(circle at 50% 30%,#176ca0,#061b2c 70%)", color: "#8be8ff", fontSize: 23, fontWeight: 950, fontStyle: "italic", textShadow: "0 0 12px #3bd2ff" }}>W<span style={{ position: "absolute", bottom: 6, width: 20, height: 2, background: "#69dcff", boxShadow: "0 -5px 0 rgba(105,220,255,.7),0 5px 0 rgba(105,220,255,.45)" }} /></span>
+          <span style={{ minWidth: 0 }}><span style={{ display: "block", color: "#74ddff", fontSize: 11, fontWeight: 950, letterSpacing: ".14em" }}>WASCIK CONTROL MENU</span><span style={{ display: "block", marginTop: 4, fontSize: 15, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{modules.find(([, href]) => href === currentPath)?.[0] || "Owner Console"}</span></span>
+          <span aria-hidden="true" style={{ display: "grid", gap: 4, justifyItems: "end" }}><span style={{ color: "#a9edff", fontSize: 20, lineHeight: 1, transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform .18s ease" }}>⌄</span><span style={{ color: "#7fb6ca", fontSize: 9, fontWeight: 900, letterSpacing: ".08em" }}>{menuOpen ? "CLOSE" : "OPEN"}</span></span>
+        </button>
+        {menuOpen && <div id="wascik-console-menu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginTop: 8, padding: 10, borderRadius: 15, border: "1px solid rgba(89,203,255,.28)", background: "rgba(3,17,29,.96)", boxShadow: "0 16px 34px rgba(0,0,0,.28)" }}>
+          {modules.map(([label, href]) => <a key={href} href={href} aria-current={currentPath === href ? "page" : undefined} style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", color: currentPath === href ? "#03111b" : "#ccefff", background: currentPath === href ? "linear-gradient(135deg,#72dcff,#42b9ef)" : "rgba(45,160,220,.1)", border: "1px solid rgba(89,203,255,.3)", borderRadius: 12, padding: "9px 11px", fontWeight: 850, fontSize: 13 }}><span>{label}</span><span aria-hidden="true" style={{ opacity: .75 }}>{currentPath === href ? "●" : "›"}</span></a>)}
+        </div>}
       </nav>
 
       <section style={panel}>{children}</section>

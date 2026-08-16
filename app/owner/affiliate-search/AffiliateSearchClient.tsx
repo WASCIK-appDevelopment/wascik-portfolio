@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, AffiliateSearchBrandId, AffiliateSearchCategoryId } from "../../../lib/affiliateSearch";
+import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, usStateOptions } from "../../../lib/affiliateSearch";
 
 const SESSION_KEY = "wascik-owner-console-key";
 const SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
@@ -25,6 +25,10 @@ type Batch = { categoryId: string; categoryLabel: string; requestedCount: number
 export default function AffiliateSearchClient() {
   const [selected, setSelected] = useState<AffiliateSearchCategoryId[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<AffiliateSearchBrandId[]>([]);
+  const [batchSize, setBatchSize] = useState<number>(AFFILIATE_BATCH_SIZE);
+  const [ticketState, setTicketState] = useState("");
+  const [ticketStartDate, setTicketStartDate] = useState("");
+  const [ticketEndDate, setTicketEndDate] = useState("");
   const [providers, setProviders] = useState({ impact: false, awin: false });
   const [batches, setBatches] = useState<Batch[]>([]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
@@ -41,11 +45,15 @@ export default function AffiliateSearchClient() {
       const savedSearch = sessionStorage.getItem(SEARCH_SESSION_KEY);
       if (savedSearch) {
         try {
-          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; selectedBrands?: unknown; batches?: unknown; notice?: unknown };
+          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; selectedBrands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; batches?: unknown; notice?: unknown };
           if (Array.isArray(parsed.seenIds)) setSeenIds(parsed.seenIds.filter((id): id is string => typeof id === "string"));
           if (Array.isArray(parsed.selectedProducts)) setSelectedProducts(parsed.selectedProducts as ProductCandidate[]);
           if (Array.isArray(parsed.selectedCategories)) setSelected(parsed.selectedCategories.filter((id): id is AffiliateSearchCategoryId => typeof id === "string" && affiliateSearchCategories.some((category) => category.id === id)));
           if (Array.isArray(parsed.selectedBrands)) setSelectedBrands(parsed.selectedBrands.filter((id): id is AffiliateSearchBrandId => typeof id === "string" && affiliateSearchBrands.some((brand) => brand.id === id)));
+          if (typeof parsed.batchSize === "number" && affiliateSearchResultCounts.some((count) => count === parsed.batchSize)) setBatchSize(parsed.batchSize);
+          if (typeof parsed.ticketState === "string") setTicketState(parsed.ticketState);
+          if (typeof parsed.ticketStartDate === "string") setTicketStartDate(parsed.ticketStartDate);
+          if (typeof parsed.ticketEndDate === "string") setTicketEndDate(parsed.ticketEndDate);
           if (Array.isArray(parsed.batches)) setBatches(parsed.batches as Batch[]);
           if (typeof parsed.notice === "string") setNotice(parsed.notice);
         } catch {
@@ -68,10 +76,14 @@ export default function AffiliateSearchClient() {
       selectedProducts,
       selectedCategories: selected,
       selectedBrands,
+      batchSize,
+      ticketState,
+      ticketStartDate,
+      ticketEndDate,
       batches,
       notice,
     }));
-  }, [hydrated, seenIds, selectedProducts, selected, selectedBrands, batches, notice]);
+  }, [hydrated, seenIds, selectedProducts, selected, selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, batches, notice]);
 
   function toggle(categoryId: AffiliateSearchCategoryId) {
     setSelected((current) => current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId]);
@@ -92,7 +104,7 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ categories: selected, brands: selectedBrands, batchSize: AFFILIATE_BATCH_SIZE, excludeIds: seenIds }),
+        body: JSON.stringify({ categories: selected, brands: selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, excludeIds: seenIds }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Affiliate search failed.");
@@ -146,14 +158,23 @@ export default function AffiliateSearchClient() {
           {affiliateSearchBrands.map((brand) => { const active = selectedBrands.includes(brand.id); return <button type="button" key={brand.id} onClick={() => toggleBrand(brand.id)} aria-pressed={active} style={{ minHeight: 44, padding: "9px 10px", textAlign: "left", borderRadius: 11, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800 }}>{active ? "✓ " : ""}{brand.label}</button>; })}
         </div>
       </details>
-      <div><h2 style={{ margin: "0 0 5px" }}>Select product categories</h2><p style={{ margin: 0, color: "#9fb6c5" }}>Each selected category requests a separate batch of {AFFILIATE_BATCH_SIZE} products.</p></div>
+      {selectedBrands.includes("ticketnetwork") && <section style={{ display: "grid", gap: 10, padding: 13, borderRadius: 14, border: "1px solid rgba(255,207,118,.35)", background: "rgba(92,61,6,.13)" }}>
+        <strong style={{ color: "#ffdc91" }}>TicketNetwork search area and dates</strong>
+        <label style={{ display: "grid", gap: 5 }}><span>Which state?</span><select required value={ticketState} onChange={(event) => setTicketState(event.target.value)} style={{ minHeight: 46, borderRadius: 10, padding: "8px 10px", fontSize: 16, background: "#07151d", color: "white", border: "1px solid rgba(255,255,255,.2)" }}><option value="">Select a state</option>{usStateOptions.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 9 }}>
+          <label style={{ display: "grid", gap: 5 }}><span>Start date</span><input required type="date" value={ticketStartDate} onChange={(event) => setTicketStartDate(event.target.value)} style={{ minHeight: 46, borderRadius: 10, padding: "8px", fontSize: 16, background: "#07151d", color: "white", border: "1px solid rgba(255,255,255,.2)" }} /></label>
+          <label style={{ display: "grid", gap: 5 }}><span>End date</span><input required type="date" min={ticketStartDate || undefined} value={ticketEndDate} onChange={(event) => setTicketEndDate(event.target.value)} style={{ minHeight: 46, borderRadius: 10, padding: "8px", fontSize: 16, background: "#07151d", color: "white", border: "1px solid rgba(255,255,255,.2)" }} /></label>
+        </div>
+      </section>}
+      <label style={{ display: "grid", gap: 5, maxWidth: 280 }}><strong>Results per category</strong><select value={batchSize} onChange={(event) => setBatchSize(Number(event.target.value))} style={{ minHeight: 46, borderRadius: 10, padding: "8px 10px", fontSize: 16, background: "#07151d", color: "white", border: "1px solid rgba(255,255,255,.2)" }}>{affiliateSearchResultCounts.map((count) => <option key={count} value={count}>{count} products per category</option>)}</select></label>
+      <div><h2 style={{ margin: "0 0 5px" }}>Select product categories</h2><p style={{ margin: 0, color: "#9fb6c5" }}>Each selected category requests a separate batch of {batchSize} products.</p></div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 9 }}>
         {affiliateSearchCategories.map((category) => {
           const active = selected.includes(category.id);
           return <button type="button" key={category.id} onClick={() => toggle(category.id)} aria-pressed={active} style={{ minHeight: 52, padding: "10px 12px", textAlign: "left", borderRadius: 13, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800, cursor: "pointer" }}>{active ? "✓ " : ""}{category.label}</button>;
         })}
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${AFFILIATE_BATCH_SIZE} per category`}</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} selected · up to {selected.length * AFFILIATE_BATCH_SIZE} candidates</span></div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate))} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate)) ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${batchSize} per category`}</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} selected · up to {selected.length * batchSize} candidates</span></div>
     </form>
 
     {error && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}

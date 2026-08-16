@@ -20,7 +20,7 @@ type ProductCandidate = {
   source: string;
 };
 
-type Batch = { categoryId: string; categoryLabel: string; requestedCount: number; items: ProductCandidate[] };
+type Batch = { brandId?: string | null; brandLabel?: string | null; categoryId: string; categoryLabel: string; requestedCount: number; items: ProductCandidate[] };
 
 export default function AffiliateSearchClient() {
   const [selected, setSelected] = useState<AffiliateSearchCategoryId[]>([]);
@@ -174,7 +174,7 @@ export default function AffiliateSearchClient() {
           return <button type="button" key={category.id} onClick={() => toggle(category.id)} aria-pressed={active} style={{ minHeight: 52, padding: "10px 12px", textAlign: "left", borderRadius: 13, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800, cursor: "pointer" }}>{active ? "✓ " : ""}{category.label}</button>;
         })}
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate))} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate)) ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${batchSize} per category`}</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} selected · up to {selected.length * batchSize} candidates</span></div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate))} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate)) ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${batchSize} per ${selectedBrands.length ? "brand/category" : "category"}`}</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} categories · up to {selected.length * Math.max(1, selectedBrands.length) * batchSize} candidates</span></div>
     </form>
 
     {error && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
@@ -186,8 +186,8 @@ export default function AffiliateSearchClient() {
       {selectedProducts.length > 0 && <div style={{ display: "grid", gap: 7, marginTop: 12 }}>{selectedProducts.map((item) => <div key={item.id} style={{ padding: 10, borderRadius: 10, background: "rgba(0,0,0,.22)" }}><strong>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div>)}</div>}
     </section>
 
-    {batches.map((batch) => <section key={batch.categoryId} style={{ display: "grid", gap: 10 }}>
-      <div><h2 style={{ margin: 0 }}>{batch.categoryLabel}</h2><p style={{ margin: "4px 0 0", color: "#91aebe" }}>{batch.items.length} of {batch.requestedCount} currently available for review</p></div>
+    {batches.map((batch) => <section key={`${batch.brandId || "all"}:${batch.categoryId}`} style={{ display: "grid", gap: 10 }}>
+      <div>{batch.brandLabel && <div style={{ color: "#70dcff", fontSize: 12, fontWeight: 900, marginBottom: 4 }}>{batch.brandLabel}</div>}<h2 style={{ margin: 0 }}>{batch.categoryLabel}</h2><p style={{ margin: "4px 0 0", color: "#91aebe" }}>{batch.items.length} of {batch.requestedCount} currently available for review</p></div>
       {batch.items.length === 0 ? <div style={{ padding: 15, borderRadius: 14, border: "1px dashed rgba(255,255,255,.2)", color: "#a7bdca" }}>No approved local items match yet. A live Impact or Awin feed connection is required to fill this requested batch.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 10 }}>
         {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}>{item.imageUrl && <img src={item.imageUrl} alt="" style={{ width: "100%", height: 150, objectFit: "contain", borderRadius: 11, background: "white", marginBottom: 10 }} />}<div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button></div></article>)}
       </div>}

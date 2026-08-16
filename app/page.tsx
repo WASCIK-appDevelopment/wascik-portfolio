@@ -84,7 +84,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           <CodeBackdrop />
           <header className="wascik-nav">
             <a href={mode === "portfolio" ? "#top" : "/"} className="wascik-brand" aria-label="WASCIK home">
-              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority />
+              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority /><sup className="wascik-tm">™</sup>
               <span className="brand-words">WASCIK <small>APP DEVELOPMENT</small></span>
             </a>
             <nav aria-label="Portfolio navigation">
@@ -172,7 +172,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             </div>
           </section>
 
-          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          <footer className="wascik-footer">© 2026 WASCIK™ App Development · WASCIK™ is a trademark of Michael Lewis.</footer>
           </>
           )}
 
@@ -208,7 +208,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             </div>
           </section>
 
-          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          <footer className="wascik-footer">© 2026 WASCIK™ App Development · WASCIK™ is a trademark of Michael Lewis.</footer>
           </>
           )}
         </div>

@@ -24,6 +24,7 @@ type ApprovedProduct = {
   page_path?: string | null;
   approved_at?: string | null;
   published_at?: string | null;
+  catalog_source?: "builtin" | "console";
 };
 
 type ManagementAction = "unpublish" | "remove";
@@ -158,10 +159,13 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     setError("");
     setNotice("");
     try {
-      const response = await fetch("/api/owner/affiliate-search/approved", {
+      const builtIn = item.catalog_source === "builtin";
+      const response = await fetch(builtIn ? "/api/owner/affiliate-search/health" : "/api/owner/affiliate-search/approved", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ action: `propose_${action}`, ids: [item.id] }),
+        body: JSON.stringify(builtIn
+          ? { action: "propose_remove", items: [{ id: item.id, merchant: item.merchant, title: item.title, reason: "Owner requested removal from Published Products", source: "builtin" }] }
+          : { action: `propose_${action}`, ids: [item.id] }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Could not prepare ${action}.`);
@@ -184,10 +188,14 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/owner/affiliate-search/approved", {
+      const item = products.find((product) => product.id === managementId);
+      const builtIn = item?.catalog_source === "builtin";
+      const response = await fetch(builtIn ? "/api/owner/affiliate-search/health" : "/api/owner/affiliate-search/approved", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ action: `confirm_${managementAction}`, ids: [managementId], confirmationToken: managementToken }),
+        body: JSON.stringify(builtIn
+          ? { action: "confirm_remove", items: [{ id: item?.id, merchant: item?.merchant, title: item?.title, reason: "Owner requested removal from Published Products", source: "builtin" }], confirmationToken: managementToken }
+          : { action: `confirm_${managementAction}`, ids: [managementId], confirmationToken: managementToken }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Could not ${managementAction} product.`);
@@ -211,7 +219,7 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     {error && <p style={{ margin: "10px 0 0", padding: 10, borderRadius: 10, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
     {notice && <p style={{ margin: "10px 0 0", padding: 10, borderRadius: 10, background: "#102d22", color: "#bdf4cd" }}>{notice}</p>}
     {open && <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-      <div><h2 style={{ margin: 0 }}>{mode === "published" ? "Currently Published" : "Ready to Publish"} · {displayedProducts.length}</h2><p style={{ margin: "5px 0 0", color: "#9fb8c5" }}>{mode === "published" ? "Review everything currently live. Unpublishing moves a product back to Affiliate Search; deleting removes it from the approved catalog." : "Select products, verify their destination pages, then prepare the yellow publication confirmation. Published products automatically leave this workspace."}</p></div>
+      <div><h2 style={{ margin: 0 }}>{mode === "published" ? "All Published Products" : "Ready to Publish"} · {displayedProducts.length}</h2><p style={{ margin: "5px 0 0", color: "#9fb8c5" }}>{mode === "published" ? "This combines products built into WASCIK pages with products published through the console. Every currently published item belongs here." : "Select products, verify their destination pages, then prepare the yellow publication confirmation. Published products automatically leave this workspace."}</p></div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
         <a href={mode === "published" ? "/owner/affiliate-search" : "/owner/published-products"} style={{ minHeight: 38, display: "grid", placeItems: "center", borderRadius: 999, border: "1px solid #75e4ff", background: "#174e67", color: "white", padding: "7px 12px", fontWeight: 900, textDecoration: "none" }}>{mode === "published" ? "← Back to Affiliate Search" : "Open Published Products →"}</a>
         {mode === "workspace" && selected.length > 0 && <button type="button" onClick={() => { setSelected([]); setConfirmationToken(""); setConfirmationSummary(""); }} style={{ minHeight: 38, borderRadius: 999, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", padding: "7px 12px", fontWeight: 900 }}>Clear Selection</button>}
@@ -220,13 +228,13 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
         const active = selected.includes(item.id);
         return <article key={item.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 11, padding: 10, borderRadius: 11, border: active ? "1px solid #6fe1ff" : "1px solid transparent", background: active ? "rgba(24,111,148,.2)" : "rgba(0,0,0,.24)" }}>
           {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : <div style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}
-          <div style={{ display: "grid", gap: 7, minWidth: 0 }}><div><strong style={{ display: "block", lineHeight: 1.3 }}>{item.title}</strong><span style={{ display: "block", color: "#82cfe8", fontSize: 12, marginTop: 3 }}>{item.merchant}{item.category ? ` · ${item.category}` : ""}</span>{item.price && <span style={{ display: "block", color: "#8ff0b6", fontSize: 12, fontWeight: 900 }}>{item.price}</span>}{item.published_at && <span style={{ display: "block", color: "#ffd77e", fontSize: 11, marginTop: 2 }}>Currently published</span>}</div>
+          <div style={{ display: "grid", gap: 7, minWidth: 0 }}><div><strong style={{ display: "block", lineHeight: 1.3 }}>{item.title}</strong><span style={{ display: "block", color: "#82cfe8", fontSize: 12, marginTop: 3 }}>{item.merchant}{item.category ? ` · ${item.category}` : ""}</span>{item.price && <span style={{ display: "block", color: "#8ff0b6", fontSize: 12, fontWeight: 900 }}>{item.price}</span>}{item.published_at && <span style={{ display: "block", color: "#ffd77e", fontSize: 11, marginTop: 2 }}>Currently published · {item.catalog_source === "builtin" ? "Original website catalog" : "Published through console"}</span>}</div>
             {mode === "workspace" && <label style={{ display: "grid", gap: 4, fontSize: 12 }}><span>Destination page</span><select value={destinationById[item.id] || suggestedDestination(item.merchant)} onChange={(event) => { setDestinationById((current) => ({ ...current, [item.id]: event.target.value })); setConfirmationToken(""); }} style={{ minHeight: 40, borderRadius: 9, border: "1px solid rgba(255,255,255,.18)", background: "#07151d", color: "white", padding: "6px 8px", fontSize: 16 }}>{destinations.map(([path, label]) => <option key={path} value={path}>{label}</option>)}</select></label>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6 }}>
               <a href={item.affiliate_url} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #49b976", background: "#113523", color: "#c8f9d9", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>Open affiliate link ↗</a>
               {mode === "published" && item.page_path ? <a href={item.page_path} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #5d8de1", background: "#142b51", color: "#d8e6ff", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>View public page ↗</a> : mode === "workspace" && <button type="button" onClick={() => toggleProduct(item.id)} style={{ minHeight: 40, borderRadius: 9, border: active ? "1px solid #7fe7ff" : "1px solid #5d7480", background: active ? "#175c78" : "#17232a", color: "white", fontWeight: 900 }}>{active ? "✓ Selected" : "Select to publish"}</button>}
-              {mode === "published" && <button type="button" onClick={() => prepareManagement("unpublish", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: loading ? .6 : 1 }}>Unpublish</button>}
-              <button type="button" onClick={() => prepareManagement("remove", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #c85b68", background: "#3b151b", color: "#ffd9de", fontWeight: 900, opacity: loading ? .6 : 1 }}>{mode === "published" ? "Delete from approved catalog" : "Remove from list"}</button>
+              {mode === "published" && <button type="button" onClick={() => prepareManagement("unpublish", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: loading ? .6 : 1 }}>{item.catalog_source === "builtin" ? "Remove from publication" : "Unpublish"}</button>}
+              {item.catalog_source !== "builtin" && <button type="button" onClick={() => prepareManagement("remove", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #c85b68", background: "#3b151b", color: "#ffd9de", fontWeight: 900, opacity: loading ? .6 : 1 }}>{mode === "published" ? "Delete from approved catalog" : "Remove from list"}</button>}
             </div>
           </div>
         </article>;

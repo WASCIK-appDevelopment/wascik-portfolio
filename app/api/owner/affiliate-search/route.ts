@@ -82,6 +82,16 @@ export async function POST(request: Request) {
 
 
 
+  // Exclude only products already shown during this signed-in console
+  // session. Published catalog duplicates are checked later at publication review.
+  const excludeIds = new Set(
+    (Array.isArray(body.excludeIds) ? body.excludeIds : [])
+      .filter((value: unknown): value is string => typeof value === "string")
+      .map((value) => value.trim().slice(0, 240))
+      .filter(Boolean)
+      .slice(0, 5000),
+  );
+
   const impactConnected = Boolean(process.env.IMPACT_ACCOUNT_SID?.trim() && process.env.IMPACT_AUTH_TOKEN?.trim());
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
@@ -97,6 +107,7 @@ export async function POST(request: Request) {
     }
   }
 
+  const requestUsedIds = new Set<string>();
   const batches: { brandId: AffiliateSearchBrandId | null; brandLabel: string | null; categoryId: AffiliateSearchCategoryId; categoryLabel: string; requestedCount: number; items: AffiliateProductCandidate[] }[] = [];
   for (const { categoryId, brandId } of searchTargets) {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
@@ -106,7 +117,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, new Set(), {
+        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), {
           brandIds: targetBrands,
           batchSize,
           ticketStateCode,
@@ -128,6 +139,7 @@ export async function POST(request: Request) {
     const items = [...impactItems, ...localItems]
       .slice(0, batchSize)
       .map((item) => ({ ...item, sourceImageUrl: item.imageUrl || null, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
+    items.forEach((item) => requestUsedIds.add(item.id));
     batches.push({
       brandId,
       brandLabel: brand?.label || null,

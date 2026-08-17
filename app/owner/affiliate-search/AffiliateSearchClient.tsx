@@ -134,8 +134,16 @@ export default function AffiliateSearchClient() {
   }
 
   function chooseProduct(item: ProductCandidate) {
-    const nextSelected = selectedProducts.some((product) => product.id === item.id) ? selectedProducts : [...selectedProducts, item];
-    setSelectedProducts(nextSelected);
+    const normalize = (value: string) => value.toLowerCase().replace(/&/g, " and ").replace(/\b(the|new)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+    const duplicate = selectedProducts.some((product) =>
+      normalize(product.merchant) === normalize(item.merchant) && normalize(product.title) === normalize(item.title),
+    );
+    if (duplicate) {
+      removeCandidate(item.id);
+      setNotice(`${item.title} is already in your current Ready selection, so a duplicate was not added.`);
+      return;
+    }
+    setSelectedProducts([...selectedProducts, item]);
     removeCandidate(item.id);
     setNotice(`${item.title} added to your current-session approval queue.`);
   }

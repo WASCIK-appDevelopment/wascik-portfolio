@@ -56,6 +56,7 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
   const [managementId, setManagementId] = useState("");
   const [managementToken, setManagementToken] = useState("");
   const [managementSummary, setManagementSummary] = useState("");
+  const [managementLoadingId, setManagementLoadingId] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -153,9 +154,9 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
   }
 
   async function prepareManagement(action: ManagementAction, item: ApprovedProduct) {
-    if (loading) return;
+    if (loading || managementLoadingId) return;
     const key = sessionStorage.getItem(SESSION_KEY) || "";
-    setLoading(true);
+    setManagementLoadingId(item.id);
     setError("");
     setNotice("");
     try {
@@ -178,14 +179,14 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : `Could not prepare ${action}.`);
     } finally {
-      setLoading(false);
+      setManagementLoadingId("");
     }
   }
 
   async function confirmManagement() {
-    if (!managementAction || !managementId || !managementToken || loading) return;
+    if (!managementAction || !managementId || !managementToken || loading || managementLoadingId) return;
     const key = sessionStorage.getItem(SESSION_KEY) || "";
-    setLoading(true);
+    setManagementLoadingId(managementId);
     setError("");
     try {
       const item = products.find((product) => product.id === managementId);
@@ -209,7 +210,7 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : `Could not ${managementAction} product.`);
     } finally {
-      setLoading(false);
+      setManagementLoadingId("");
     }
   }
 
@@ -233,15 +234,16 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6 }}>
               <a href={item.affiliate_url} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #49b976", background: "#113523", color: "#c8f9d9", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>Open affiliate link ↗</a>
               {mode === "published" && item.page_path ? <a href={item.page_path} target="_blank" rel="noopener noreferrer" style={{ minHeight: 40, display: "grid", placeItems: "center", borderRadius: 9, border: "1px solid #5d8de1", background: "#142b51", color: "#d8e6ff", fontWeight: 900, textDecoration: "none", textAlign: "center", padding: 5 }}>View public page ↗</a> : mode === "workspace" && <button type="button" onClick={() => toggleProduct(item.id)} style={{ minHeight: 40, borderRadius: 9, border: active ? "1px solid #7fe7ff" : "1px solid #5d7480", background: active ? "#175c78" : "#17232a", color: "white", fontWeight: 900 }}>{active ? "✓ Selected" : "Select to publish"}</button>}
-              {mode === "published" && <button type="button" onClick={() => prepareManagement("unpublish", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: loading ? .6 : 1 }}>{item.catalog_source === "builtin" ? "Remove from publication" : "Unpublish"}</button>}
-              {item.catalog_source !== "builtin" && <button type="button" onClick={() => prepareManagement("remove", item)} disabled={loading} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #c85b68", background: "#3b151b", color: "#ffd9de", fontWeight: 900, opacity: loading ? .6 : 1 }}>{mode === "published" ? "Delete from approved catalog" : "Remove from list"}</button>}
+              {mode === "published" && <button type="button" onClick={() => prepareManagement("unpublish", item)} disabled={loading || Boolean(managementLoadingId)} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: managementLoadingId === item.id ? .6 : 1 }}>{item.catalog_source === "builtin" ? "Remove from publication" : "Unpublish"}</button>}
+              {item.catalog_source !== "builtin" && <button type="button" onClick={() => prepareManagement("remove", item)} disabled={loading || Boolean(managementLoadingId)} style={{ minHeight: 40, borderRadius: 9, border: "1px solid #c85b68", background: "#3b151b", color: "#ffd9de", fontWeight: 900, opacity: managementLoadingId === item.id ? .6 : 1 }}>{mode === "published" ? "Delete from approved catalog" : "Remove from list"}</button>}
             </div>
+            {managementToken && managementId === item.id && <div style={{ padding: 12, borderRadius: 11, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 11, fontWeight: 950, letterSpacing: ".1em" }}>CONFIRM PRODUCT CHANGE</div><p style={{ lineHeight: 1.45, whiteSpace: "pre-line", margin: "8px 0" }}>{managementSummary}</p><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><button type="button" onClick={() => { setManagementAction(null); setManagementId(""); setManagementToken(""); setManagementSummary(""); }} style={{ minHeight: 44, borderRadius: 10, border: "1px solid #e2c96e", background: "transparent", color: "#fff4bd", fontWeight: 900 }}>Cancel</button><button type="button" onClick={confirmManagement} disabled={Boolean(managementLoadingId)} style={{ minHeight: 44, borderRadius: 10, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: managementLoadingId === item.id ? .6 : 1 }}>{managementLoadingId === item.id ? "Applying…" : managementAction === "remove" ? "Confirm removal" : "Confirm unpublish"}</button></div></div>}
           </div>
         </article>;
       })}
       {mode === "workspace" && selected.length > 0 && !confirmationToken && <button type="button" onClick={preparePublication} disabled={loading} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: loading ? .6 : 1 }}>{loading ? "Preparing confirmation…" : `Review publication for ${selected.length} product${selected.length === 1 ? "" : "s"}`}</button>}
       {mode === "workspace" && confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM PUBLICATION</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmPublication} disabled={loading} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: loading ? .6 : 1 }}>{loading ? "Publishing…" : "Confirm and publish to development pages"}</button></div>}
-      {managementToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM PRODUCT CHANGE</div><p style={{ lineHeight: 1.5, whiteSpace: "pre-line" }}>{managementSummary}</p><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><button type="button" onClick={() => { setManagementAction(null); setManagementId(""); setManagementToken(""); setManagementSummary(""); }} style={{ minHeight: 46, borderRadius: 11, border: "1px solid #e2c96e", background: "transparent", color: "#fff4bd", fontWeight: 900 }}>Cancel</button><button type="button" onClick={confirmManagement} disabled={loading} style={{ minHeight: 46, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: loading ? .6 : 1 }}>{loading ? "Applying…" : managementAction === "remove" ? "Confirm removal" : "Confirm unpublish"}</button></div></div>}
+
     </div>}
   </section>;
 }

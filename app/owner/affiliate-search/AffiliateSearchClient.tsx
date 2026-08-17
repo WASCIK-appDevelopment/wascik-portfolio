@@ -17,6 +17,7 @@ type ProductCandidate = {
   features: string[];
   affiliateUrl: string;
   imageUrl?: string | null;
+  sourceImageUrl?: string | null;
   price?: string | null;
   pagePath?: string | null;
   source: string;
@@ -159,7 +160,7 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search/approved", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ action: "propose", products: selectedProducts }),
+        body: JSON.stringify({ action: "propose", products: selectedProducts.map((item) => ({ ...item, imageUrl: item.sourceImageUrl || item.imageUrl })) }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not prepare the approval.");
@@ -181,7 +182,7 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search/approved", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ action: "confirm", confirmationToken, products: selectedProducts }),
+        body: JSON.stringify({ action: "confirm", confirmationToken, products: selectedProducts.map((item) => ({ ...item, imageUrl: item.sourceImageUrl || item.imageUrl })) }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not save the approved products.");

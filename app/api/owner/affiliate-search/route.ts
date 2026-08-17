@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory, usStateOptions } from "../../../../lib/affiliateSearch";
 import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
+import { proxiedAffiliateImageUrl } from "../../../../lib/affiliateImageProxy";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 
@@ -120,7 +121,9 @@ export async function POST(request: Request) {
     const localItems = localCandidates(categoryId, new Set([...excludeIds, ...requestUsedIds]), targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
-    const items = [...impactItems, ...localItems].slice(0, batchSize);
+    const items = [...impactItems, ...localItems]
+      .slice(0, batchSize)
+      .map((item) => ({ ...item, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
     items.forEach((item) => requestUsedIds.add(item.id));
 
     batches.push({

@@ -29,6 +29,7 @@ export const affiliateSearchBrands = [
   { id: "philips", label: "Philips", aliases: ["philips"] },
   { id: "revomatic", label: "RevoMatic", aliases: ["revomatic", "revo matic"] },
   { id: "arccaptain", label: "ArcCaptain", aliases: ["arccaptain", "arc captain"] },
+  { id: "coofandy", label: "COOFANDY", aliases: ["coofandy", "coo fandy", "kuvfandi"] },
 ] as const;
 
 export type AffiliateSearchBrandId = typeof affiliateSearchBrands[number]["id"];

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory, usStateOptions } from "../../../../lib/affiliateSearch";
-import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
+import { AffiliateProductCandidate, findImpactProductImageByTitle, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 import { proxiedAffiliateImageUrl } from "../../../../lib/affiliateImageProxy";
 
@@ -115,6 +115,16 @@ export async function POST(request: Request) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
       }
+    }
+
+    if (impactItems.some((item) => !item.imageUrl)) {
+      impactItems = await Promise.all(impactItems.map(async (item) => {
+        if (item.imageUrl) return item;
+        const recoveredImage = await findImpactProductImageByTitle(item.title, item.merchant);
+        return recoveredImage
+          ? { ...item, imageUrl: recoveredImage, features: [...item.features, "Official image recovered by exact product lookup"] }
+          : item;
+      }));
     }
 
     const ids = new Set(impactItems.map((item) => item.id));

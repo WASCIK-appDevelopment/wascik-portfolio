@@ -346,7 +346,15 @@ type ImpactSearchOptions = {
   ticketStateName?: string;
   ticketStartDate?: string;
   ticketEndDate?: string;
+  excludedPublishedKeys?: Set<string>;
 };
+
+function publishedCandidateKey(merchant: string, title: string) {
+  const normalize = (value: string) => comparableProductText(value).replace(/\b(the|new)\b/g, " ").trim().replace(/\s+/g, " ");
+  let merchantKey = normalize(merchant).replaceAll(" ", "");
+  if (["focuscamera", "focusbylifestyle", "lifestylebyfocus"].includes(merchantKey)) merchantKey = "focuscamera";
+  return `${merchantKey}|${normalize(title)}`;
+}
 
 function recordDate(record: ImpactRecord) {
   const raw = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
@@ -405,6 +413,7 @@ export async function searchImpactCategory(
 
         const item = mapImpactProduct(record, category.label);
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
+        if (options.excludedPublishedKeys?.has(publishedCandidateKey(item.merchant, item.title))) continue;
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
           imageEnrichmentAttempts += 1;
           item.imageUrl = await resolveMerchantImage(record, item.affiliateUrl) || null;

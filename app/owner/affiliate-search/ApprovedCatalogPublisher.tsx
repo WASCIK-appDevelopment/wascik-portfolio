@@ -7,6 +7,8 @@ const SESSION_KEY = "wascik-owner-console-key";
 const destinations = [
   ["/affiliate-services", "Main Affiliate Services"],
   ["/affiliate-services/aquacurve", "AquaCurve"],
+  ["/affiliate-services/coofandy", "COOFANDY"],
+  ["/affiliate-services/dhgate", "DHgate"],
   ["/affiliate-services/eurooptic", "EuroOptic"],
   ["/affiliate-services/focus-camera", "Focus Camera"],
   ["/affiliate-services/gearup", "GearUP"],
@@ -32,7 +34,8 @@ type ManagementAction = "unpublish" | "remove";
 function suggestedDestination(merchant: string) {
   const name = merchant.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (name.includes("aquacurve")) return "/affiliate-services/aquacurve";
-  if (name.includes("dhgate")) return "/affiliate-services";
+  if (name.includes("coofandy")) return "/affiliate-services/coofandy";
+  if (name.includes("dhgate")) return "/affiliate-services/dhgate";
   if (name.includes("eurooptic")) return "/affiliate-services/eurooptic";
   if (name.includes("focus")) return "/affiliate-services/focus-camera";
   if (name.includes("gearup")) return "/affiliate-services/gearup";

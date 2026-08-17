@@ -173,6 +173,39 @@ function pageImageFromHtml(html: string, pageUrl: string, productTitle: string) 
   return '';
 }
 
+async function readerRenderedPageImage(pageUrl: string, productTitle: string) {
+  try {
+    const endpoint = `https://r.jina.ai/${pageUrl}`;
+    const apiKey = process.env.JINA_API_KEY?.trim();
+    const response = await fetch(endpoint, {
+      cache: "force-cache",
+      signal: AbortSignal.timeout(20000),
+      headers: {
+        Accept: "text/markdown,text/plain;q=0.9",
+        "X-Return-Format": "markdown",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
+    });
+    if (!response.ok) return "";
+    const markdown = (await response.text()).slice(0, 2_000_000);
+    const titleTokens = productTitle.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length >= 3);
+    const candidates: { url: string; score: number }[] = [];
+    const imagePattern = /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+["'][^)]*["'])?\)/gi;
+    for (const match of markdown.matchAll(imagePattern)) {
+      const alt = (match[1] || "").toLowerCase();
+      const url = decodeHtmlUrl(match[2] || "");
+      if (!safePublicUrl(url) || /logo|icon|badge|avatar|payment|spinner|placeholder/i.test(`${alt} ${url}`)) continue;
+      const score = titleTokens.filter((token) => alt.includes(token) || url.toLowerCase().includes(token)).length
+        + (/product|gallery|main|primary|large/i.test(`${alt} ${url}`) ? 2 : 0);
+      candidates.push({ url, score });
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates[0]?.url || "";
+  } catch {
+    return "";
+  }
+}
+
 async function browserRenderedMetadataImage(pageUrl: string) {
   try {
     const endpoint = new URL("https://api.microlink.io");
@@ -196,6 +229,9 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
   const directProductUrl = textValue(record, ['ProductUrl', 'ProductURL', 'LandingPageUrl', 'LandingPageURL', 'ProductPageUrl', 'ProductPageURL', 'ProductLink', 'ProductUri', 'Uri', 'URL', 'Url', 'Link']);
   const startingUrl = safePublicUrl(directProductUrl)?.toString() || safePublicUrl(affiliateUrl)?.toString();
   if (!startingUrl) return '';
+  const productTitle = textValue(record, ['Name', 'Title', 'ProductName']);
+  const renderedFallback = async (url: string) =>
+    await readerRenderedPageImage(url, productTitle) || await browserRenderedMetadataImage(url);
   try {
     const response = await fetch(startingUrl, {
       redirect: 'follow',
@@ -203,14 +239,13 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
       signal: AbortSignal.timeout(12000),
       headers: { Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1 WASCIK-Affiliate-Catalog/1.1' },
     });
-    if (!response.ok || !safePublicUrl(response.url)) return browserRenderedMetadataImage(startingUrl);
+    if (!response.ok || !safePublicUrl(response.url)) return renderedFallback(startingUrl);
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return browserRenderedMetadataImage(response.url || startingUrl);
+    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return renderedFallback(response.url || startingUrl);
     const html = (await response.text()).slice(0, 1_500_000);
-    const productTitle = textValue(record, ['Name', 'Title', 'ProductName']);
-    return pageImageFromHtml(html, response.url, productTitle) || await browserRenderedMetadataImage(response.url || startingUrl);
+    return pageImageFromHtml(html, response.url, productTitle) || await renderedFallback(response.url || startingUrl);
   } catch {
-    return browserRenderedMetadataImage(startingUrl);
+    return renderedFallback(startingUrl);
   }
 }
 

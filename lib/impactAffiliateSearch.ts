@@ -319,6 +319,39 @@ function comparableProductText(value: string) {
   return value.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
 }
 
+async function impactCatalogItemImage(record: ImpactRecord) {
+  const catalogId = textValue(record, ["CatalogId"]);
+  const catalogItemId = textValue(record, ["CatalogItemId", "ItemId", "Id"]);
+  if (!catalogId || !catalogItemId) return "";
+
+  const accountSid = process.env.IMPACT_ACCOUNT_SID?.trim();
+  const authToken = process.env.IMPACT_AUTH_TOKEN?.trim();
+  if (!accountSid || !authToken) return "";
+
+  try {
+    const url = new URL(`https://api.impact.com/Mediapartners/${encodeURIComponent(accountSid)}/Catalogs/${encodeURIComponent(catalogId)}/Items`);
+    url.searchParams.set("CatalogItemId", catalogItemId);
+    url.searchParams.set("PageSize", "10");
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return "";
+    const records = arrayValue(await response.json().catch(() => null));
+    for (const catalogRecord of records) {
+      const image = imageValue(catalogRecord);
+      if (image) return image;
+    }
+  } catch {
+    // Continue to merchant-page recovery when the catalog cannot supply an image.
+  }
+  return "";
+}
+
 export async function findImpactProductImageByTitle(title: string, merchant: string) {
   if (!title.trim()) return "";
   const titleTokens = comparableProductText(title).split(" ").filter((token) => token.length >= 3);
@@ -340,6 +373,8 @@ export async function findImpactProductImageByTitle(title: string, merchant: str
       for (const entry of ranked) {
         const direct = imageValue(entry.record);
         if (direct) return direct;
+        const catalogImage = await impactCatalogItemImage(entry.record);
+        if (catalogImage) return catalogImage;
         const affiliateUrl = textValue(entry.record, ["TrackingLink", "DeepLink"]);
         const recovered = await resolveMerchantImage(entry.record, affiliateUrl);
         if (recovered) return recovered;
@@ -426,8 +461,13 @@ export async function searchImpactCategory(
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
           imageEnrichmentAttempts += 1;
-          item.imageUrl = await resolveMerchantImage(record, item.affiliateUrl) || null;
-          if (item.imageUrl) item.features.push('Official image recovered from the merchant product page');
+          const catalogImage = await impactCatalogItemImage(record);
+          item.imageUrl = catalogImage || await resolveMerchantImage(record, item.affiliateUrl) || null;
+          if (item.imageUrl) {
+            item.features.push(catalogImage
+              ? "Official image recovered from the affiliate catalog"
+              : "Official image recovered from the merchant product page");
+          }
         }
         // Keep valid commission-eligible products even when Impact and the merchant page do not expose an image.
         // The owner UI can show a placeholder while the image is reviewed or enriched later.

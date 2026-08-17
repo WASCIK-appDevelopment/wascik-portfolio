@@ -92,7 +92,7 @@ function htmlAttribute(tag: string, name: string) {
 
 function resolvePageAsset(value: string, pageUrl: string) {
   if (!value || value.startsWith('data:')) return '';
-  const firstSrcsetValue = value.split(',')[0]?.trim().split(/\\s+/)[0] || '';
+  const firstSrcsetValue = value.split(',')[0]?.trim().split(/\s+/)[0] || '';
   try {
     const resolved = new URL(firstSrcsetValue, pageUrl).toString();
     return safePublicUrl(resolved) ? resolved : '';
@@ -104,7 +104,7 @@ function resolvePageAsset(value: string, pageUrl: string) {
 function pageImageFromHtml(html: string, pageUrl: string) {
   // Merchant sites do not use one consistent attribute order, so inspect every
   // meta tag by attribute name rather than relying on a fixed regex order.
-  const metaTags = html.match(/<meta\\b[^>]*>/gi) || [];
+  const metaTags = html.match(/<meta\b[^>]*>/gi) || [];
   for (const tag of metaTags) {
     const property = (htmlAttribute(tag, 'property') || htmlAttribute(tag, 'name') || htmlAttribute(tag, 'itemprop')).toLowerCase();
     if (!['og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src', 'image', 'primaryimageofpage'].includes(property)) continue;
@@ -112,10 +112,10 @@ function pageImageFromHtml(html: string, pageUrl: string) {
     if (image) return image;
   }
 
-  const linkTags = html.match(/<link\\b[^>]*>/gi) || [];
+  const linkTags = html.match(/<link\b[^>]*>/gi) || [];
   for (const tag of linkTags) {
     const rel = htmlAttribute(tag, 'rel').toLowerCase();
-    if (!rel.split(/\\s+/).includes('image_src') && !rel.includes('preload')) continue;
+    if (!rel.split(/\s+/).includes('image_src') && !rel.includes('preload')) continue;
     if (rel.includes('preload') && htmlAttribute(tag, 'as').toLowerCase() !== 'image') continue;
     const image = resolvePageAsset(htmlAttribute(tag, 'href') || htmlAttribute(tag, 'imagesrcset'), pageUrl);
     if (image) return image;
@@ -123,15 +123,15 @@ function pageImageFromHtml(html: string, pageUrl: string) {
 
   // Many commerce platforms expose the authoritative product image only in
   // Product JSON-LD. Support both a string and the first entry in an array.
-  const jsonLdBlocks = html.match(/<script\\b[^>]*type=["']application\\/ld\\+json["'][^>]*>[\\s\\S]*?<\\/script>/gi) || [];
+  const jsonLdBlocks = html.match(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) || [];
   for (const block of jsonLdBlocks) {
-    const imageMatch = block.match(/["']image["']\\s*:\\s*(?:["']([^"']+)["']|\\[\\s*["']([^"']+)["'])/i);
+    const imageMatch = block.match(/["']image["']\s*:\s*(?:["']([^"']+)["']|\[\s*["']([^"']+)["'])/i);
     const image = resolvePageAsset(imageMatch?.[1] || imageMatch?.[2] || '', pageUrl);
     if (image) return image;
   }
 
   // Final fallback for storefronts that lazy-load the main product photo.
-  const imageTags = html.match(/<img\\b[^>]*>/gi) || [];
+  const imageTags = html.match(/<img\b[^>]*>/gi) || [];
   for (const tag of imageTags) {
     const classAndId = `${htmlAttribute(tag, 'class')} ${htmlAttribute(tag, 'id')} ${htmlAttribute(tag, 'alt')}`.toLowerCase();
     if (/logo|icon|avatar|payment|badge|spinner/.test(classAndId)) continue;

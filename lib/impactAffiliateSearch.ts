@@ -75,41 +75,89 @@ function safePublicUrl(value: string) {
 }
 
 function decodeHtmlUrl(value: string) {
-  return value.replaceAll('&amp;', '&').replaceAll('&#x2F;', '/').replaceAll('\\/', '/').trim();
+  return value
+    .replaceAll('&amp;', '&')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#34;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&#x2F;', '/')
+    .replaceAll('\\/', '/')
+    .trim();
+}
+
+function htmlAttribute(tag: string, name: string) {
+  const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'));
+  return decodeHtmlUrl(match?.[1] || match?.[2] || match?.[3] || '');
+}
+
+function resolvePageAsset(value: string, pageUrl: string) {
+  if (!value || value.startsWith('data:')) return '';
+  const firstSrcsetValue = value.split(',')[0]?.trim().split(/\\s+/)[0] || '';
+  try {
+    const resolved = new URL(firstSrcsetValue, pageUrl).toString();
+    return safePublicUrl(resolved) ? resolved : '';
+  } catch {
+    return '';
+  }
 }
 
 function pageImageFromHtml(html: string, pageUrl: string) {
-  const tags = html.match(/<meta\b[^>]*>/gi) || [];
-  for (const tag of tags) {
-    const property = tag.match(/(?:property|name)=["']([^"']+)["']/i)?.[1]?.toLowerCase();
-    if (!['og:image', 'og:image:url', 'twitter:image', 'twitter:image:src'].includes(property || '')) continue;
-    const content = tag.match(/content=["']([^"']+)["']/i)?.[1];
-    if (!content) continue;
-    try {
-      const resolved = new URL(decodeHtmlUrl(content), pageUrl).toString();
-      if (safePublicUrl(resolved)) return resolved;
-    } catch { /* Ignore malformed merchant metadata. */ }
+  // Merchant sites do not use one consistent attribute order, so inspect every
+  // meta tag by attribute name rather than relying on a fixed regex order.
+  const metaTags = html.match(/<meta\\b[^>]*>/gi) || [];
+  for (const tag of metaTags) {
+    const property = (htmlAttribute(tag, 'property') || htmlAttribute(tag, 'name') || htmlAttribute(tag, 'itemprop')).toLowerCase();
+    if (!['og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src', 'image', 'primaryimageofpage'].includes(property)) continue;
+    const image = resolvePageAsset(htmlAttribute(tag, 'content'), pageUrl);
+    if (image) return image;
   }
-  const imageSrc = html.match(/<link\b[^>]*rel=["']image_src["'][^>]*href=["']([^"']+)["']/i)?.[1];
-  const jsonImage = html.match(/["']image["']\s*:\s*["']([^"']+)["']/i)?.[1];
-  const candidate = imageSrc || jsonImage;
-  if (!candidate) return '';
-  try {
-    const resolved = new URL(decodeHtmlUrl(candidate), pageUrl).toString();
-    return safePublicUrl(resolved) ? resolved : '';
-  } catch { return ''; }
+
+  const linkTags = html.match(/<link\\b[^>]*>/gi) || [];
+  for (const tag of linkTags) {
+    const rel = htmlAttribute(tag, 'rel').toLowerCase();
+    if (!rel.split(/\\s+/).includes('image_src') && !rel.includes('preload')) continue;
+    if (rel.includes('preload') && htmlAttribute(tag, 'as').toLowerCase() !== 'image') continue;
+    const image = resolvePageAsset(htmlAttribute(tag, 'href') || htmlAttribute(tag, 'imagesrcset'), pageUrl);
+    if (image) return image;
+  }
+
+  // Many commerce platforms expose the authoritative product image only in
+  // Product JSON-LD. Support both a string and the first entry in an array.
+  const jsonLdBlocks = html.match(/<script\\b[^>]*type=["']application\\/ld\\+json["'][^>]*>[\\s\\S]*?<\\/script>/gi) || [];
+  for (const block of jsonLdBlocks) {
+    const imageMatch = block.match(/["']image["']\\s*:\\s*(?:["']([^"']+)["']|\\[\\s*["']([^"']+)["'])/i);
+    const image = resolvePageAsset(imageMatch?.[1] || imageMatch?.[2] || '', pageUrl);
+    if (image) return image;
+  }
+
+  // Final fallback for storefronts that lazy-load the main product photo.
+  const imageTags = html.match(/<img\\b[^>]*>/gi) || [];
+  for (const tag of imageTags) {
+    const classAndId = `${htmlAttribute(tag, 'class')} ${htmlAttribute(tag, 'id')} ${htmlAttribute(tag, 'alt')}`.toLowerCase();
+    if (/logo|icon|avatar|payment|badge|spinner/.test(classAndId)) continue;
+    const source = htmlAttribute(tag, 'data-zoom-image')
+      || htmlAttribute(tag, 'data-large-image')
+      || htmlAttribute(tag, 'data-src')
+      || htmlAttribute(tag, 'data-original')
+      || htmlAttribute(tag, 'srcset')
+      || htmlAttribute(tag, 'src');
+    const image = resolvePageAsset(source, pageUrl);
+    if (image) return image;
+  }
+
+  return '';
 }
 
 async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) {
-  const directProductUrl = textValue(record, ['ProductUrl', 'ProductURL', 'LandingPageUrl', 'ProductPageUrl', 'Url', 'Link']);
+  const directProductUrl = textValue(record, ['ProductUrl', 'ProductURL', 'LandingPageUrl', 'LandingPageURL', 'ProductPageUrl', 'ProductPageURL', 'ProductLink', 'ProductUri', 'Uri', 'URL', 'Url', 'Link']);
   const startingUrl = safePublicUrl(directProductUrl)?.toString() || safePublicUrl(affiliateUrl)?.toString();
   if (!startingUrl) return '';
   try {
     const response = await fetch(startingUrl, {
       redirect: 'follow',
       cache: 'no-store',
-      signal: AbortSignal.timeout(8000),
-      headers: { Accept: 'text/html,application/xhtml+xml', 'User-Agent': 'WASCIK-Affiliate-Catalog/1.0' },
+      signal: AbortSignal.timeout(12000),
+      headers: { Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1 WASCIK-Affiliate-Catalog/1.1' },
     });
     if (!response.ok || !safePublicUrl(response.url)) return '';
     const contentType = response.headers.get('content-type') || '';

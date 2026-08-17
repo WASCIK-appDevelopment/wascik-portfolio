@@ -182,6 +182,11 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
   }
 }
 
+export async function discoverMerchantProductImage(affiliateUrl: string, productTitle: string) {
+  if (!safePublicUrl(affiliateUrl)) return "";
+  return resolveMerchantImage({ Name: productTitle, Url: affiliateUrl }, affiliateUrl);
+}
+
 function arrayValue(payload: unknown): ImpactRecord[] {
   if (Array.isArray(payload)) return payload.filter((item): item is ImpactRecord => Boolean(item) && typeof item === "object");
   if (!payload || typeof payload !== "object") return [];

@@ -20,7 +20,7 @@ export function isAffiliateSearchCategory(value: string): value is AffiliateSear
 }
 
 export const affiliateSearchBrands = [
-  { id: "coofandy", label: "COOFANDY", aliases: ["coofandy", "coofandy partner program"] },
+  { id: "coofandy", label: "COOFANDY", aliases: ["coofandy", "coo fandy", "coofandy partner program"] },
   { id: "eurooptic", label: "EuroOptic", aliases: ["eurooptic", "euro optic"] },
   { id: "focus-camera", label: "Focus Camera", aliases: ["focus camera", "lifestyle by focus", "lifestyle focus", "focus by lifestyle"] },
   { id: "aquacurve", label: "AquaCurve", aliases: ["aquacurve", "aqua curve"] },
@@ -30,7 +30,6 @@ export const affiliateSearchBrands = [
   { id: "philips", label: "Philips", aliases: ["philips"] },
   { id: "revomatic", label: "RevoMatic", aliases: ["revomatic", "revo matic"] },
   { id: "arccaptain", label: "ArcCaptain", aliases: ["arccaptain", "arc captain"] },
-  { id: "coofandy", label: "Coofandy", aliases: ["coofandy", "coo fandy"] },
 ] as const;
 
 export type AffiliateSearchBrandId = typeof affiliateSearchBrands[number]["id"];

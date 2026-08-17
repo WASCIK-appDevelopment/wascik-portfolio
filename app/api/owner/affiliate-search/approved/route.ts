@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
 import { unifiedAffiliateCatalog } from "../../../../../lib/ai/unifiedAffiliateCatalog";
 import { proxiedAffiliateImageUrl } from "../../../../../lib/affiliateImageProxy";
+import { findImpactProductImageByTitle } from "../../../../../lib/impactAffiliateSearch";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const MAX_PRODUCTS = 100;
@@ -189,6 +190,13 @@ function tokenAuthorized(products: ApprovedProduct[], tokenValue: unknown) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+function normalizedProductKey(merchant: string, title: string) {
+  const normalize = (value: string) => value.toLowerCase().replace(/&/g, " and ").replace(/\b(the|new)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+  let merchantKey = normalize(merchant).replaceAll(" ", "");
+  if (["focuscamera", "focusbylifestyle", "lifestylebyfocus"].includes(merchantKey)) merchantKey = "focuscamera";
+  return `${merchantKey}|${normalize(title)}`;
+}
+
 function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
   const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
   if (kind === "service_role") headers.Authorization = `Bearer ${key}`;
@@ -238,9 +246,27 @@ export async function GET(request: Request) {
       published_at: "built-in",
       catalog_source: "builtin",
     }));
-  const consoleProducts = Array.isArray(products) ? products.map((item) => ({ ...item, image_url: proxiedAffiliateImageUrl(item.image_url), catalog_source: "console" })) : [];
-  const consoleIds = new Set(consoleProducts.map((item) => String(item.id || "")));
-  return NextResponse.json({ products: [...consoleProducts, ...builtInProducts.filter((item) => !consoleIds.has(item.id))] });
+  let repairAttempts = 0;
+  const repairedProducts = Array.isArray(products) ? await Promise.all(products.map(async (item) => {
+    if (item?.image_url || repairAttempts >= 20) return item;
+    repairAttempts += 1;
+    const recovered = await findImpactProductImageByTitle(String(item?.title || ""), String(item?.merchant || ""));
+    if (!recovered) return item;
+    await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(String(item.id || ""))}`, {
+      method: "PATCH",
+      headers: { ...supabaseHeaders(config.supabaseServerKey!, config.supabaseKeyKind), Prefer: "return=minimal" },
+      body: JSON.stringify({ image_url: recovered, updated_at: new Date().toISOString() }),
+    }).catch(() => null);
+    return { ...item, image_url: recovered };
+  })) : [];
+  const consoleProducts = repairedProducts.map((item) => ({ ...item, image_url: proxiedAffiliateImageUrl(item.image_url), catalog_source: "console" }));
+  const combined = [...consoleProducts, ...builtInProducts];
+  const uniqueProducts = new Map<string, (typeof combined)[number]>();
+  for (const item of combined) {
+    const key = normalizedProductKey(String(item.merchant || ""), String(item.title || ""));
+    if (key && !uniqueProducts.has(key)) uniqueProducts.set(key, item);
+  }
+  return NextResponse.json({ products: Array.from(uniqueProducts.values()) });
 }
 
 export async function POST(request: Request) {
@@ -326,7 +352,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
   const now = new Date().toISOString();
-  const rows = products.map((product) => ({
+  const existingResponse = await fetch(
+    `${config.supabaseUrl}/rest/v1/approved_affiliate_products?select=merchant,title&limit=2000`,
+    { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+  );
+  const existingRows = existingResponse.ok ? await existingResponse.json().catch(() => []) : [];
+  const existingKeys = new Set(Array.isArray(existingRows) ? existingRows.map((item) => normalizedProductKey(String(item?.merchant || ""), String(item?.title || ""))) : []);
+  const newProducts = products.filter((product) => !existingKeys.has(normalizedProductKey(product.merchant, product.title)));
+  if (!newProducts.length) {
+    return NextResponse.json({ success: true, savedCount: 0, products: [], message: "Those products are already in your Ready or Published Products list, so no duplicates were added." });
+  }
+  const rows = newProducts.map((product) => ({
     id: product.id,
     merchant: product.merchant,
     title: product.title,
@@ -355,7 +391,7 @@ export async function POST(request: Request) {
   if (!response.ok) return NextResponse.json({ error: "Could not save the approved products.", detail: saved }, { status: 502 });
   return NextResponse.json({
     success: true,
-    savedCount: Array.isArray(saved) ? saved.length : products.length,
+    savedCount: Array.isArray(saved) ? saved.length : newProducts.length,
     products: saved,
     message: "Products saved to the private approved catalog. They have not been published.",
   });

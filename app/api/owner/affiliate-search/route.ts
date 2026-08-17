@@ -158,7 +158,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
+        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate, excludedPublishedKeys: alreadyPublished });
         const beforePublishedFilter = impactItems.length;
         impactItems = impactItems.filter((item) => !alreadyPublished.has(publishedProductKey(item.merchant, item.title)));
         duplicatePublishedCount += beforePublishedFilter - impactItems.length;

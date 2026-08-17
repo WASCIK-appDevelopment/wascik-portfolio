@@ -119,6 +119,12 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not prepare publication.");
+      if (Array.isArray(data.duplicateWarnings) && data.duplicateWarnings.length) {
+        const names = data.duplicateWarnings.map((warning: { title?: string }) => warning.title || "Duplicate product").join(", ");
+        setConfirmationToken("");
+        setConfirmationSummary(`${data.warning || "Duplicate products found."} Review: ${names}`);
+        return;
+      }
       setConfirmationToken(data.confirmationToken || "");
       setConfirmationSummary(data.summary || "Confirm publication.");
     } catch (reason) {
@@ -241,7 +247,7 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
           </div>
         </article>;
       })}
-      {mode === "workspace" && selected.length > 0 && !confirmationToken && <button type="button" onClick={preparePublication} disabled={loading} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: loading ? .6 : 1 }}>{loading ? "Preparing confirmation…" : `Review publication for ${selected.length} product${selected.length === 1 ? "" : "s"}`}</button>}
+      {mode === "workspace" && confirmationSummary && !confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>⚠ DUPLICATE PUBLICATION WARNING</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><a href="/owner/published-products" style={{ minHeight: 44, display: "grid", placeItems: "center", borderRadius: 10, border: "1px solid #ffe28a", color: "#fff4bd", textDecoration: "none", textAlign: "center", fontWeight: 900, padding: 5 }}>Review Published Products</a></div>}\n      {mode === "workspace" && selected.length > 0 && !confirmationToken && <button type="button" onClick={preparePublication} disabled={loading} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: loading ? .6 : 1 }}>{loading ? "Preparing confirmation…" : `Review publication for ${selected.length} product${selected.length === 1 ? "" : "s"}`}</button>}
       {mode === "workspace" && confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM PUBLICATION</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmPublication} disabled={loading} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: loading ? .6 : 1 }}>{loading ? "Publishing…" : "Confirm and publish to development pages"}</button></div>}
 
     </div>}

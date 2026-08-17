@@ -489,6 +489,8 @@ type ImpactSearchOptions = {
   ticketStartDate?: string;
   ticketEndDate?: string;
   excludeProductKeys?: Set<string>;
+  startPage?: number;
+  onPageRead?: (page: number) => void;
 };
 
 function recordDate(record: ImpactRecord) {
@@ -533,7 +535,9 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    for (let page = 1; page <= 5 && results.length < batchSize; page += 1) {
+    const startPage = Math.max(1, Math.floor(options.startPage || 1));
+    for (let page = startPage; page < startPage + 5 && results.length < batchSize; page += 1) {
+      options.onPageRead?.(page);
       const payload = await impactRequest(query, 100, page);
       const records = arrayValue(payload);
       if (!records.length) break;

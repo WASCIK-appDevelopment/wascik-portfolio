@@ -375,11 +375,14 @@ export async function searchImpactCategory(
   const selectedBrands = affiliateSearchBrands.filter((brand) => (options.brandIds || []).includes(brand.id));
   const queryPrefixes = selectedBrands.length ? selectedBrands.map((brand) => brand.label) : [""];
   const ticketLocation = options.ticketStateName || options.ticketStateCode || "";
-  const queries = queryPrefixes.flatMap((brand) =>
-    [category.label, ...category.keywords.slice(0, 3)].map((term) =>
+  const queries = Array.from(new Set(queryPrefixes.flatMap((brand) => {
+    const categoryQueries = [category.label, ...category.keywords].map((term) =>
       [brand, term, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" "),
-    ),
-  );
+    );
+    // A brand-only pass reaches products Impact may not tag with our category wording.
+    // The category keyword check below still prevents unrelated products from leaking in.
+    return brand ? [...categoryQueries, [brand, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" ")] : categoryQueries;
+  }).filter(Boolean))).slice(0, 10);
 
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
@@ -389,7 +392,7 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    for (let page = 1; page <= 3 && results.length < batchSize; page += 1) {
+    for (let page = 1; page <= 6 && results.length < batchSize; page += 1) {
       const payload = await impactRequest(query, 100, page);
       const records = arrayValue(payload);
       if (!records.length) break;

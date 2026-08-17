@@ -101,7 +101,7 @@ function resolvePageAsset(value: string, pageUrl: string) {
   }
 }
 
-function pageImageFromHtml(html: string, pageUrl: string) {
+function pageImageFromHtml(html: string, pageUrl: string, productTitle: string) {
   // Merchant sites do not use one consistent attribute order, so inspect every
   // meta tag by attribute name rather than relying on a fixed regex order.
   const metaTags = html.match(/<meta\b[^>]*>/gi) || [];
@@ -132,9 +132,13 @@ function pageImageFromHtml(html: string, pageUrl: string) {
 
   // Final fallback for storefronts that lazy-load the main product photo.
   const imageTags = html.match(/<img\b[^>]*>/gi) || [];
+  const titleTokens = productTitle.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length >= 4);
   for (const tag of imageTags) {
     const classAndId = `${htmlAttribute(tag, 'class')} ${htmlAttribute(tag, 'id')} ${htmlAttribute(tag, 'alt')}`.toLowerCase();
     if (/logo|icon|avatar|payment|badge|spinner/.test(classAndId)) continue;
+    const looksLikeProductImage = /product|gallery|main-image|featured/.test(classAndId)
+      || titleTokens.some((token) => classAndId.includes(token));
+    if (!looksLikeProductImage) continue;
     const source = htmlAttribute(tag, 'data-zoom-image')
       || htmlAttribute(tag, 'data-large-image')
       || htmlAttribute(tag, 'data-src')
@@ -163,7 +167,8 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return '';
     const html = (await response.text()).slice(0, 1_500_000);
-    return pageImageFromHtml(html, response.url);
+    const productTitle = textValue(record, ['Name', 'Title', 'ProductName']);
+    return pageImageFromHtml(html, response.url, productTitle);
   } catch {
     return '';
   }

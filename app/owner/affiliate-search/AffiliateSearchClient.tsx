@@ -205,7 +205,14 @@ export default function AffiliateSearchClient() {
 
   function skipProduct(item: ProductCandidate) {
     removeCandidate(item.id);
-    setNotice(`${item.title} skipped for this console session. It will not appear in another search until you sign out.`);
+    setNotice(`${item.title} skipped. It will stay out of later searches until you reset product history.`);
+  }
+
+  function skipAllVisibleProducts() {
+    const count = batches.reduce((total, batch) => total + batch.items.length, 0);
+    if (!count) return;
+    setBatches((current) => current.map((batch) => ({ ...batch, items: [] })));
+    setNotice(`None this time: ${count} product${count === 1 ? "" : "s"} dismissed. They will stay out of later searches until you reset product history.`);
   }
 
   function removeSelectedProduct(itemId: string) {
@@ -260,6 +267,8 @@ export default function AffiliateSearchClient() {
       setSavingApproval(false);
     }
   }
+
+  const visibleProductCount = batches.reduce((total, batch) => total + batch.items.length, 0);
 
   return <div style={{ display: "grid", gap: 18 }}>
     <ProductHealthMonitor />
@@ -324,5 +333,6 @@ export default function AffiliateSearchClient() {
         {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><ProductImage item={item} /><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button><button type="button" disabled={fetchingImageIds.includes(item.id)} onClick={() => fetchThumbnail(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #67cfff", background: "#0b3349", color: "#d7f5ff", fontWeight: 900, opacity: fetchingImageIds.includes(item.id) ? .6 : 1 }}>{fetchingImageIds.includes(item.id) ? "Fetching photo…" : "Fetch thumbnail photo"}</button></div></article>)}
       </div>}
     </section>)}
+    {visibleProductCount > 0 && <button type="button" onClick={skipAllVisibleProducts} style={{ width: "100%", minHeight: 52, borderRadius: 13, border: "1px solid #7b8e99", background: "#17232a", color: "#e4edf2", fontWeight: 950, fontSize: 16 }}>None This Time — Dismiss All {visibleProductCount}</button>}
   </div>;
 }

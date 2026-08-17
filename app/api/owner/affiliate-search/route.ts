@@ -3,7 +3,6 @@ import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories,
 import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 import { proxiedAffiliateImageUrl } from "../../../../lib/affiliateImageProxy";
-import { getStage6Config } from "../../../../lib/ai/stage6Config";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 
@@ -15,50 +14,6 @@ function authorized(request: Request) {
 
 function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
   return [item.title, item.category, item.merchant, item.description, ...item.features].join(" ").toLowerCase();
-}
-
-function normalizedProductText(value: string) {
-  return value.toLowerCase().replace(/&/g, " and ").replace(/\b(the|new)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
-}
-
-function normalizedMerchant(value: string) {
-  const compact = normalizedProductText(value).replaceAll(" ", "");
-  if (["focuscamera", "focusbylifestyle", "lifestylebyfocus"].includes(compact)) return "focuscamera";
-  return compact;
-}
-
-function publishedProductKey(merchant: string, title: string) {
-  return `${normalizedMerchant(merchant)}|${normalizedProductText(title)}`;
-}
-
-function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
-  const headers: Record<string, string> = { apikey: key };
-  if (kind === "service_role") headers.Authorization = `Bearer ${key}`;
-  return headers;
-}
-
-async function publishedProductKeys() {
-  const keys = new Set(unifiedAffiliateCatalog.map((item) => publishedProductKey(item.merchant, item.title)));
-  const config = getStage6Config();
-  if (!config.databaseConfigured || !config.supabaseServerKey) return keys;
-  const query = new URLSearchParams({ select: "merchant,title", approval_status: "eq.approved", published_at: "not.is.null", limit: "2000" });
-  try {
-    const response = await fetch(`${config.supabaseUrl}/rest/v1/approved_affiliate_products?${query.toString()}`, {
-      headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind),
-      cache: "no-store",
-    });
-    const rows = await response.json().catch(() => []);
-    if (response.ok && Array.isArray(rows)) {
-      rows.forEach((row) => {
-        const merchant = String(row?.merchant || "");
-        const title = String(row?.title || "");
-        if (merchant && title) keys.add(publishedProductKey(merchant, title));
-      });
-    }
-  } catch {
-    // The built-in published catalog still protects older page products.
-  }
-  return keys;
 }
 
 function localCandidates(categoryId: AffiliateSearchCategoryId, excludeIds: Set<string>, brandIds: AffiliateSearchBrandId[], batchSize: number, ticketStateCode: string): AffiliateProductCandidate[] {
@@ -132,9 +87,6 @@ export async function POST(request: Request) {
       .slice(0, 2000),
   );
 
-  const alreadyPublished = await publishedProductKeys();
-  let duplicatePublishedCount = 0;
-
   const impactConnected = Boolean(process.env.IMPACT_ACCOUNT_SID?.trim() && process.env.IMPACT_AUTH_TOKEN?.trim());
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
@@ -158,10 +110,7 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate, excludedPublishedKeys: alreadyPublished });
-        const beforePublishedFilter = impactItems.length;
-        impactItems = impactItems.filter((item) => !alreadyPublished.has(publishedProductKey(item.merchant, item.title)));
-        duplicatePublishedCount += beforePublishedFilter - impactItems.length;
+        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -170,7 +119,6 @@ export async function POST(request: Request) {
 
     const ids = new Set(impactItems.map((item) => item.id));
     const localItems = localCandidates(categoryId, new Set([...excludeIds, ...requestUsedIds]), targetBrands, batchSize, ticketStateCode)
-      .filter((item) => !alreadyPublished.has(publishedProductKey(item.merchant, item.title)))
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems]
@@ -196,7 +144,6 @@ export async function POST(request: Request) {
     : `${returnedTotal} of ${requestedTotal} requested products were available. Products without a recoverable image remain visible for review instead of being discarded. Results remain separated by category.`;
   if (impactConnected && impactFailed) notice = "Impact is connected, but its product search did not respond. Existing WASCIK catalog matches are shown instead.";
   if (!impactConnected && !awinConnected) notice = "Connect Impact or Awin server credentials to fetch new network products.";
-  if (duplicatePublishedCount > 0) notice += ` ${duplicatePublishedCount} product${duplicatePublishedCount === 1 ? "" : "s"} already published on your affiliate pages ${duplicatePublishedCount === 1 ? "was" : "were"} excluded.`;
 
   return NextResponse.json({
     batches,

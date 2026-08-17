@@ -57,6 +57,7 @@ export default function AffiliateSearchClient() {
   const [providers, setProviders] = useState({ impact: false, awin: false });
   const [batches, setBatches] = useState<Batch[]>([]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [cursors, setCursors] = useState<Record<string, number>>({});
   const [selectedProducts, setSelectedProducts] = useState<ProductCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,11 +73,12 @@ export default function AffiliateSearchClient() {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
     if (!key) return;
     const timer = window.setTimeout(() => {
-      const savedSearch = sessionStorage.getItem(SEARCH_SESSION_KEY);
+      const savedSearch = localStorage.getItem(SEARCH_SESSION_KEY);
       if (savedSearch) {
         try {
-          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; selectedBrands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; batches?: unknown; notice?: unknown };
+          const parsed = JSON.parse(savedSearch) as { seenIds?: unknown; selectedProducts?: unknown; selectedCategories?: unknown; selectedBrands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; batches?: unknown; notice?: unknown; cursors?: unknown };
           if (Array.isArray(parsed.seenIds)) setSeenIds(parsed.seenIds.filter((id): id is string => typeof id === "string"));
+          if (parsed.cursors && typeof parsed.cursors === "object") setCursors(parsed.cursors as Record<string, number>);
           if (Array.isArray(parsed.selectedProducts)) setSelectedProducts(parsed.selectedProducts as ProductCandidate[]);
           if (Array.isArray(parsed.selectedCategories)) setSelected(parsed.selectedCategories.filter((id): id is AffiliateSearchCategoryId => typeof id === "string" && affiliateSearchCategories.some((category) => category.id === id)));
           if (Array.isArray(parsed.selectedBrands)) setSelectedBrands(parsed.selectedBrands.filter((id): id is AffiliateSearchBrandId => typeof id === "string" && affiliateSearchBrands.some((brand) => brand.id === id)));
@@ -87,7 +89,7 @@ export default function AffiliateSearchClient() {
           if (Array.isArray(parsed.batches)) setBatches(parsed.batches as Batch[]);
           if (typeof parsed.notice === "string") setNotice(parsed.notice);
         } catch {
-          sessionStorage.removeItem(SEARCH_SESSION_KEY);
+          localStorage.removeItem(SEARCH_SESSION_KEY);
         }
       }
       setHydrated(true);
@@ -101,8 +103,9 @@ export default function AffiliateSearchClient() {
 
   useEffect(() => {
     if (!hydrated) return;
-    sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({
+    localStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({
       seenIds,
+      cursors,
       selectedProducts,
       selectedCategories: selected,
       selectedBrands,
@@ -113,7 +116,7 @@ export default function AffiliateSearchClient() {
       batches,
       notice,
     }));
-  }, [hydrated, seenIds, selectedProducts, selected, selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, batches, notice]);
+  }, [hydrated, seenIds, cursors, selectedProducts, selected, selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, batches, notice]);
 
   function toggle(categoryId: AffiliateSearchCategoryId) {
     setSelected((current) => current.includes(categoryId) ? current.filter((id) => id !== categoryId) : [...current, categoryId]);
@@ -134,7 +137,7 @@ export default function AffiliateSearchClient() {
       const response = await fetch("/api/owner/affiliate-search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ categories: selected, brands: selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, excludeIds: seenIds }),
+        body: JSON.stringify({ categories: selected, brands: selectedBrands, batchSize, ticketState, ticketStartDate, ticketEndDate, excludeIds: seenIds, cursors }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Affiliate search failed.");
@@ -143,6 +146,7 @@ export default function AffiliateSearchClient() {
       const returnedIds = nextBatches.flatMap((batch) => batch.items.map((item) => item.id));
       const nextSeenIds = Array.from(new Set([...seenIds, ...returnedIds]));
       setSeenIds(nextSeenIds);
+      if (data.cursors && typeof data.cursors === "object") setCursors(data.cursors as Record<string, number>);
       setProviders(data.providers || providers);
       setNotice(data.notice || "Review batch prepared.");
     } catch (reason) {
@@ -294,7 +298,7 @@ export default function AffiliateSearchClient() {
           return <button type="button" key={category.id} onClick={() => toggle(category.id)} aria-pressed={active} style={{ minHeight: 52, padding: "10px 12px", textAlign: "left", borderRadius: 13, border: active ? "1px solid #66ddff" : "1px solid rgba(255,255,255,.12)", background: active ? "rgba(31,148,211,.22)" : "rgba(255,255,255,.03)", color: "white", fontWeight: 800, cursor: "pointer" }}>{active ? "✓ " : ""}{category.label}</button>;
         })}
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate))} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate)) ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${batchSize} per ${selectedBrands.length ? "brand/category" : "category"}`}</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} categories · up to {selected.length * Math.max(1, selectedBrands.length) * batchSize} candidates</span></div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}><button type="submit" disabled={!selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate))} style={{ minHeight: 48, padding: "11px 18px", border: 0, borderRadius: 13, background: "linear-gradient(135deg,#2678ff,#09b9cf)", color: "white", fontWeight: 900, cursor: "pointer", opacity: !selected.length || loading || (selectedBrands.includes("ticketnetwork") && (!ticketState || !ticketStartDate || !ticketEndDate)) ? .55 : 1 }}>{loading ? "Preparing batches…" : `Find ${batchSize} per ${selectedBrands.length ? "brand/category" : "category"}`}</button><button type="button" onClick={() => { setSeenIds([]); setCursors({}); setBatches([]); setNotice("Product history reset. Earlier products may now appear in searches again."); }} disabled={loading} style={{ minHeight: 48, padding: "10px 14px", borderRadius: 13, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900, opacity: loading ? .6 : 1 }}>Reset product history</button><span style={{ color: "#8faaba", fontSize: 13 }}>{selected.length} categories · up to {selected.length * Math.max(1, selectedBrands.length) * batchSize} candidates · {seenIds.length} previously shown</span></div>
     </form>
 
     {error && <p style={{ margin: 0, padding: 12, borderRadius: 12, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}

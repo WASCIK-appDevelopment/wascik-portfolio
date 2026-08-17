@@ -239,7 +239,10 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
       signal: AbortSignal.timeout(12000),
       headers: { Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1 WASCIK-Affiliate-Catalog/1.1' },
     });
-    if (!response.ok || !safePublicUrl(response.url)) return renderedFallback(startingUrl);
+    if (!response.ok || !safePublicUrl(response.url)) {
+      const redirectedUrl = safePublicUrl(response.url)?.toString() || startingUrl;
+      return renderedFallback(redirectedUrl);
+    }
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return renderedFallback(response.url || startingUrl);
     const html = (await response.text()).slice(0, 1_500_000);

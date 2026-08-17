@@ -154,7 +154,7 @@ export async function GET(request: Request) {
       const imageUrl = link?.discoveredImage || await discoverMerchantProductImage(link?.finalUrl || item.affiliateUrl, item.title);
       return imageUrl ? { id: item.id, source: item.source, imageUrl, sourcePageUrl: link?.finalUrl || item.affiliateUrl } : null;
     }));
-    imageRepairs.push(...recovered.filter((repair): repair is NonNullable<typeof repair> => Boolean(repair)));
+    for (const repair of recovered) if (repair) imageRepairs.push(repair);
   }
   return NextResponse.json({ imageRepairs, checkedAt: new Date().toISOString(), checkedCount: items.length, brandCount: new Set(items.map((item) => item.merchant)).size, candidates: candidateList, message: candidateList.length ? `${candidateList.length} item${candidateList.length === 1 ? "" : "s"} need your review.` : "No definitely expired, unavailable, missing, or duplicate items were found." });
 }

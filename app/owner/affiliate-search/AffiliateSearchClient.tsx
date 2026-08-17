@@ -66,6 +66,7 @@ export default function AffiliateSearchClient() {
   const [confirmationToken, setConfirmationToken] = useState("");
   const [confirmationSummary, setConfirmationSummary] = useState("");
   const [savingApproval, setSavingApproval] = useState(false);
+  const [fetchingImageIds, setFetchingImageIds] = useState<string[]>([]);
 
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -148,6 +149,34 @@ export default function AffiliateSearchClient() {
       setError(reason instanceof Error ? reason.message : "Affiliate search failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchThumbnail(item: ProductCandidate) {
+    if (fetchingImageIds.includes(item.id)) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setFetchingImageIds((current) => [...current, item.id]);
+    setError("");
+    setNotice(`Fetching a thumbnail for ${item.title}…`);
+    try {
+      const response = await fetch("/api/owner/affiliate-search/thumbnail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ title: item.title, merchant: item.merchant, affiliateUrl: item.affiliateUrl }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "No thumbnail was found.");
+      const update = (product: ProductCandidate): ProductCandidate => product.id === item.id
+        ? { ...product, imageUrl: data.imageUrl || null, sourceImageUrl: data.sourceImageUrl || null }
+        : product;
+      setBatches((current) => current.map((batch) => ({ ...batch, items: batch.items.map(update) })));
+      setSelectedProducts((current) => current.map(update));
+      setNotice(data.message || `Thumbnail recovered for ${item.title}.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No thumbnail was found.");
+      setNotice("");
+    } finally {
+      setFetchingImageIds((current) => current.filter((id) => id !== item.id));
     }
   }
 
@@ -288,7 +317,7 @@ export default function AffiliateSearchClient() {
     {batches.map((batch) => <section key={`${batch.brandId || "all"}:${batch.categoryId}`} style={{ display: "grid", gap: 10 }}>
       <div>{batch.brandLabel && <div style={{ color: "#70dcff", fontSize: 12, fontWeight: 900, marginBottom: 4 }}>{batch.brandLabel}</div>}<h2 style={{ margin: 0 }}>{batch.categoryLabel}</h2><p style={{ margin: "4px 0 0", color: "#91aebe" }}>{batch.items.length} of {batch.requestedCount} currently available for review</p></div>
       {batch.items.length === 0 ? <div style={{ padding: 15, borderRadius: 14, border: "1px dashed rgba(255,255,255,.2)", color: "#a7bdca" }}>No approved local items match yet. A live Impact or Awin feed connection is required to fill this requested batch.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 10 }}>
-        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><ProductImage item={item} /><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button></div></article>)}
+        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><ProductImage item={item} /><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button><button type="button" disabled={fetchingImageIds.includes(item.id)} onClick={() => fetchThumbnail(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #67cfff", background: "#0b3349", color: "#d7f5ff", fontWeight: 900, opacity: fetchingImageIds.includes(item.id) ? .6 : 1 }}>{fetchingImageIds.includes(item.id) ? "Fetching photo…" : "Fetch thumbnail photo"}</button></div></article>)}
       </div>}
     </section>)}
   </div>;

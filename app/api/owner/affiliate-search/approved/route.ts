@@ -307,6 +307,48 @@ export async function POST(request: Request) {
     const publications = sanitizePublications(body.publications);
     if (!publications.length) return NextResponse.json({ error: "Select at least one approved product and destination." }, { status: 400 });
     if (body.action === "propose_publish") {
+      const config = getStage6Config();
+      if (!config.databaseConfigured || !config.supabaseServerKey) return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+      const existingResponse = await fetch(
+        `${config.supabaseUrl}/rest/v1/approved_affiliate_products?select=id,merchant,title,published_at,page_path&limit=2000`,
+        { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+      );
+      const existingRows = await existingResponse.json().catch(() => []);
+      if (!existingResponse.ok || !Array.isArray(existingRows)) return NextResponse.json({ error: "Could not check published products for duplicates." }, { status: 502 });
+
+      const selectedIds = new Set(publications.map((publication) => publication.id));
+      const selectedRows = existingRows.filter((row) => selectedIds.has(String(row?.id || "")));
+      const publishedByKey = new Map<string, { id: string; merchant: string; title: string; pagePath: string; source: string }[]>();
+      for (const row of existingRows) {
+        if (!row?.published_at || selectedIds.has(String(row?.id || ""))) continue;
+        const key = normalizedProductKey(String(row?.merchant || ""), String(row?.title || ""));
+        const matches = publishedByKey.get(key) || [];
+        matches.push({ id: String(row?.id || ""), merchant: String(row?.merchant || ""), title: String(row?.title || ""), pagePath: String(row?.page_path || "/affiliate-services"), source: "console" });
+        publishedByKey.set(key, matches);
+      }
+      for (const item of unifiedAffiliateCatalog) {
+        const key = normalizedProductKey(item.merchant, item.title);
+        const matches = publishedByKey.get(key) || [];
+        matches.push({ id: item.id, merchant: item.merchant, title: item.title, pagePath: item.pagePath || "/affiliate-services", source: "original catalog" });
+        publishedByKey.set(key, matches);
+      }
+
+      const duplicateWarnings = selectedRows.flatMap((row) => {
+        const matches = publishedByKey.get(normalizedProductKey(String(row?.merchant || ""), String(row?.title || ""))) || [];
+        return matches.length ? [{
+          readyProductId: String(row?.id || ""),
+          merchant: String(row?.merchant || ""),
+          title: String(row?.title || ""),
+          matches,
+        }] : [];
+      });
+      if (duplicateWarnings.length) {
+        return NextResponse.json({
+          duplicateWarnings,
+          warning: `${duplicateWarnings.length} selected Ready product${duplicateWarnings.length === 1 ? " matches" : "s match"} something already published. Review the warning before publishing.`,
+        });
+      }
+
       const confirmationToken = createPublicationToken(publications);
       if (!confirmationToken) return NextResponse.json({ error: "Owner confirmation is not configured." }, { status: 503 });
       return NextResponse.json({ confirmationToken, count: publications.length, summary: `Publish ${publications.length} approved product${publications.length === 1 ? "" : "s"} to the selected WASCIK affiliate pages. Existing product IDs will be updated, not duplicated.` });

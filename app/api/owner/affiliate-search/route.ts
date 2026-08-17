@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; brands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; excludeIds?: unknown };
+  const body = (await request.json().catch(() => ({}))) as { categories?: unknown; brands?: unknown; batchSize?: unknown; ticketState?: unknown; ticketStartDate?: unknown; ticketEndDate?: unknown; excludeIds?: unknown; cursors?: unknown };
   const candidates = Array.isArray(body.categories) ? body.categories : [];
   const requested: AffiliateSearchCategoryId[] = candidates
     .filter((value: unknown): value is string => typeof value === "string")
@@ -92,6 +92,12 @@ export async function POST(request: Request) {
       .slice(0, 5000),
   );
 
+  const rawCursors = body.cursors && typeof body.cursors === "object" ? body.cursors as Record<string, unknown> : {};
+  const cursors = Object.fromEntries(Object.entries(rawCursors)
+    .filter(([key, value]) => /^[a-z0-9-]+:[a-z0-9-]+$/.test(key) && Number.isInteger(Number(value)))
+    .map(([key, value]) => [key, Math.min(10000, Math.max(1, Number(value)))]));
+  const nextCursors: Record<string, number> = { ...cursors };
+
   const impactConnected = Boolean(process.env.IMPACT_ACCOUNT_SID?.trim() && process.env.IMPACT_AUTH_TOKEN?.trim());
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
@@ -110,6 +116,9 @@ export async function POST(request: Request) {
   const requestUsedIds = new Set<string>();
   const batches: { brandId: AffiliateSearchBrandId | null; brandLabel: string | null; categoryId: AffiliateSearchCategoryId; categoryLabel: string; requestedCount: number; items: AffiliateProductCandidate[] }[] = [];
   for (const { categoryId, brandId } of searchTargets) {
+    const targetKey = `${brandId || "all"}:${categoryId}`;
+    const startPage = cursors[targetKey] || 1;
+    let lastPageRead = startPage - 1;
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
     const brand = brandId ? affiliateSearchBrands.find((entry) => entry.id === brandId) : null;
     const targetBrands: AffiliateSearchBrandId[] = brandId ? [brandId] : [];
@@ -124,6 +133,8 @@ export async function POST(request: Request) {
           ticketStateName,
           ticketStartDate,
           ticketEndDate,
+          startPage,
+          onPageRead: (page) => { lastPageRead = Math.max(lastPageRead, page); },
         });
       } catch (error) {
         impactFailed = true;
@@ -140,6 +151,7 @@ export async function POST(request: Request) {
       .slice(0, batchSize)
       .map((item) => ({ ...item, sourceImageUrl: item.imageUrl || null, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
     items.forEach((item) => requestUsedIds.add(item.id));
+    nextCursors[targetKey] = Math.max(startPage + 1, lastPageRead + 1);
     batches.push({
       brandId,
       brandLabel: brand?.label || null,
@@ -164,6 +176,7 @@ export async function POST(request: Request) {
     providers: { impact: impactConnected, awin: awinConnected },
     selectedBrands: requestedBrands.map((id) => affiliateSearchBrands.find((brand) => brand.id === id)?.label).filter(Boolean),
     notice,
+    cursors: nextCursors,
     mode: impactConnected ? "impact-live" : "approved-catalog-foundation",
   });
 }

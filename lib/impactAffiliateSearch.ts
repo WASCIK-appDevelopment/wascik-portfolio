@@ -354,7 +354,13 @@ async function impactRequest(keyword: string, pageSize: number, page = 1) {
 }
 
 function comparableProductText(value: string) {
-  return value.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+  return value.toLowerCase().replace(/&/g, " and ").replace(/\b(the|new)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+export function normalizedAffiliateProductKey(merchant: string, title: string) {
+  let merchantKey = comparableProductText(merchant).replaceAll(" ", "");
+  if (["focuscamera", "focusbylifestyle", "lifestylebyfocus"].includes(merchantKey)) merchantKey = "focuscamera";
+  return `${merchantKey}|${comparableProductText(title)}`;
 }
 
 async function impactCatalogItemImage(record: ImpactRecord) {
@@ -438,6 +444,7 @@ type ImpactSearchOptions = {
   ticketStateName?: string;
   ticketStartDate?: string;
   ticketEndDate?: string;
+  excludeProductKeys?: Set<string>;
 };
 
 function recordDate(record: ImpactRecord) {
@@ -497,6 +504,7 @@ export async function searchImpactCategory(
 
         const item = mapImpactProduct(record, category.label);
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
+        if (options.excludeProductKeys?.has(normalizedAffiliateProductKey(item.merchant, item.title))) continue;
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
           imageEnrichmentAttempts += 1;
           const catalogImage = await impactCatalogItemImage(record);

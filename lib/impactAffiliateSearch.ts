@@ -261,7 +261,7 @@ function arrayValue(payload: unknown): ImpactRecord[] {
   if (Array.isArray(payload)) return payload.filter((item): item is ImpactRecord => Boolean(item) && typeof item === "object");
   if (!payload || typeof payload !== "object") return [];
   const record = payload as ImpactRecord;
-  for (const key of ["Items", "CatalogItems", "Products", "Records"]) {
+  for (const key of ["Items", "CatalogItems", "Products", "Records", "Campaigns"]) {
     const value = record[key];
     if (Array.isArray(value)) return value.filter((item): item is ImpactRecord => Boolean(item) && typeof item === "object");
   }
@@ -295,7 +295,7 @@ function commissionEligible(record: ImpactRecord) {
   return true;
 }
 
-function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): AffiliateProductCandidate | null {
+function mapImpactProduct(record: ImpactRecord, fallbackCategory: string, campaignTrackingLinks: Map<string, string>): AffiliateProductCandidate | null {
   const id = normalizedId(record);
   const title = textValue(record, ["Name", "Title", "ProductName"]);
   if (!id || !title) return null;
@@ -303,7 +303,21 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string): Affil
   const merchant = textValue(record, ["CampaignName", "AdvertiserName", "CatalogName", "ProgramName", "PartnerName"]) || "Impact merchant";
   const category = textValue(record, ["Category", "ProductCategory", "CategoryName"]) || fallbackCategory;
   const description = textValue(record, ["Description", "ShortDescription", "ProductDescription"]) || `${title} from ${merchant}.`;
-  const affiliateUrl = textValue(record, ["TrackingLink", "DeepLink"]);
+  const productUrl = textValue(record, ["Url", "URL", "ProductUrl", "ProductURL", "LandingPageUrl", "LandingPageURL"]);
+  let affiliateUrl = textValue(record, ["TrackingLink", "DeepLink"]);
+  if (!affiliateUrl && productUrl) {
+    const campaignId = textValue(record, ["CampaignId"]);
+    const campaignTrackingLink = campaignTrackingLinks.get(campaignId) || "";
+    if (campaignTrackingLink) {
+      try {
+        const trackingUrl = new URL(campaignTrackingLink);
+        trackingUrl.searchParams.set("u", productUrl);
+        affiliateUrl = trackingUrl.toString();
+      } catch {
+        affiliateUrl = "";
+      }
+    }
+  }
   const imageUrl = imageValue(record) || null;
   if (!affiliateUrl || !commissionEligible(record)) return null;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
@@ -351,6 +365,36 @@ async function impactRequest(keyword: string, pageSize: number, page = 1) {
     throw new Error(`Impact returned HTTP ${response.status}.`);
   }
   return response.json() as Promise<unknown>;
+}
+
+async function impactCampaignTrackingLinks() {
+  const accountSid = process.env.IMPACT_ACCOUNT_SID?.trim();
+  const authToken = process.env.IMPACT_AUTH_TOKEN?.trim();
+  const links = new Map<string, string>();
+  if (!accountSid || !authToken) return links;
+  try {
+    const url = new URL(`https://api.impact.com/Mediapartners/${encodeURIComponent(accountSid)}/Campaigns`);
+    url.searchParams.set("PageSize", "1000");
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return links;
+    for (const campaign of arrayValue(await response.json().catch(() => null))) {
+      const campaignId = textValue(campaign, ["CampaignId", "Id"]);
+      const trackingLink = textValue(campaign, ["TrackingLink"]);
+      const contractStatus = textValue(campaign, ["ContractStatus"]).toLowerCase();
+      if (campaignId && trackingLink && (!contractStatus || contractStatus === "active")) links.set(campaignId, trackingLink);
+    }
+  } catch {
+    // The product search will return no unsafe merchant-only links if campaign
+    // tracking data is temporarily unavailable.
+  }
+  return links;
 }
 
 function comparableProductText(value: string) {
@@ -480,6 +524,7 @@ export async function searchImpactCategory(
     : [];
   const queries = Array.from(new Set([...brandedQueries, ...categoryOnlyQueries]));
 
+  const campaignTrackingLinks = await impactCampaignTrackingLinks();
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
   let imageEnrichmentAttempts = 0;
@@ -510,7 +555,7 @@ export async function searchImpactCategory(
           if (!eventDate || (startDate && eventDate < startDate) || (endDate && eventDate > endDate)) continue;
         }
 
-        const item = mapImpactProduct(record, category.label);
+        const item = mapImpactProduct(record, category.label, campaignTrackingLinks);
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
         if (options.excludeProductKeys?.has(normalizedAffiliateProductKey(item.merchant, item.title))) continue;
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {

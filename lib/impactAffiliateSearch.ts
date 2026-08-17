@@ -295,7 +295,8 @@ export async function searchImpactCategory(
           item.imageUrl = await resolveMerchantImage(record, item.affiliateUrl) || null;
           if (item.imageUrl) item.features.push('Official image recovered from the merchant product page');
         }
-        if (!item.imageUrl) continue;
+        // Keep valid commission-eligible products even when Impact and the merchant page do not expose an image.
+        // The owner UI can show a placeholder while the image is reviewed or enriched later.
         used.add(item.id);
         results.push(item);
         if (results.length >= batchSize) break;

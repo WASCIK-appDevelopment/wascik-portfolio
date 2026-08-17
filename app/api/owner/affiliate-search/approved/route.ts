@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
 import { unifiedAffiliateCatalog } from "../../../../../lib/ai/unifiedAffiliateCatalog";
+import { proxiedAffiliateImageUrl } from "../../../../../lib/affiliateImageProxy";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const MAX_PRODUCTS = 100;
@@ -228,7 +229,7 @@ export async function GET(request: Request) {
       description: item.description,
       features: item.features,
       affiliate_url: item.affiliateUrl,
-      image_url: imageOverrides.get(item.id) || item.imageUrl || null,
+      image_url: proxiedAffiliateImageUrl(imageOverrides.get(item.id) || item.imageUrl || null),
       price: null,
       page_path: item.pagePath || "/affiliate-services",
       source: item.source,
@@ -237,7 +238,7 @@ export async function GET(request: Request) {
       published_at: "built-in",
       catalog_source: "builtin",
     }));
-  const consoleProducts = Array.isArray(products) ? products.map((item) => ({ ...item, catalog_source: "console" })) : [];
+  const consoleProducts = Array.isArray(products) ? products.map((item) => ({ ...item, image_url: proxiedAffiliateImageUrl(item.image_url), catalog_source: "console" })) : [];
   const consoleIds = new Set(consoleProducts.map((item) => String(item.id || "")));
   return NextResponse.json({ products: [...consoleProducts, ...builtInProducts.filter((item) => !consoleIds.has(item.id))] });
 }

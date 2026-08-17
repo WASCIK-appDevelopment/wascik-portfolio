@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory, usStateOptions } from "../../../../lib/affiliateSearch";
-import { AffiliateProductCandidate, findImpactProductImageByTitle, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
+import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 import { proxiedAffiliateImageUrl } from "../../../../lib/affiliateImageProxy";
 
@@ -115,21 +115,6 @@ export async function POST(request: Request) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
       }
-    }
-
-    if (impactItems.some((item) => !item.imageUrl)) {
-      const enrichedItems: AffiliateProductCandidate[] = [];
-      for (const item of impactItems) {
-        if (item.imageUrl) {
-          enrichedItems.push(item);
-          continue;
-        }
-        const recoveredImage = await findImpactProductImageByTitle(item.title, item.merchant);
-        enrichedItems.push(recoveredImage
-          ? { ...item, imageUrl: recoveredImage, features: [...item.features, "Official image recovered by exact product lookup"] }
-          : item);
-      }
-      impactItems = enrichedItems;
     }
 
     const ids = new Set(impactItems.map((item) => item.id));

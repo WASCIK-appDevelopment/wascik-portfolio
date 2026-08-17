@@ -500,12 +500,8 @@ export async function searchImpactCategory(
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
           imageEnrichmentAttempts += 1;
           const catalogImage = await impactCatalogItemImage(record);
-          item.imageUrl = catalogImage || await resolveMerchantImage(record, item.affiliateUrl) || null;
-          if (item.imageUrl) {
-            item.features.push(catalogImage
-              ? "Official image recovered from the affiliate catalog"
-              : "Official image recovered from the merchant product page");
-          }
+          item.imageUrl = catalogImage || null;
+          if (catalogImage) item.features.push("Official image recovered from the affiliate catalog");
         }
         // Keep valid commission-eligible products even when Impact and the merchant page do not expose an image.
         // The owner UI can show a placeholder while the image is reviewed or enriched later.

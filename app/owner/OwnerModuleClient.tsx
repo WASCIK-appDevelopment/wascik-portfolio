@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 
 const SESSION_KEY = "wascik-owner-console-key";
@@ -105,7 +106,7 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
           <span aria-hidden="true" style={{ display: "grid", gap: 4, justifyItems: "end" }}><span style={{ color: "#a9edff", fontSize: 20, lineHeight: 1, transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform .18s ease" }}>⌄</span><span style={{ color: "#7fb6ca", fontSize: 9, fontWeight: 900, letterSpacing: ".08em" }}>{menuOpen ? "CLOSE" : "OPEN"}</span></span>
         </button>
         {menuOpen && <div id="wascik-console-menu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginTop: 8, padding: 10, borderRadius: 15, border: "1px solid rgba(89,203,255,.28)", background: "rgba(3,17,29,.96)", boxShadow: "0 16px 34px rgba(0,0,0,.28)" }}>
-          {modules.map(([label, href]) => <a key={href} href={href} aria-current={currentPath === href ? "page" : undefined} style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", color: currentPath === href ? "#03111b" : "#ccefff", background: currentPath === href ? "linear-gradient(135deg,#72dcff,#42b9ef)" : "rgba(45,160,220,.1)", border: "1px solid rgba(89,203,255,.3)", borderRadius: 12, padding: "9px 11px", fontWeight: 850, fontSize: 13 }}><span>{label}</span><span aria-hidden="true" style={{ opacity: .75 }}>{currentPath === href ? "●" : "›"}</span></a>)}
+          {modules.map(([label, href]) => <Link key={href} href={href} prefetch onClick={() => setMenuOpen(false)} aria-current={currentPath === href ? "page" : undefined} style={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", color: currentPath === href ? "#03111b" : "#ccefff", background: currentPath === href ? "linear-gradient(135deg,#72dcff,#42b9ef)" : "rgba(45,160,220,.1)", border: "1px solid rgba(89,203,255,.3)", borderRadius: 12, padding: "9px 11px", fontWeight: 850, fontSize: 13 }}><span>{label}</span><span aria-hidden="true" style={{ opacity: .75 }}>{currentPath === href ? "●" : "›"}</span></Link>)}
         </div>}
       </nav>
 

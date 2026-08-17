@@ -121,7 +121,8 @@ export async function POST(request: Request) {
     }
 
     const ids = new Set(impactItems.map((item) => item.id));
-    const localItems = localCandidates(categoryId, new Set(), targetBrands, batchSize, ticketStateCode)
+    // A connected search must only show affiliate-network results.
+    const localItems = impactConnected ? [] : localCandidates(categoryId, new Set(), targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems]
@@ -143,7 +144,7 @@ export async function POST(request: Request) {
   if (impactConnected && !impactFailed) notice = returnedTotal >= requestedTotal
     ? `${returnedTotal} live Impact products are ready: ${batchSize} for each selected brand/category.`
     : `${returnedTotal} of ${requestedTotal} requested products were available. Products without a recoverable image remain visible for review instead of being discarded. Results remain separated by category.`;
-  if (impactConnected && impactFailed) notice = "Impact is connected, but its product search did not respond. Existing WASCIK catalog matches are shown instead.";
+  if (impactConnected && impactFailed) notice = "Impact is connected, but its product search did not respond. No products from the existing WASCIK website catalog were inserted.";
   if (!impactConnected && !awinConnected) notice = "Connect Impact or Awin server credentials to fetch new network products.";
 
   return NextResponse.json({

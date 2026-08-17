@@ -138,6 +138,16 @@ function pageImageFromHtml(html: string, pageUrl: string, productTitle: string) 
     if (image) return image;
   }
 
+  // EuroOptic and several retail platforms embed their full-size CDN image
+  // directly in page markup while the visible <img> is lazy-loaded later.
+  const decodedHtml = html.replaceAll('\\/', '/').replaceAll('&amp;', '&');
+  const embeddedImages = decodedHtml.match(/https?:\/\/[^"'<>\s]+\.(?:jpe?g|png|webp|avif)(?:\?[^"'<>\s]*)?/gi) || [];
+  for (const candidate of embeddedImages) {
+    if (/logo|icon|badge|payment|spinner/i.test(candidate)) continue;
+    const image = resolvePageAsset(candidate, pageUrl);
+    if (image) return image;
+  }
+
   // Final fallback for storefronts that lazy-load the main product photo.
   const imageTags = html.match(/<img\b[^>]*>/gi) || [];
   const titleTokens = productTitle.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length >= 4);
@@ -151,6 +161,9 @@ function pageImageFromHtml(html: string, pageUrl: string, productTitle: string) 
       || htmlAttribute(tag, 'data-large-image')
       || htmlAttribute(tag, 'data-src')
       || htmlAttribute(tag, 'data-original')
+      || htmlAttribute(tag, 'data-srcset')
+      || htmlAttribute(tag, 'data-lazy-src')
+      || htmlAttribute(tag, 'data-original-src')
       || htmlAttribute(tag, 'srcset')
       || htmlAttribute(tag, 'src');
     const image = resolvePageAsset(source, pageUrl);
@@ -281,6 +294,42 @@ async function impactRequest(keyword: string, pageSize: number, page = 1) {
     throw new Error(`Impact returned HTTP ${response.status}.`);
   }
   return response.json() as Promise<unknown>;
+}
+
+function comparableProductText(value: string) {
+  return value.toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+export async function findImpactProductImageByTitle(title: string, merchant: string) {
+  if (!title.trim()) return "";
+  const titleTokens = comparableProductText(title).split(" ").filter((token) => token.length >= 3);
+  const queries = [title, titleTokens.slice(0, 6).join(" ")].filter(Boolean);
+  const merchantKey = comparableProductText(merchant).replaceAll(" ", "");
+  for (const query of Array.from(new Set(queries))) {
+    try {
+      const records = arrayValue(await impactRequest(query, 100, 1));
+      const ranked = records
+        .map((record) => {
+          const recordTitle = comparableProductText(textValue(record, ["Name", "Title", "ProductName"]));
+          const recordMerchant = comparableProductText(textValue(record, ["CampaignName", "AdvertiserName", "CatalogName", "ProgramName", "PartnerName"])).replaceAll(" ", "");
+          const titleScore = titleTokens.filter((token) => recordTitle.includes(token)).length;
+          const merchantMatch = !merchantKey || recordMerchant.includes(merchantKey) || merchantKey.includes(recordMerchant);
+          return { record, titleScore, merchantMatch };
+        })
+        .filter((entry) => entry.titleScore >= Math.min(2, titleTokens.length))
+        .sort((a, b) => Number(b.merchantMatch) - Number(a.merchantMatch) || b.titleScore - a.titleScore);
+      for (const entry of ranked) {
+        const direct = imageValue(entry.record);
+        if (direct) return direct;
+        const affiliateUrl = textValue(entry.record, ["TrackingLink", "DeepLink"]);
+        const recovered = await resolveMerchantImage(entry.record, affiliateUrl);
+        if (recovered) return recovered;
+      }
+    } catch {
+      // Fall through to the merchant-link recovery already used by the caller.
+    }
+  }
+  return "";
 }
 
 function recordText(record: ImpactRecord) {

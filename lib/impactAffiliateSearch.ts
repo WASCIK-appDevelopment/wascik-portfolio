@@ -466,11 +466,19 @@ export async function searchImpactCategory(
   const selectedBrands = affiliateSearchBrands.filter((brand) => (options.brandIds || []).includes(brand.id));
   const queryPrefixes = selectedBrands.length ? selectedBrands.map((brand) => brand.label) : [""];
   const ticketLocation = options.ticketStateName || options.ticketStateCode || "";
-  const queries = queryPrefixes.flatMap((brand) =>
-    [category.label, ...category.keywords.slice(0, 3)].map((term) =>
+  const categoryTerms = [category.label, ...category.keywords];
+  const brandedQueries = queryPrefixes.flatMap((brand) =>
+    categoryTerms.map((term) =>
       [brand, term, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" "),
     ),
   );
+  // Impact frequently stores the advertiser only in partner metadata instead of
+  // the searchable product title. Run a broader category pass too, then retain
+  // only records whose partner identity matches the selected brand below.
+  const categoryOnlyQueries = selectedBrands.length
+    ? categoryTerms.map((term) => [term, selectedBrands.some((brand) => brand.id === "ticketnetwork") ? ticketLocation : ""].filter(Boolean).join(" "))
+    : [];
+  const queries = Array.from(new Set([...brandedQueries, ...categoryOnlyQueries]));
 
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
@@ -480,7 +488,7 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    for (let page = 1; page <= 3 && results.length < batchSize; page += 1) {
+    for (let page = 1; page <= 5 && results.length < batchSize; page += 1) {
       const payload = await impactRequest(query, 100, page);
       const records = arrayValue(payload);
       if (!records.length) break;

@@ -31,7 +31,7 @@ function normalizeImageUrl(value: unknown, depth = 0): string {
     const trimmed = value.trim().replaceAll("&amp;", "&").replaceAll("\\/", "/");
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    const embeddedUrl = trimmed.match(/https?:\/\/[^"'<>\\s]+/i)?.[0];
+    const embeddedUrl = trimmed.match(/https?:\/\/[^"'<>\s]+/i)?.[0];
     if (embeddedUrl) return embeddedUrl;
   }
   if (Array.isArray(value)) {

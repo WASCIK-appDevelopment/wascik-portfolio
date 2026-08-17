@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems]
       .slice(0, batchSize)
-      .map((item) => ({ ...item, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
+      .map((item) => ({ ...item, sourceImageUrl: item.imageUrl || null, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
     items.forEach((item) => requestUsedIds.add(item.id));
 
     batches.push({

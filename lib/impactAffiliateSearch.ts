@@ -346,15 +346,7 @@ type ImpactSearchOptions = {
   ticketStateName?: string;
   ticketStartDate?: string;
   ticketEndDate?: string;
-  excludedPublishedKeys?: Set<string>;
 };
-
-function publishedCandidateKey(merchant: string, title: string) {
-  const normalize = (value: string) => comparableProductText(value).replace(/\b(the|new)\b/g, " ").trim().replace(/\s+/g, " ");
-  let merchantKey = normalize(merchant).replaceAll(" ", "");
-  if (["focuscamera", "focusbylifestyle", "lifestylebyfocus"].includes(merchantKey)) merchantKey = "focuscamera";
-  return `${merchantKey}|${normalize(title)}`;
-}
 
 function recordDate(record: ImpactRecord) {
   const raw = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);
@@ -375,14 +367,11 @@ export async function searchImpactCategory(
   const selectedBrands = affiliateSearchBrands.filter((brand) => (options.brandIds || []).includes(brand.id));
   const queryPrefixes = selectedBrands.length ? selectedBrands.map((brand) => brand.label) : [""];
   const ticketLocation = options.ticketStateName || options.ticketStateCode || "";
-  const queries = Array.from(new Set(queryPrefixes.flatMap((brand) => {
-    const categoryQueries = [category.label, ...category.keywords].map((term) =>
+  const queries = queryPrefixes.flatMap((brand) =>
+    [category.label, ...category.keywords.slice(0, 3)].map((term) =>
       [brand, term, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" "),
-    );
-    // A brand-only pass reaches products Impact may not tag with our category wording.
-    // The category keyword check below still prevents unrelated products from leaking in.
-    return brand ? [...categoryQueries, [brand, brand === "TicketNetwork" ? ticketLocation : ""].filter(Boolean).join(" ")] : categoryQueries;
-  }).filter(Boolean))).slice(0, 10);
+    ),
+  );
 
   const results: AffiliateProductCandidate[] = [];
   const used = new Set<string>();
@@ -392,7 +381,7 @@ export async function searchImpactCategory(
 
   for (const query of queries) {
     if (results.length >= batchSize) break;
-    for (let page = 1; page <= 6 && results.length < batchSize; page += 1) {
+    for (let page = 1; page <= 3 && results.length < batchSize; page += 1) {
       const payload = await impactRequest(query, 100, page);
       const records = arrayValue(payload);
       if (!records.length) break;
@@ -416,7 +405,6 @@ export async function searchImpactCategory(
 
         const item = mapImpactProduct(record, category.label);
         if (!item || excludeIds.has(item.id) || used.has(item.id)) continue;
-        if (options.excludedPublishedKeys?.has(publishedCandidateKey(item.merchant, item.title))) continue;
         if (!item.imageUrl && imageEnrichmentAttempts < batchSize * 4) {
           imageEnrichmentAttempts += 1;
           item.imageUrl = await resolveMerchantImage(record, item.affiliateUrl) || null;

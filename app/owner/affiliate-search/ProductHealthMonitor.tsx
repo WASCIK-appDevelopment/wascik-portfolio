@@ -27,10 +27,24 @@ export default function ProductHealthMonitor() {
       if (!response.ok) throw new Error(data.error || "Could not check published affiliate products.");
       setCounts({ products: Number(data.checkedCount) || 0, brands: Number(data.brandCount) || 0 });
       setCandidates(Array.isArray(data.candidates) ? data.candidates : []);
-      setImageRepairs(Array.isArray(data.imageRepairs) ? data.imageRepairs : []);
-      setNotice(data.message || "Product check finished.");
+      const repairs = Array.isArray(data.imageRepairs) ? data.imageRepairs as ImageRepair[] : [];
+      setImageRepairs(repairs);
+      if (repairs.length) {
+        setRepairing(true);
+        const repairResponse = await fetch("/api/owner/affiliate-search/health", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+          body: JSON.stringify({ action: "repair_images", items: repairs }),
+        });
+        const repairData = await repairResponse.json().catch(() => ({}));
+        if (!repairResponse.ok) throw new Error(repairData.error || "Could not repair missing published pictures.");
+        setImageRepairs([]);
+        setNotice(`${data.message || "Product check finished."} ${repairData.message || "Missing published pictures repaired."}`);
+      } else {
+        setNotice(data.message || "Product check finished.");
+      }
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not check published affiliate products."); }
-    finally { setScanning(false); }
+    finally { setScanning(false); setRepairing(false); }
   }
 
   useEffect(() => { void scan(); }, []);
@@ -80,7 +94,7 @@ export default function ProductHealthMonitor() {
     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}><div><h2 style={{ margin: 0 }}>Owner AI Product Check</h2><p style={{ margin: "5px 0 0", color: "#c9bb82", lineHeight: 1.5 }}>Starts automatically when this page opens. Nothing is removed without your yellow confirmation.</p></div><button type="button" onClick={scan} disabled={scanning} style={{ minHeight: 40, borderRadius: 10, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", fontWeight: 900 }}>{scanning ? "Checking…" : "Check again"}</button></div>
     {scanning && <p style={{ color: "#ffe7a3" }}>Checking products, brands, merchant links, and dated events…</p>}
     {!scanning && counts.products > 0 && <p style={{ color: "#9fb8c5" }}>Checked {counts.products} listings across {counts.brands} brands.</p>}
-    {!scanning && imageRepairs.length > 0 && <button type="button" onClick={repairImages} disabled={repairing} style={{ width: "100%", minHeight: 44, marginBottom: 10, borderRadius: 10, border: "1px solid #62d899", background: "#123b28", color: "#d5ffe5", fontWeight: 900, opacity: repairing ? .6 : 1 }}>{repairing ? "Refreshing thumbnails…" : `Refresh ${imageRepairs.length} merchant thumbnail${imageRepairs.length === 1 ? "" : "s"}`}</button>}
+    {!scanning && imageRepairs.length > 0 && <button type="button" onClick={repairImages} disabled={repairing} style={{ width: "100%", minHeight: 44, marginBottom: 10, borderRadius: 10, border: "1px solid #62d899", background: "#123b28", color: "#d5ffe5", fontWeight: 900, opacity: repairing ? .6 : 1 }}>{repairing ? "Refreshing thumbnails…" : `Repair ${imageRepairs.length} missing published picture${imageRepairs.length === 1 ? "" : "s"}`}</button>}
     {error && <p style={{ padding: 10, borderRadius: 10, background: "#3a1219", color: "#ffd7dc" }}>{error}</p>}
     {notice && !scanning && <p style={{ padding: 10, borderRadius: 10, background: candidates.length ? "#493607" : "#102d22", color: candidates.length ? "#ffe9a8" : "#bdf4cd" }}>{notice}</p>}
     {candidates.length > 0 && <div style={{ display: "grid", gap: 8 }}>{candidates.map((item) => { const selectionId = `${item.source}:${item.id}`; return <article key={selectionId} style={{ padding: 10, borderRadius: 10, background: "rgba(0,0,0,.25)" }}><strong>{item.title}</strong><div style={{ color: "#82cfe8", fontSize: 12 }}>{item.merchant}</div><div style={{ marginTop: 4, color: "#ffd77e", fontSize: 12 }}>{item.reason}</div><div style={{ display: "flex", gap: 7, marginTop: 8, flexWrap: "wrap" }}><a href={item.affiliateUrl} target="_blank" rel="noopener noreferrer" style={{ minHeight: 38, display: "grid", placeItems: "center", padding: "4px 10px", borderRadius: 9, border: "1px solid #49b976", color: "#c8f9d9", textDecoration: "none", fontWeight: 900 }}>Review listing ↗</a><button type="button" onClick={() => ignoreWarning(item, "item")} style={{ minHeight: 38, borderRadius: 9, border: "1px solid #49b976", background: "#113523", color: "#c8f9d9", fontWeight: 900 }}>Ignore this warning</button><button type="button" onClick={() => ignoreWarning(item, "brand")} style={{ minHeight: 38, borderRadius: 9, border: "1px solid #3a9660", background: "#0d291b", color: "#b8eccb", fontWeight: 900 }}>Ignore this brand warning</button><button type="button" onClick={() => toggle(selectionId)} style={{ minHeight: 38, borderRadius: 9, border: selected.includes(selectionId) ? "1px solid #ffd45c" : "1px solid #c85b68", background: selected.includes(selectionId) ? "#725809" : "#3b151b", color: "white", fontWeight: 900 }}>{selected.includes(selectionId) ? "✓ Selected to remove" : "Remove from publication"}</button></div></article>})}</div>}

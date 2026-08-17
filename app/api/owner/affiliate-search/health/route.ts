@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { unifiedAffiliateCatalog } from "../../../../../lib/ai/unifiedAffiliateCatalog";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
-import { discoverMerchantProductImage } from "../../../../../lib/impactAffiliateSearch";
+import { discoverMerchantProductImage, findImpactProductImageByTitle } from "../../../../../lib/impactAffiliateSearch";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 type ScanItem = { id: string; merchant: string; title: string; description: string; affiliateUrl: string; imageUrl: string | null; pagePath: string | null; removable: boolean; source: "builtin" | "uploaded" };
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
     const group = missingImageItems.slice(index, index + 6);
     const recovered = await Promise.all(group.map(async (item) => {
       const link = linkResults.get(item.affiliateUrl);
-      const imageUrl = link?.discoveredImage || await discoverMerchantProductImage(link?.finalUrl || item.affiliateUrl, item.title);
+      const imageUrl = await findImpactProductImageByTitle(item.title, item.merchant) || link?.discoveredImage || await discoverMerchantProductImage(link?.finalUrl || item.affiliateUrl, item.title);
       return imageUrl ? { id: item.id, source: item.source, imageUrl, sourcePageUrl: link?.finalUrl || item.affiliateUrl } : null;
     }));
     for (const repair of recovered) if (repair) imageRepairs.push(repair);

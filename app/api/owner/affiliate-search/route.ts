@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { AFFILIATE_BATCH_SIZE, affiliateSearchBrands, affiliateSearchCategories, affiliateSearchResultCounts, AffiliateSearchBrandId, AffiliateSearchCategoryId, isAffiliateSearchBrand, isAffiliateSearchCategory, usStateOptions } from "../../../../lib/affiliateSearch";
-import { AffiliateProductCandidate, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
+import { AffiliateProductCandidate, normalizedAffiliateProductKey, searchImpactCategory } from "../../../../lib/impactAffiliateSearch";
 import { unifiedAffiliateCatalog } from "../../../../lib/ai/unifiedAffiliateCatalog";
 import { proxiedAffiliateImageUrl } from "../../../../lib/affiliateImageProxy";
+import { getStage6Config } from "../../../../lib/ai/stage6Config";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 
@@ -10,6 +11,12 @@ function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
   return Boolean(expected && provided && provided === expected);
+}
+
+function supabaseHeaders(key: string, kind?: "secret" | "service_role") {
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
+  if (kind === "service_role") headers.Authorization = `Bearer ${key}`;
+  return headers;
 }
 
 function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
@@ -91,6 +98,31 @@ export async function POST(request: Request) {
   const awinConnected = Boolean(process.env.AWIN_API_TOKEN?.trim() && process.env.AWIN_PUBLISHER_ID?.trim());
   let impactFailed = false;
 
+  const existingProductKeys = new Set(
+    unifiedAffiliateCatalog.map((item) => normalizedAffiliateProductKey(item.merchant, item.title)),
+  );
+  const config = getStage6Config();
+  if (config.databaseConfigured && config.supabaseServerKey) {
+    try {
+      const response = await fetch(
+        `${config.supabaseUrl}/rest/v1/approved_affiliate_products?select=merchant,title&limit=2000`,
+        { headers: supabaseHeaders(config.supabaseServerKey, config.supabaseKeyKind), cache: "no-store" },
+      );
+      if (response.ok) {
+        const rows = await response.json().catch(() => []);
+        if (Array.isArray(rows)) {
+          for (const row of rows) {
+            const merchant = typeof row?.merchant === "string" ? row.merchant : "";
+            const title = typeof row?.title === "string" ? row.title : "";
+            if (merchant && title) existingProductKeys.add(normalizedAffiliateProductKey(merchant, title));
+          }
+        }
+      }
+    } catch {
+      console.error("Could not load existing affiliate products for duplicate prevention.");
+    }
+  }
+
   const searchTargets: { categoryId: AffiliateSearchCategoryId; brandId: AffiliateSearchBrandId | null }[] = [];
   for (const categoryId of requested) {
     if (requestedBrands.length) {
@@ -102,6 +134,7 @@ export async function POST(request: Request) {
 
   const batches: { brandId: AffiliateSearchBrandId | null; brandLabel: string | null; categoryId: AffiliateSearchCategoryId; categoryLabel: string; requestedCount: number; items: AffiliateProductCandidate[] }[] = [];
   const requestUsedIds = new Set<string>();
+  const requestUsedProductKeys = new Set<string>();
   for (const { categoryId, brandId } of searchTargets) {
     const category = affiliateSearchCategories.find((entry) => entry.id === categoryId)!;
     const brand = brandId ? affiliateSearchBrands.find((entry) => entry.id === brandId) : null;
@@ -110,7 +143,15 @@ export async function POST(request: Request) {
 
     if (impactConnected) {
       try {
-        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), { brandIds: targetBrands, batchSize, ticketStateCode, ticketStateName, ticketStartDate, ticketEndDate });
+        impactItems = await searchImpactCategory(categoryId, new Set([...excludeIds, ...requestUsedIds]), {
+          brandIds: targetBrands,
+          batchSize,
+          ticketStateCode,
+          ticketStateName,
+          ticketStartDate,
+          ticketEndDate,
+          excludeProductKeys: new Set([...existingProductKeys, ...requestUsedProductKeys]),
+        });
       } catch (error) {
         impactFailed = true;
         console.error("Impact Affiliate Search failed:", error instanceof Error ? error.message : "Unknown error");
@@ -120,11 +161,16 @@ export async function POST(request: Request) {
     const ids = new Set(impactItems.map((item) => item.id));
     const localItems = localCandidates(categoryId, new Set([...excludeIds, ...requestUsedIds]), targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
+      .filter((item) => !existingProductKeys.has(normalizedAffiliateProductKey(item.merchant, item.title)))
+      .filter((item) => !requestUsedProductKeys.has(normalizedAffiliateProductKey(item.merchant, item.title)))
       .slice(0, Math.max(0, batchSize - impactItems.length));
     const items = [...impactItems, ...localItems]
       .slice(0, batchSize)
       .map((item) => ({ ...item, sourceImageUrl: item.imageUrl || null, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
-    items.forEach((item) => requestUsedIds.add(item.id));
+    items.forEach((item) => {
+      requestUsedIds.add(item.id);
+      requestUsedProductKeys.add(normalizedAffiliateProductKey(item.merchant, item.title));
+    });
 
     batches.push({
       brandId,

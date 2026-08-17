@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { unifiedAffiliateCatalog } from "../../../../../lib/ai/unifiedAffiliateCatalog";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
+import { discoverMerchantProductImage } from "../../../../../lib/impactAffiliateSearch";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 type ScanItem = { id: string; merchant: string; title: string; description: string; affiliateUrl: string; imageUrl: string | null; pagePath: string | null; removable: boolean; source: "builtin" | "uploaded" };
@@ -144,10 +145,17 @@ export async function GET(request: Request) {
     const merchantKey = normalizedMerchant(item.merchant);
     return !ignored.has(`item:${item.source}:${item.id}:${item.kind}`) && !ignored.has(`brand:${merchantKey}:${item.kind}`);
   });
-  const imageRepairs = items.flatMap((item) => {
-    const link = linkResults.get(item.affiliateUrl);
-    return link?.discoveredImage && link.discoveredImage !== item.imageUrl ? [{ id: item.id, source: item.source, imageUrl: link.discoveredImage, sourcePageUrl: link.finalUrl }] : [];
-  });
+  const imageRepairs: { id: string; source: "builtin" | "uploaded"; imageUrl: string; sourcePageUrl: string }[] = [];
+  const missingImageItems = items.filter((item) => !item.imageUrl);
+  for (let index = 0; index < missingImageItems.length; index += 6) {
+    const group = missingImageItems.slice(index, index + 6);
+    const recovered = await Promise.all(group.map(async (item) => {
+      const link = linkResults.get(item.affiliateUrl);
+      const imageUrl = link?.discoveredImage || await discoverMerchantProductImage(link?.finalUrl || item.affiliateUrl, item.title);
+      return imageUrl ? { id: item.id, source: item.source, imageUrl, sourcePageUrl: link?.finalUrl || item.affiliateUrl } : null;
+    }));
+    imageRepairs.push(...recovered.filter((repair): repair is NonNullable<typeof repair> => Boolean(repair)));
+  }
   return NextResponse.json({ imageRepairs, checkedAt: new Date().toISOString(), checkedCount: items.length, brandCount: new Set(items.map((item) => item.merchant)).size, candidates: candidateList, message: candidateList.length ? `${candidateList.length} item${candidateList.length === 1 ? "" : "s"} need your review.` : "No definitely expired, unavailable, missing, or duplicate items were found." });
 }
 

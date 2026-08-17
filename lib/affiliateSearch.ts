@@ -20,6 +20,7 @@ export function isAffiliateSearchCategory(value: string): value is AffiliateSear
 }
 
 export const affiliateSearchBrands = [
+  { id: "coofandy", label: "COOFANDY", aliases: ["coofandy", "coofandy partner program"] },
   { id: "eurooptic", label: "EuroOptic", aliases: ["eurooptic", "euro optic"] },
   { id: "focus-camera", label: "Focus Camera", aliases: ["focus camera", "lifestyle by focus", "lifestyle focus", "focus by lifestyle"] },
   { id: "aquacurve", label: "AquaCurve", aliases: ["aquacurve", "aqua curve"] },

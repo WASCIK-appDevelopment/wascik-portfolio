@@ -118,13 +118,18 @@ export async function POST(request: Request) {
     }
 
     if (impactItems.some((item) => !item.imageUrl)) {
-      impactItems = await Promise.all(impactItems.map(async (item) => {
-        if (item.imageUrl) return item;
+      const enrichedItems: AffiliateProductCandidate[] = [];
+      for (const item of impactItems) {
+        if (item.imageUrl) {
+          enrichedItems.push(item);
+          continue;
+        }
         const recoveredImage = await findImpactProductImageByTitle(item.title, item.merchant);
-        return recoveredImage
+        enrichedItems.push(recoveredImage
           ? { ...item, imageUrl: recoveredImage, features: [...item.features, "Official image recovered by exact product lookup"] }
-          : item;
-      }));
+          : item);
+      }
+      impactItems = enrichedItems;
     }
 
     const ids = new Set(impactItems.map((item) => item.id));

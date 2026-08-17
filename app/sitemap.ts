@@ -8,6 +8,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/start-project", changeFrequency: "monthly", priority: 0.9 },
     { path: "/affiliate-services", changeFrequency: "weekly", priority: 0.9 },
     { path: "/affiliate-services/ticketnetwork", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/affiliate-services/coofandy", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/affiliate-services/dhgate", changeFrequency: "weekly", priority: 0.8 },
     { path: "/affiliate-services/eurooptic", changeFrequency: "weekly", priority: 0.8 },
     { path: "/affiliate-services/focus-camera", changeFrequency: "weekly", priority: 0.8 },
     { path: "/affiliate-services/aquacurve", changeFrequency: "weekly", priority: 0.7 },

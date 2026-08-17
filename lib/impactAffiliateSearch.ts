@@ -173,6 +173,25 @@ function pageImageFromHtml(html: string, pageUrl: string, productTitle: string) 
   return '';
 }
 
+async function browserRenderedMetadataImage(pageUrl: string) {
+  try {
+    const endpoint = new URL("https://api.microlink.io");
+    endpoint.searchParams.set("url", pageUrl);
+    endpoint.searchParams.set("meta", "true");
+    const response = await fetch(endpoint, {
+      cache: "force-cache",
+      signal: AbortSignal.timeout(20000),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return "";
+    const payload = await response.json().catch(() => null) as { status?: string; data?: { image?: { url?: string } | string } } | null;
+    const rawImage = typeof payload?.data?.image === "string" ? payload.data.image : payload?.data?.image?.url;
+    return normalizeImageUrl(rawImage);
+  } catch {
+    return "";
+  }
+}
+
 async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) {
   const directProductUrl = textValue(record, ['ProductUrl', 'ProductURL', 'LandingPageUrl', 'LandingPageURL', 'ProductPageUrl', 'ProductPageURL', 'ProductLink', 'ProductUri', 'Uri', 'URL', 'Url', 'Link']);
   const startingUrl = safePublicUrl(directProductUrl)?.toString() || safePublicUrl(affiliateUrl)?.toString();
@@ -184,14 +203,14 @@ async function resolveMerchantImage(record: ImpactRecord, affiliateUrl: string) 
       signal: AbortSignal.timeout(12000),
       headers: { Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1 WASCIK-Affiliate-Catalog/1.1' },
     });
-    if (!response.ok || !safePublicUrl(response.url)) return '';
+    if (!response.ok || !safePublicUrl(response.url)) return browserRenderedMetadataImage(startingUrl);
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return '';
+    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) return browserRenderedMetadataImage(response.url || startingUrl);
     const html = (await response.text()).slice(0, 1_500_000);
     const productTitle = textValue(record, ['Name', 'Title', 'ProductName']);
-    return pageImageFromHtml(html, response.url, productTitle);
+    return pageImageFromHtml(html, response.url, productTitle) || await browserRenderedMetadataImage(response.url || startingUrl);
   } catch {
-    return '';
+    return browserRenderedMetadataImage(startingUrl);
   }
 }
 

@@ -25,22 +25,30 @@ function textValue(record: ImpactRecord, keys: string[]) {
   return "";
 }
 
-function normalizeImageUrl(value: unknown): string {
+function normalizeImageUrl(value: unknown, depth = 0): string {
+  if (depth > 5) return "";
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    const trimmed = value.trim().replaceAll("&amp;", "&").replaceAll("\\/", "/");
     if (trimmed.startsWith("//")) return `https:${trimmed}`;
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const embeddedUrl = trimmed.match(/https?:\/\/[^"'<>\\s]+/i)?.[0];
+    if (embeddedUrl) return embeddedUrl;
   }
   if (Array.isArray(value)) {
     for (const entry of value) {
-      const found = normalizeImageUrl(entry);
+      const found = normalizeImageUrl(entry, depth + 1);
       if (found) return found;
     }
   }
   if (value && typeof value === "object") {
     const record = value as ImpactRecord;
-    for (const key of ["Url", "URL", "url", "Src", "src", "Large", "Original"]) {
-      const found = normalizeImageUrl(record[key]);
+    const preferredKeys = ["ImageUrl", "ImageURL", "Url", "URL", "url", "Src", "src", "Large", "Original"];
+    for (const key of preferredKeys) {
+      const found = normalizeImageUrl(record[key], depth + 1);
+      if (found) return found;
+    }
+    for (const nested of Object.values(record)) {
+      const found = normalizeImageUrl(nested, depth + 1);
       if (found) return found;
     }
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { safeAffiliateImageUrl, verifyAffiliateImageSignature } from "../../../../../../lib/affiliateImageProxy";
+import { safeAffiliateImageUrl, verifyAffiliateImageSignature } from "../../../../../lib/affiliateImageProxy";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 

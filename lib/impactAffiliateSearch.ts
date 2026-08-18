@@ -319,7 +319,9 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string, campai
     }
   }
   const imageUrl = imageValue(record) || null;
-  if (!affiliateUrl || !commissionEligible(record)) return null;
+  const safeAffiliateUrl = safePublicUrl(decodeHtmlUrl(affiliateUrl))?.toString() || "";
+  if (!safeAffiliateUrl || !commissionEligible(record)) return null;
+  affiliateUrl = safeAffiliateUrl;
   const price = textValue(record, ["CurrentPrice", "SalePrice", "Price"]) || null;
   const stock = textValue(record, ["StockAvailability", "Availability"]);
   const eventDate = textValue(record, ["EventDate", "StartDate", "EventStartDate", "Date"]);

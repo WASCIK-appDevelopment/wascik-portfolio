@@ -11,6 +11,8 @@ const TOKEN_TTL_MS = 5 * 60 * 1000;
 const PUBLISH_PATHS = new Set([
   "/affiliate-services",
   "/affiliate-services/aquacurve",
+  "/affiliate-services/coofandy",
+  "/affiliate-services/dhgate",
   "/affiliate-services/eurooptic",
   "/affiliate-services/focus-camera",
   "/affiliate-services/gearup",

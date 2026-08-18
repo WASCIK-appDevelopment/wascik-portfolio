@@ -84,7 +84,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
           <CodeBackdrop />
           <header className="wascik-nav">
             <a href={mode === "portfolio" ? "#top" : "/"} className="wascik-brand" aria-label="WASCIK home">
-              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority />
+              <Image className="wascik-logo wascik-logo-nav" src="/wascik-logo-v2.png?v=20260809" alt="WASCIK" width={1812} height={868} priority /><sup className="wascik-tm">™</sup>
               <span className="brand-words">WASCIK <small>APP DEVELOPMENT</small></span>
             </a>
             <nav aria-label="Portfolio navigation">
@@ -112,8 +112,12 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <div className="wascik-actions">
                 <a href="/start-project" className="wascik-cta primary">Start My Project</a>
                 <a href="/sample-project" className="wascik-cta secondary">View Our Work</a>
-                <a href="/affiliate-services" className="wascik-cta secondary">Affiliate Services</a>
-                <button type="button" className="wascik-cta future" disabled aria-disabled="true">What We&apos;re Working On</button>
+                <div className="affiliate-hero-spotlight">
+                  <span className="affiliate-hero-callout">Check Out Our Affiliate Pages</span>
+                  <span className="affiliate-hero-arrow" aria-hidden="true">↓</span>
+                  <a href="/affiliate-services" className="wascik-cta secondary affiliate-hero-button">Affiliate Services</a>
+                  <button type="button" className="wascik-cta future affiliate-future-button" disabled aria-disabled="true">What We&apos;re Working On</button>
+                </div>
               </div>
               <div className="wascik-trust"><span>✓ Mobile-first</span><span>✓ Custom-built</span><span>✓ Local support</span></div>
             </div>
@@ -168,7 +172,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             </div>
           </section>
 
-          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          <footer className="wascik-footer">© 2026 WASCIK™ App Development · WASCIK™ is a trademark of Michael Lewis.</footer>
           </>
           )}
 
@@ -204,7 +208,7 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
             </div>
           </section>
 
-          <footer className="wascik-footer">© 2026 WASCIK App Development · We Are So Close, It&apos;s Crazy.</footer>
+          <footer className="wascik-footer">© 2026 WASCIK™ App Development · WASCIK™ is a trademark of Michael Lewis.</footer>
           </>
           )}
         </div>

@@ -70,7 +70,7 @@ export default function PortableVoiceRecorderAdPage() {
         </div>
       </section>
 
-      <section className="relative z-10 border-t border-sky-900/70 bg-[#01070d] px-5 py-14 text-center md:px-8"><div className="mx-auto max-w-3xl"><Image src="/wascik-logo-v2.png" alt="WASCIK" width={1254} height={1254} className="mx-auto h-16 w-16 rounded-2xl object-contain" /><h2 className="mt-5 text-3xl font-black">A practical tech pick from WASCIK.</h2><p className="mt-4 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through product links, at no additional cost to you.</p><Link href="/affiliate-services" className="mt-6 inline-block font-bold text-sky-300 hover:text-yellow-300">Explore all affiliate picks →</Link></div></section>
+      <section className="relative z-10 border-t border-sky-900/70 bg-[#01070d] px-5 py-14 text-center md:px-8"><div className="mx-auto max-w-3xl"><Image src="/wascik-logo-v2.png" alt="WASCIK" width={1254} height={1254} className="mx-auto h-16 w-16 rounded-2xl object-contain" /><h2 className="mt-5 text-3xl font-black">A practical tech pick from WASCIK™.</h2><p className="mt-4 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through product links, at no additional cost to you.</p><Link href="/affiliate-services" className="mt-6 inline-block font-bold text-sky-300 hover:text-yellow-300">Explore all affiliate picks →</Link><p className="mt-8 text-xs text-slate-500">© 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.</p></div></section>
     </main>
   );
 }

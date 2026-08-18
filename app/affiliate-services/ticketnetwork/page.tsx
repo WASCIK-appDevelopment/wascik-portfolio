@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import PublishedAffiliateProducts from "../PublishedAffiliateProducts";
+import { getAffiliateSuppressions } from "../../../lib/affiliateSuppressions";
 
 export const metadata: Metadata = {
   title: "Concert Tickets & Upcoming Events | WASCIK Affiliate Services",
@@ -19,19 +21,21 @@ export const metadata: Metadata = {
 const ticketLink = "https://goto.ticketnetwork.com/c/7587435/120057/2322";
 
 const events = [
-  { artist: "Chris Stapleton", tour: "All-American Road Show with Zach Top & Allen Stone", date: "Friday, August 14, 2026", time: "7:30 PM", venue: "Fenway Park", location: "Boston, Massachusetts", image: "/affiliate/ticketnetwork/chris-stapleton.webp", genre: "Country" },
-  { artist: "Kane Brown", tour: "OC Smoke Show with Dustin Lynch & LoCash", date: "Saturday, August 15, 2026", time: "1:00 PM", venue: "Rancho Mission Viejo Riding Park", location: "San Juan Capistrano, California", image: "/affiliate/ticketnetwork/kane-brown.webp", genre: "Country" },
-  { artist: "Guns N’ Roses", tour: "Guns N’ Roses with Public Enemy", date: "Sunday, August 16, 2026", time: "6:25 PM", venue: "Busch Stadium", location: "St. Louis, Missouri", image: "/affiliate/ticketnetwork/guns-n-roses.webp", genre: "Rock" },
-  { artist: "Pitbull", tour: "Pitbull with Lil Jon", date: "Wednesday, August 19, 2026", time: "8:00 PM", venue: "Jiffy Lube Live", location: "Bristow, Virginia", image: "/affiliate/ticketnetwork/pitbull.webp", genre: "Pop & Hip-Hop" },
-  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Thursday, August 20, 2026", time: "7:30 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
-  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Friday, August 21, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
-  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Saturday, August 22, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
-  { artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Sunday, August 23, 2026", time: "2:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
-  { artist: "Weezer", tour: "Weezer with The Shins & Silversun Pickups", date: "Tuesday, October 6, 2026", time: "7:00 PM", venue: "Nationwide Arena", location: "Columbus, Ohio", image: "/affiliate/ticketnetwork/weezer.webp", genre: "Alternative Rock" },
-  { artist: "Journey", tour: "Journey Live in Concert", date: "Thursday, October 8, 2026", time: "7:30 PM", venue: "BOK Center", location: "Tulsa, Oklahoma", image: "/affiliate/ticketnetwork/journey.webp", genre: "Classic Rock" },
+  { id: "ticketnetwork-chris-stapleton", artist: "Chris Stapleton", tour: "All-American Road Show with Zach Top & Allen Stone", date: "Friday, August 14, 2026", time: "7:30 PM", venue: "Fenway Park", location: "Boston, Massachusetts", image: "/affiliate/ticketnetwork/chris-stapleton.webp", genre: "Country" },
+  { id: "ticketnetwork-kane-brown", artist: "Kane Brown", tour: "OC Smoke Show with Dustin Lynch & LoCash", date: "Saturday, August 15, 2026", time: "1:00 PM", venue: "Rancho Mission Viejo Riding Park", location: "San Juan Capistrano, California", image: "/affiliate/ticketnetwork/kane-brown.webp", genre: "Country" },
+  { id: "ticketnetwork-guns-n-roses", artist: "Guns N’ Roses", tour: "Guns N’ Roses with Public Enemy", date: "Sunday, August 16, 2026", time: "6:25 PM", venue: "Busch Stadium", location: "St. Louis, Missouri", image: "/affiliate/ticketnetwork/guns-n-roses.webp", genre: "Rock" },
+  { id: "ticketnetwork-pitbull", artist: "Pitbull", tour: "Pitbull with Lil Jon", date: "Wednesday, August 19, 2026", time: "8:00 PM", venue: "Jiffy Lube Live", location: "Bristow, Virginia", image: "/affiliate/ticketnetwork/pitbull.webp", genre: "Pop & Hip-Hop" },
+  { id: "ticketnetwork-garth-brooks-aug-20", artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Thursday, August 20, 2026", time: "7:30 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { id: "ticketnetwork-garth-brooks-aug-21", artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Friday, August 21, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { id: "ticketnetwork-garth-brooks-aug-22", artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Saturday, August 22, 2026", time: "8:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { id: "ticketnetwork-garth-brooks-aug-23", artist: "Garth Brooks", tour: "Garth Brooks Live in Concert", date: "Sunday, August 23, 2026", time: "2:00 PM", venue: "Gainbridge Fieldhouse", location: "Indianapolis, Indiana", image: "/affiliate/ticketnetwork/garth-brooks.webp", genre: "Country" },
+  { id: "ticketnetwork-weezer", artist: "Weezer", tour: "Weezer with The Shins & Silversun Pickups", date: "Tuesday, October 6, 2026", time: "7:00 PM", venue: "Nationwide Arena", location: "Columbus, Ohio", image: "/affiliate/ticketnetwork/weezer.webp", genre: "Alternative Rock" },
+  { id: "ticketnetwork-journey", artist: "Journey", tour: "Journey Live in Concert", date: "Thursday, October 8, 2026", time: "7:30 PM", venue: "BOK Center", location: "Tulsa, Oklahoma", image: "/affiliate/ticketnetwork/journey.webp", genre: "Classic Rock" },
 ];
 
-export default function TicketNetworkPage() {
+export default async function TicketNetworkPage() {
+  const suppressions = await getAffiliateSuppressions();
+  const visibleEvents = events.filter((event) => !suppressions.has(event.id));
   return (
     <main className="min-h-screen overflow-hidden bg-[#090510] text-white">
       <div className="fixed inset-0 -z-0 bg-[radial-gradient(circle_at_15%_12%,rgba(236,72,153,.24),transparent_30%),radial-gradient(circle_at_84%_46%,rgba(124,58,237,.22),transparent_30%)]" />
@@ -57,7 +61,7 @@ export default function TicketNetworkPage() {
           <h2 className="mt-3 text-4xl font-black sm:text-5xl">Upcoming shows worth checking out</h2>
           <p className="mt-5 max-w-3xl leading-8 text-slate-300">Schedules were reviewed on August 13, 2026. Events, performers, times, ticket inventory, and pricing can change, so verify every detail on TicketNetwork before ordering.</p>
           <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-3">
-            {events.map((event) => (
+            {visibleEvents.map((event) => (
               <article key={`${event.artist}-${event.date}`} className="flex h-full flex-col overflow-hidden rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-[#1c0a28] to-[#090510] shadow-[0_24px_70px_rgba(0,0,0,.34)]">
                 <div className="relative"><Image src={event.image} alt={`${event.artist} performing live`} width={1200} height={675} className="aspect-video h-auto w-full object-cover" /><span className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/65 px-3 py-1 text-xs font-black uppercase tracking-[.18em] text-fuchsia-100 backdrop-blur">{event.genre}</span></div>
                 <div className="flex flex-1 flex-col p-7">
@@ -73,11 +77,12 @@ export default function TicketNetworkPage() {
         </div>
       </section>
 
+      <PublishedAffiliateProducts pagePath="/affiliate-services/ticketnetwork" />
       <section className="relative z-10 px-5 py-14 md:px-8">
         <div className="mx-auto max-w-4xl rounded-3xl border border-yellow-300/25 bg-yellow-300/[.06] p-7 sm:p-9"><p className="font-black text-yellow-200">Ticket and affiliate disclosure</p><p className="mt-3 leading-7 text-slate-400">WASCIK may earn a commission from qualifying purchases made through TicketNetwork links on this page, at no additional cost to you. TicketNetwork is a resale marketplace, not the venue or box office, and ticket prices may be above or below face value. Event schedules, performers, availability, seat locations, fees, and prices may change. Review the merchant&apos;s current listing and purchase terms before ordering.</p></div>
         <div className="mx-auto mt-8 max-w-4xl text-center"><a href={ticketLink} target="_blank" rel="sponsored noopener noreferrer" className="inline-flex min-h-14 w-full items-center justify-center rounded-xl bg-fuchsia-400 px-8 py-4 text-center font-black text-slate-950 transition hover:bg-fuchsia-300 sm:w-auto">Browse All TicketNetwork Events ↗</a></div>
       </section>
-      <footer className="relative z-10 border-t border-fuchsia-950 bg-[#050208] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK Affiliate Services · TicketNetwork event page.</footer>
+      <footer className="relative z-10 border-t border-fuchsia-950 bg-[#050208] px-5 py-7 text-center text-sm text-slate-500">© 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.</footer>
     </main>
   );
 }

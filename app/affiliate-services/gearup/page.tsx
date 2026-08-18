@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import PublishedAffiliateProducts from "../PublishedAffiliateProducts";
 
 const benefits = [
   { number: "01", title: "Connection optimization", copy: "GearUP says its patented network technology is designed to find a better route between your device and the game server." },
@@ -60,6 +61,10 @@ export default function GearUpPage() {
       <section className="relative z-10 px-5 py-16 md:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-7 lg:grid-cols-2"><article className="rounded-3xl border border-emerald-400/25 bg-emerald-400/[.06] p-7 sm:p-9"><p className="text-xs font-black uppercase tracking-[.24em] text-emerald-300">May be worth exploring if</p><h2 className="mt-3 text-3xl font-black">Your game connection is the problem.</h2><ul className="mt-6 grid gap-3 text-slate-300">{["Your ping changes sharply during play", "You connect to game servers in another region", "Your normal internet works, but a specific game feels unstable", "You want a simple mobile-focused tool"].map((item) => <li key={item} className="flex gap-3"><span className="text-emerald-300">✓</span><span>{item}</span></li>)}</ul></article><article className="rounded-3xl border border-amber-300/25 bg-amber-300/[.06] p-7 sm:p-9"><p className="text-xs font-black uppercase tracking-[.24em] text-amber-200">Keep expectations realistic</p><h2 className="mt-3 text-3xl font-black">No booster can fix every cause of lag.</h2><p className="mt-5 leading-8 text-slate-300">A game booster cannot repair weak Wi-Fi, an overloaded home network, device performance limits, or problems at the game server itself. Review the current trial, price, renewal terms, supported games, and cancellation policy before subscribing.</p></article></div></section>
 
       <section className="relative z-10 border-t border-violet-950 bg-[#020207] px-5 py-14 md:px-8"><div className="mx-auto max-w-4xl text-center"><p className="text-xs font-black uppercase tracking-[.28em] text-violet-300">Coming next</p><h2 className="mt-3 text-3xl font-black">One GearUP hub. More products as we add them.</h2><p className="mt-4 leading-7 text-slate-400">This page is structured to grow with additional approved GearUP offers, including Windows and network-hardware products, without crowding the main WASCIK affiliate catalog.</p><div className="mt-8 rounded-2xl border border-yellow-300/25 bg-yellow-300/[.06] p-6 text-left"><p className="font-black text-yellow-200">Affiliate disclosure</p><p className="mt-2 leading-7 text-slate-400">WASCIK may earn a commission when you purchase through a qualifying GearUP affiliate link, at no additional cost to you. Prices, eligibility, supported games, features, and promotions may change.</p></div><Link href="/affiliate-services" className="mt-8 inline-block font-bold text-violet-300 hover:text-violet-200">Explore all WASCIK affiliate picks →</Link></div></section>
+      <PublishedAffiliateProducts pagePath="/affiliate-services/gearup" />
+      <footer className="relative z-10 border-t border-violet-950 bg-[#020207] px-5 py-6 text-center text-xs text-slate-500">
+        © 2026 WASCIK™ Affiliate Services · WASCIK™ is a trademark of Michael Lewis.
+      </footer>
     </main>
   );
 }

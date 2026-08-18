@@ -74,7 +74,8 @@ export async function POST(request: Request) {
     "Return concise content suitable for the named platform.",
     "EVERY generated ad must include a clear final invitation to subscribe for future WASCIK Affiliate Services email deals, product updates, and recommendations. Do not imply the person is subscribed until they actively submit their email.",
     "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page.",
-    "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
+    "Also write one short first-person SALES LINE for Michael to read aloud in his own voice. It should sound natural when spoken, sell the product without exaggeration, and normally fit in about 8 to 20 seconds. Do not claim Michael personally owns, uses, tested, or recommends the product unless that fact was explicitly supplied.",
+    "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"salesLine\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
     "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
     "Keep hashtags relevant and restrained. Avoid spammy tag stuffing.",
   ].join("\n");
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
       instructions,
       input: [{ role: "user", content: JSON.stringify(input) }],
       reasoning: { effort: "minimal" },
-      max_output_tokens: 700,
+      max_output_tokens: 760,
       store: false,
     }),
   });

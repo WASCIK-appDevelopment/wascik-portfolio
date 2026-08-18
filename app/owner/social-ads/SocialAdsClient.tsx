@@ -30,7 +30,8 @@ type CatalogProduct = {
 const platforms = ["Facebook", "Instagram", "TikTok", "Threads", "X", "YouTube", "General social post"];
 
 export default function SocialAdsClient() {
-  const [platform, setPlatform] = useState("Facebook");
+  const [platform, setPlatform] = useState("");
+  const [platformPickerOpen, setPlatformPickerOpen] = useState(false);
   const [objective, setObjective] = useState("Drive product interest and affiliate clicks");
   const [creativeNotes, setCreativeNotes] = useState("");
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -79,8 +80,16 @@ export default function SocialAdsClient() {
 
   function selectProduct(item: CatalogProduct) {
     setSelectedId(item.id);
+    setPlatform("");
     setResult(null);
     setError("");
+    setPlatformPickerOpen(true);
+  }
+
+  function choosePlatform(value: string) {
+    setPlatform(value);
+    setPlatformPickerOpen(false);
+    setResult(null);
   }
 
   function verifiedFacts(item: CatalogProduct) {
@@ -171,11 +180,11 @@ export default function SocialAdsClient() {
       <div style={{ display: "grid", gap: 12 }}>
         <h2 style={{ margin: 0 }}>Create the ad copy</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
-          <label style={labelStyle}>Platform
-            <select value={platform} onChange={(event) => setPlatform(event.target.value)} style={fieldStyle}>
-              {platforms.map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </label>
+          <div style={labelStyle}>Platform
+            <button type="button" disabled={!selectedProduct} onClick={() => setPlatformPickerOpen(true)} style={{ ...fieldStyle, textAlign: "left", cursor: selectedProduct ? "pointer" : "not-allowed" }}>
+              {platform || (selectedProduct ? "Choose platform" : "Pick a product first")}
+            </button>
+          </div>
           <label style={labelStyle}>Goal
             <input value={objective} onChange={(event) => setObjective(event.target.value)} style={fieldStyle} />
           </label>
@@ -184,7 +193,7 @@ export default function SocialAdsClient() {
           <textarea value={creativeNotes} onChange={(event) => setCreativeNotes(event.target.value)} rows={3} placeholder="Optional: emphasize a feature, say LINK IN BIO, make it energetic, etc." style={{ ...fieldStyle, resize: "vertical" }} />
         </label>
         <button type="button" disabled={!canGenerate} onClick={generate} style={{ border: 0, borderRadius: 12, padding: "13px 16px", fontWeight: 900, cursor: canGenerate ? "pointer" : "not-allowed", background: canGenerate ? "#71dcff" : "#314653", color: "#031019", fontSize: 16 }}>
-          {loading ? "AI is building your ad…" : selectedProduct ? "Generate Ad" : "Pick a product first"}
+          {loading ? "AI is building your ad…" : !selectedProduct ? "Pick a product first" : !platform ? "Choose a platform" : `Generate ${platform} Ad`}
         </button>
         {error ? <div style={{ color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}
       </div>
@@ -201,5 +210,22 @@ export default function SocialAdsClient() {
       {result.hashtags?.length ? <div style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.03)" }}><strong>Hashtags</strong><div style={{ marginTop: 8, color: "#71dcff", lineHeight: 1.6 }}>{result.hashtags.join(" ")}</div></div> : null}
       {result.complianceNotes?.length ? <div style={{ border: "1px solid rgba(255,205,92,.25)", borderRadius: 14, padding: 14, background: "rgba(255,205,92,.05)" }}><strong style={{ color: "#ffd76f" }}>Compliance check</strong><ul style={{ margin: "8px 0 0", paddingLeft: 20, color: "#dbe9f1", lineHeight: 1.6 }}>{result.complianceNotes.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
     </section> : null}
+
+    {platformPickerOpen && selectedProduct ? <div role="dialog" aria-modal="true" aria-label="Choose social platform" onClick={() => setPlatformPickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1000, display: "grid", placeItems: "center", padding: 18, background: "rgba(0,0,0,.72)", backdropFilter: "blur(6px)" }}>
+      <div onClick={(event) => event.stopPropagation()} style={{ width: "min(520px,100%)", border: "1px solid rgba(113,220,255,.32)", borderRadius: 20, padding: 18, background: "#07131d", boxShadow: "0 24px 70px rgba(0,0,0,.5)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
+          <div>
+            <div style={{ color: "#71dcff", fontSize: 12, fontWeight: 900 }}>WHERE DO YOU WANT THIS AD?</div>
+            <h2 style={{ margin: "5px 0 0" }}>Choose a platform</h2>
+            <div style={{ marginTop: 6, color: "#9fb5c5", fontSize: 13, lineHeight: 1.45 }}>{selectedProduct.merchant} — {selectedProduct.title}</div>
+          </div>
+          <button type="button" onClick={() => setPlatformPickerOpen(false)} aria-label="Close platform picker" style={{ border: "1px solid rgba(255,255,255,.15)", borderRadius: 10, background: "transparent", color: "#dbe9f1", padding: "6px 10px", cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10, marginTop: 16 }}>
+          {platforms.map((item) => <button key={item} type="button" onClick={() => choosePlatform(item)} style={{ border: platform === item ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.13)", borderRadius: 14, padding: "14px 10px", background: platform === item ? "rgba(113,220,255,.12)" : "rgba(255,255,255,.035)", color: "#eef8ff", fontWeight: 850, cursor: "pointer" }}>{item}</button>)}
+        </div>
+        <div style={{ marginTop: 14, color: "#8fa6b6", fontSize: 12, lineHeight: 1.5 }}>The AI will tailor the copy, CTA, and formatting for the platform you choose.</div>
+      </div>
+    </div> : null}
   </div>;
 }

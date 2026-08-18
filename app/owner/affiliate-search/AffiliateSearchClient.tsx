@@ -25,23 +25,14 @@ type ProductCandidate = {
 
 type Batch = { brandId?: string | null; brandLabel?: string | null; categoryId: string; categoryLabel: string; requestedCount: number; items: ProductCandidate[] };
 
-function ProductImage({ item, compact = false, uploading = false, onUpload }: { item: ProductCandidate; compact?: boolean; uploading?: boolean; onUpload?: (file: File) => void }) {
+function ProductImage({ item, compact = false }: { item: ProductCandidate; compact?: boolean }) {
   const raw = item.sourceImageUrl || "";
   const [src, setSrc] = useState(item.imageUrl || raw);
   useEffect(() => setSrc(item.imageUrl || raw), [item.imageUrl, raw]);
 
-  if (!src) return onUpload ? <label aria-label="No product image available. Upload a photo." style={compact
-    ? { width: 54, height: 54, display: "grid", placeItems: "center", borderRadius: 8, background: "#18262e", color: "#9edfff", fontSize: 9, fontWeight: 800, textAlign: "center", cursor: uploading ? "wait" : "pointer", padding: 3 }
-    : { width: "100%", height: 150, display: "grid", placeItems: "center", borderRadius: 11, background: "#18262e", color: "#9edfff", fontSize: 14, fontWeight: 900, textAlign: "center", cursor: uploading ? "wait" : "pointer", marginBottom: 10, border: "1px dashed #67cfff", padding: 12 }}>
-      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploading} hidden onChange={(event) => {
-        const file = event.currentTarget.files?.[0];
-        if (file) onUpload(file);
-        event.currentTarget.value = "";
-      }} />
-      <span>{uploading ? "Uploading photo…" : compact ? "Tap to upload" : "No image — tap here to upload a photo"}</span>
-    </label> : compact
-      ? <div aria-label="No product image available" style={{ width: 54, height: 54, display: "grid", placeItems: "center", borderRadius: 8, background: "#18262e", color: "#7f9aa8", fontSize: 9, textAlign: "center" }}>No image</div>
-      : null;
+  if (!src) return compact
+    ? <div aria-label="No product image available" style={{ width: 54, height: 54, display: "grid", placeItems: "center", borderRadius: 8, background: "#18262e", color: "#7f9aa8", fontSize: 9, textAlign: "center" }}>No image</div>
+    : null;
 
   return <img
     src={src}
@@ -77,7 +68,6 @@ export default function AffiliateSearchClient() {
   const [confirmationSummary, setConfirmationSummary] = useState("");
   const [savingApproval, setSavingApproval] = useState(false);
   const [fetchingImageIds, setFetchingImageIds] = useState<string[]>([]);
-  const [uploadingImageIds, setUploadingImageIds] = useState<string[]>([]);
 
   useEffect(() => {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -191,37 +181,6 @@ export default function AffiliateSearchClient() {
       setNotice("");
     } finally {
       setFetchingImageIds((current) => current.filter((id) => id !== item.id));
-    }
-  }
-
-  async function uploadProductImage(item: ProductCandidate, file: File) {
-    if (uploadingImageIds.includes(item.id)) return;
-    const key = sessionStorage.getItem(SESSION_KEY) || "";
-    setUploadingImageIds((current) => [...current, item.id]);
-    setError("");
-    setNotice(`Uploading your photo for ${item.title}…`);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("productId", item.id);
-      const response = await fetch("/api/owner/affiliate-search/upload", {
-        method: "POST",
-        headers: { "x-wascik-owner-key": key },
-        body: form,
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "The photo could not be uploaded.");
-      const update = (product: ProductCandidate): ProductCandidate => product.id === item.id
-        ? { ...product, imageUrl: data.imageUrl || null, sourceImageUrl: data.sourceImageUrl || data.imageUrl || null }
-        : product;
-      setBatches((current) => current.map((batch) => ({ ...batch, items: batch.items.map(update) })));
-      setSelectedProducts((current) => current.map(update));
-      setNotice(data.message || `Your photo was attached to ${item.title}.`);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The photo could not be uploaded.");
-      setNotice("");
-    } finally {
-      setUploadingImageIds((current) => current.filter((id) => id !== item.id));
     }
   }
 
@@ -359,7 +318,7 @@ export default function AffiliateSearchClient() {
       <p style={{ margin: 0, color: "#c9bb82", lineHeight: 1.5 }}>These choices are waiting for your review. Saving them creates a private approved catalog record only—it does not publish anything to the public website.</p>
       {selectedProducts.length > 0 && <button type="button" onClick={() => { setReviewOpen((open) => !open); setConfirmationToken(""); setConfirmationSummary(""); }} style={{ width: "100%", minHeight: 48, marginTop: 12, borderRadius: 12, border: "1px solid #ffd45c", background: "#5b4608", color: "#fff3bd", fontWeight: 900 }}>{reviewOpen ? "Close review" : `Review ${selectedProducts.length} selected product${selectedProducts.length === 1 ? "" : "s"}`}</button>}
       {reviewOpen && selectedProducts.length > 0 && <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
-        {selectedProducts.map((item) => <div key={item.id} style={{ display: "grid", gridTemplateColumns: "54px minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: 10, borderRadius: 10, background: "rgba(0,0,0,.25)" }}><ProductImage item={item} compact uploading={uploadingImageIds.includes(item.id)} onUpload={(file) => uploadProductImage(item, file)} /><div style={{ minWidth: 0 }}><strong style={{ display: "block", lineHeight: 1.25 }}>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div><button type="button" onClick={() => removeSelectedProduct(item.id)} style={{ minHeight: 38, borderRadius: 9, border: "1px solid #7a8790", background: "#17232a", color: "#e3edf1", fontWeight: 800 }}>Remove</button></div>)}
+        {selectedProducts.map((item) => <div key={item.id} style={{ display: "grid", gridTemplateColumns: "54px minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: 10, borderRadius: 10, background: "rgba(0,0,0,.25)" }}><ProductImage item={item} compact /><div style={{ minWidth: 0 }}><strong style={{ display: "block", lineHeight: 1.25 }}>{item.title}</strong><span style={{ display: "block", color: "#8fb3c4", fontSize: 12, marginTop: 3 }}>{item.merchant} · {item.category}</span></div><button type="button" onClick={() => removeSelectedProduct(item.id)} style={{ minHeight: 38, borderRadius: 9, border: "1px solid #7a8790", background: "#17232a", color: "#e3edf1", fontWeight: 800 }}>Remove</button></div>)}
         {!confirmationToken && <button type="button" onClick={prepareApproval} disabled={savingApproval} style={{ minHeight: 48, borderRadius: 12, border: "1px solid #ffd45c", background: "#725809", color: "white", fontWeight: 900, opacity: savingApproval ? .6 : 1 }}>{savingApproval ? "Preparing confirmation…" : "Prepare approval"}</button>}
         {confirmationToken && <div style={{ padding: 14, borderRadius: 13, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><div style={{ fontSize: 12, fontWeight: 950, letterSpacing: ".12em" }}>CONFIRM CATALOG SAVE</div><p style={{ lineHeight: 1.5 }}>{confirmationSummary}</p><button type="button" onClick={confirmApproval} disabled={savingApproval} style={{ width: "100%", minHeight: 48, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, opacity: savingApproval ? .6 : 1 }}>{savingApproval ? "Saving…" : "Confirm and save privately"}</button></div>}
       </div>}
@@ -371,7 +330,7 @@ export default function AffiliateSearchClient() {
     {batches.map((batch) => <section key={`${batch.brandId || "all"}:${batch.categoryId}`} style={{ display: "grid", gap: 10 }}>
       <div>{batch.brandLabel && <div style={{ color: "#70dcff", fontSize: 12, fontWeight: 900, marginBottom: 4 }}>{batch.brandLabel}</div>}<h2 style={{ margin: 0 }}>{batch.categoryLabel}</h2><p style={{ margin: "4px 0 0", color: "#91aebe" }}>{batch.items.length} of {batch.requestedCount} currently available for review</p></div>
       {batch.items.length === 0 ? <div style={{ padding: 15, borderRadius: 14, border: "1px dashed rgba(255,255,255,.2)", color: "#a7bdca" }}>No approved local items match yet. A live Impact or Awin feed connection is required to fill this requested batch.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 10 }}>
-        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><ProductImage item={item} uploading={uploadingImageIds.includes(item.id)} onUpload={(file) => uploadProductImage(item, file)} /><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button><button type="button" disabled={fetchingImageIds.includes(item.id)} onClick={() => fetchThumbnail(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #67cfff", background: "#0b3349", color: "#d7f5ff", fontWeight: 900, opacity: fetchingImageIds.includes(item.id) ? .6 : 1 }}>{fetchingImageIds.includes(item.id) ? "Fetching photo…" : "Fetch thumbnail photo"}</button></div><p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small></article>)}
+        {batch.items.map((item) => <article key={item.id} style={{ padding: 14, borderRadius: 15, border: "1px solid rgba(255,255,255,.11)", background: "rgba(255,255,255,.035)" }}><ProductImage item={item} /><div style={{ color: "#70dcff", fontSize: 11, fontWeight: 900 }}>{item.merchant}</div><h3 style={{ margin: "6px 0", fontSize: 17 }}>{item.title}</h3>{item.price && <div style={{ color: "#8ff0b6", fontWeight: 900, marginBottom: 6 }}>{item.price}</div>}<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 7, marginTop: 12 }}><button type="button" onClick={() => chooseProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #58d38d", background: "#12442a", color: "#d9ffe7", fontWeight: 900 }}>Choose</button><button type="button" onClick={() => skipProduct(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #647681", background: "#17232a", color: "#d8e4ea", fontWeight: 900 }}>Not this time</button><button type="button" disabled={fetchingImageIds.includes(item.id)} onClick={() => fetchThumbnail(item)} style={{ minHeight: 42, borderRadius: 10, border: "1px solid #67cfff", background: "#0b3349", color: "#d7f5ff", fontWeight: 900, opacity: fetchingImageIds.includes(item.id) ? .6 : 1 }}>{fetchingImageIds.includes(item.id) ? "Fetching photo…" : "Fetch thumbnail photo"}</button></div><p style={{ color: "#aabfcb", lineHeight: 1.5, fontSize: 13 }}>{item.description}</p><small style={{ color: "#7899aa" }}>{item.source}</small></article>)}
       </div>}
     </section>)}
     {visibleProductCount > 0 && <button type="button" onClick={skipAllVisibleProducts} style={{ width: "100%", minHeight: 52, borderRadius: 13, border: "1px solid #7b8e99", background: "#17232a", color: "#e4edf2", fontWeight: 950, fontSize: 16 }}>None This Time — Dismiss All {visibleProductCount}</button>}

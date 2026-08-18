@@ -51,8 +51,10 @@ export async function POST(request: Request) {
     "Preserve affiliate compliance: make the commercial relationship clear and do not disguise the destination or tracking link.",
     "If the notes contain uncertain claims, omit them rather than strengthening them.",
     "Return concise content suitable for the named platform.",
+    "EVERY generated ad must include a clear final invitation to subscribe for future WASCIK Affiliate Services email deals, product updates, and recommendations. Do not imply the person is subscribed until they actively submit their email.",
+    "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page.",
     "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
-    "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform.",
+    "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
     "Keep hashtags relevant and restrained. Avoid spammy tag stuffing.",
   ].join("\n");
 

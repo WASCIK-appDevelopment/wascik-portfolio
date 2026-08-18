@@ -214,19 +214,40 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
       });
       const proposal = await proposalResponse.json().catch(() => ({}));
       if (!proposalResponse.ok) throw new Error(proposal.error || "Could not prepare bulk publication.");
-      if (Array.isArray(proposal.duplicateWarnings) && proposal.duplicateWarnings.length) {
-        const names = proposal.duplicateWarnings.map((warning: { title?: string }) => warning.title || "Duplicate product").join(", ");
-        setSelected(displayedProducts.map((item) => item.id));
+      const duplicateWarnings = Array.isArray(proposal.duplicateWarnings)
+        ? proposal.duplicateWarnings as { readyProductId?: string; title?: string }[]
+        : [];
+      const duplicateIds = new Set(duplicateWarnings.map((warning) => String(warning.readyProductId || "")).filter(Boolean));
+      const publishable = allPublications.filter((publication) => !duplicateIds.has(publication.id));
+      const duplicateNames = duplicateWarnings.map((warning) => warning.title || "Duplicate product").join(", ");
+
+      if (!publishable.length) {
+        setSelected([]);
         setConfirmationToken("");
-        setConfirmationSummary(`${proposal.warning || "Duplicate products found."} Review: ${names}`);
+        setConfirmationSummary(`All ${duplicateWarnings.length} ready products match products already published. They were left here for review or removal: ${duplicateNames}`);
         return;
       }
-      if (!proposal.confirmationToken) throw new Error("The bulk publication confirmation could not be created.");
+
+      let confirmationToken = proposal.confirmationToken || "";
+      if (duplicateWarnings.length) {
+        const cleanProposalResponse = await fetch("/api/owner/affiliate-search/approved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+          body: JSON.stringify({ action: "propose_publish", publications: publishable }),
+        });
+        const cleanProposal = await cleanProposalResponse.json().catch(() => ({}));
+        if (!cleanProposalResponse.ok) throw new Error(cleanProposal.error || "Could not prepare the non-duplicate products.");
+        if (Array.isArray(cleanProposal.duplicateWarnings) && cleanProposal.duplicateWarnings.length) {
+          throw new Error("The duplicate check changed while preparing publication. Please try Publish All again.");
+        }
+        confirmationToken = cleanProposal.confirmationToken || "";
+      }
+      if (!confirmationToken) throw new Error("The bulk publication confirmation could not be created.");
 
       const confirmResponse = await fetch("/api/owner/affiliate-search/approved", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ action: "confirm_publish", confirmationToken: proposal.confirmationToken, publications: allPublications }),
+        body: JSON.stringify({ action: "confirm_publish", confirmationToken, publications: publishable }),
       });
       const confirmed = await confirmResponse.json().catch(() => ({}));
       if (!confirmResponse.ok) throw new Error(confirmed.error || "Could not publish all ready products.");
@@ -234,7 +255,13 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
       setSelected([]);
       setConfirmationToken("");
       setConfirmationSummary("");
-      setNotice(confirmed.message || `Published all ${count} ready products to their assigned affiliate pages.`);
+      const publishedCount = publishable.length;
+      setNotice(duplicateWarnings.length
+        ? `Published ${publishedCount} non-duplicate product${publishedCount === 1 ? "" : "s"}. Left ${duplicateWarnings.length} duplicate${duplicateWarnings.length === 1 ? "" : "s"} in Ready Products for your review or removal.`
+        : confirmed.message || `Published all ${count} ready products to their assigned affiliate pages.`);
+      setConfirmationSummary(duplicateWarnings.length
+        ? `⚠ ${duplicateWarnings.length} duplicate${duplicateWarnings.length === 1 ? "" : "s"} were not published and remain below: ${duplicateNames}`
+        : "");
       await loadProducts(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not publish all ready products.");

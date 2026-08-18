@@ -23,8 +23,10 @@ function safePart(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "product";
 }
 
-function storageHeaders(key: string) {
-  return { apikey: key, Authorization: `Bearer ${key}` };
+function storageHeaders(key: string, kind?: "secret" | "service_role") {
+  const headers: Record<string, string> = { apikey: key };
+  if (kind === "service_role") headers.Authorization = `Bearer ${key}`;
+  return headers;
 }
 
 export async function POST(request: Request) {
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   const productId = typeof form?.get("productId") === "string" ? String(form?.get("productId")) : "product";
+  const persistApproved = form?.get("persistApproved") === "true";
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Choose a photo to upload." }, { status: 400 });
   }
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   const base = config.supabaseUrl.replace(/\/$/, "");
-  const headers = storageHeaders(config.supabaseServerKey);
+  const headers = storageHeaders(config.supabaseServerKey, config.supabaseKeyKind);
   const bucketCheck = await fetch(`${base}/storage/v1/bucket/${BUCKET}`, { headers, cache: "no-store" });
   if (bucketCheck.status === 404) {
     const createBucket = await fetch(`${base}/storage/v1/bucket`, {
@@ -84,5 +87,18 @@ export async function POST(request: Request) {
   }
 
   const imageUrl = `${base}/storage/v1/object/public/${BUCKET}/${encodedPath}`;
+
+  if (persistApproved) {
+    const update = await fetch(`${base}/rest/v1/approved_affiliate_products?id=eq.${encodeURIComponent(productId)}&approval_status=eq.approved`, {
+      method: "PATCH",
+      headers: { ...headers, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify({ image_url: imageUrl, updated_at: new Date().toISOString() }),
+    });
+    const rows = await update.json().catch(() => []);
+    if (!update.ok || !Array.isArray(rows) || rows.length !== 1) {
+      return NextResponse.json({ error: "The photo uploaded, but it could not be attached to that Ready Product." }, { status: 502 });
+    }
+  }
+
   return NextResponse.json({ imageUrl, sourceImageUrl: imageUrl, message: "Your photo was attached to this product." });
 }

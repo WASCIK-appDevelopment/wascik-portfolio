@@ -40,14 +40,29 @@ function expiredDate(description: string) {
   return Number.isNaN(date.getTime()) ? null : date.getTime() < Date.now() ? date : null;
 }
 
-const UNAVAILABLE_MARKERS = [
+const DEFINITIVE_UNAVAILABLE_MARKERS = [
   "product not found", "item not found", "page not found", "this product is no longer available",
   "no longer available", "product has been discontinued", "this item has been discontinued",
+];
+
+const STOCK_UNAVAILABLE_MARKERS = [
   "currently unavailable", "item unavailable", "out of stock", "sold out",
 ];
 
 function visiblePageText(html: string) {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").toLowerCase();
+}
+
+function productAvailability(html: string) {
+  const schemaMatches = Array.from(html.matchAll(/["']availability["']\s*:\s*["'](?:https?:\\?\/\\?\/schema\.org\\?\/)?([^"'\\,}\s]+)/gi));
+  const schemaValues = schemaMatches.map((match) => String(match[1] || "").replace(/\\/g, "").toLowerCase());
+  const inStock = schemaValues.some((value) => ["instock", "preorder", "presale", "limitedavailability", "onlineonly", "instoreonly"].includes(value));
+  const schemaUnavailable = schemaValues.find((value) => ["outofstock", "soldout", "discontinued"].includes(value)) || "";
+
+  const availabilityRegions = Array.from(html.matchAll(/<(?:div|span|p|section)[^>]+(?:id|class)=["'][^"']*(?:availability|stock-status|product-status)[^"']*["'][^>]*>([\s\S]{0,4000}?)<\/(?:div|span|p|section)>/gi));
+  const regionText = visiblePageText(availabilityRegions.map((match) => match[1] || "").join(" "));
+  const regionalMarker = STOCK_UNAVAILABLE_MARKERS.find((value) => regionText.includes(value)) || "";
+  return { inStock, marker: schemaUnavailable || regionalMarker };
 }
 
 function merchantImage(html: string, baseUrl: string) {
@@ -93,9 +108,11 @@ async function checkMerchantListing(url: string) {
     const contentType = response.headers.get("content-type") || "";
     const html = response.ok && contentType.includes("text/html") ? (await response.text()).slice(0, 1_500_000) : "";
     const text = visiblePageText(html);
-    const marker = UNAVAILABLE_MARKERS.find((value) => text.includes(value));
+    const definitiveMarker = DEFINITIVE_UNAVAILABLE_MARKERS.find((value) => text.includes(value)) || "";
+    const availability = productAvailability(html);
+    const marker = definitiveMarker || (!availability.inStock ? availability.marker : "");
     const specificPage = productSpecificPage(finalUrl);
-    return { status: response.status, broken, unavailable: Boolean(marker && specificPage), marker: marker || "", finalUrl, specificPage, discoveredImage: specificPage ? merchantImage(html, finalUrl) : "" };
+    return { status: response.status, broken, unavailable: Boolean(marker && specificPage), marker, finalUrl, specificPage, discoveredImage: specificPage ? merchantImage(html, finalUrl) : "" };
   } catch { return { status: 0, broken: false, unavailable: false, marker: "", finalUrl: url, specificPage: false, discoveredImage: "" }; }
 }
 

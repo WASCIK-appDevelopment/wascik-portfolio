@@ -68,15 +68,32 @@ function productSpecificPage(url: string) {
   try { return new URL(url).pathname.split("/").filter(Boolean).length > 0; } catch { return false; }
 }
 
+function isAffiliateTrackingHost(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return [
+      "pxf.io", "sjv.io", "jdoqocy.com", "tkqlhce.com", "anrdoezrs.net",
+      "dpbolvw.net", "kqzyfj.com", "evyy.net", "prf.hn",
+    ].some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
 async function checkMerchantListing(url: string) {
   try {
     const response = await fetch(url, { method: "GET", redirect: "follow", cache: "no-store", signal: AbortSignal.timeout(9000), headers: { "User-Agent": "Mozilla/5.0 (compatible; WASCIK-Product-Monitor/2.0)", Accept: "text/html,application/xhtml+xml" } });
-    const broken = response.status === 404 || response.status === 410;
+    const finalUrl = response.url || url;
+    const trackingRedirectUnresolved = (response.status === 404 || response.status === 410)
+      && isAffiliateTrackingHost(url)
+      && isAffiliateTrackingHost(finalUrl);
+    // A tracking service can reject server-side monitoring while the same link
+    // works in a real browser. Only call it broken after reaching a merchant URL.
+    const broken = (response.status === 404 || response.status === 410) && !trackingRedirectUnresolved;
     const contentType = response.headers.get("content-type") || "";
     const html = response.ok && contentType.includes("text/html") ? (await response.text()).slice(0, 1_500_000) : "";
     const text = visiblePageText(html);
     const marker = UNAVAILABLE_MARKERS.find((value) => text.includes(value));
-    const finalUrl = response.url || url;
     const specificPage = productSpecificPage(finalUrl);
     return { status: response.status, broken, unavailable: Boolean(marker && specificPage), marker: marker || "", finalUrl, specificPage, discoveredImage: specificPage ? merchantImage(html, finalUrl) : "" };
   } catch { return { status: 0, broken: false, unavailable: false, marker: "", finalUrl: url, specificPage: false, discoveredImage: "" }; }

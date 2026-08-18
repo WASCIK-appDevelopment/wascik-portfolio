@@ -5,6 +5,17 @@ const OWNER_HEADER = "x-wascik-owner-key";
 
 type ResponsesPayload = {
   output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_details?: { cached_tokens?: number };
+  };
+};
+
+const TEXT_PRICING_PER_MILLION: Record<string, { input: number; cachedInput: number; output: number }> = {
+  "gpt-5-mini": { input: 0.25, cachedInput: 0.025, output: 2.0 },
+  "gpt-5.4-mini": { input: 0.75, cachedInput: 0.075, output: 4.5 },
+  "gpt-5.4-nano": { input: 0.2, cachedInput: 0.02, output: 1.25 },
 };
 
 function authorized(request: Request) {
@@ -21,6 +32,16 @@ function extractResponseText(payload: ResponsesPayload) {
     .filter(Boolean)
     .join("\n")
     .trim();
+}
+
+function requestCostUsd(model: string, usage?: ResponsesPayload["usage"]) {
+  const pricing = TEXT_PRICING_PER_MILLION[model];
+  if (!pricing || !usage) return null;
+  const input = Math.max(0, Number(usage.input_tokens || 0));
+  const output = Math.max(0, Number(usage.output_tokens || 0));
+  const cached = Math.min(input, Math.max(0, Number(usage.input_tokens_details?.cached_tokens || 0)));
+  const uncached = input - cached;
+  return ((uncached * pricing.input) + (cached * pricing.cachedInput) + (output * pricing.output)) / 1_000_000;
 }
 
 export async function POST(request: Request) {
@@ -52,8 +73,7 @@ export async function POST(request: Request) {
     "If the notes contain uncertain claims, omit them rather than strengthening them.",
     "Return concise content suitable for the named platform.",
     "EVERY generated ad must include a clear final invitation to subscribe for future WASCIK Affiliate Services email deals, product updates, and recommendations. Do not imply the person is subscribed until they actively submit their email.",
-    "The owner facts may contain a line beginning 'Email subscription link for this exact ad:'. When present, include that exact URL in the subscription invitation in primaryCopy so the signup can be attributed to this specific ad. Do not alter, shorten, or replace that URL.",
-    "The subscription invitation should fit naturally into primaryCopy and direct interested people to the relevant WASCIK subscription form.",
+    "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page.",
     "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
     "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
     "Keep hashtags relevant and restrained. Avoid spammy tag stuffing.",
@@ -96,7 +116,16 @@ export async function POST(request: Request) {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Record<string, unknown>;
-    return NextResponse.json(parsed);
+    const cost = requestCostUsd(openAI.model, data.usage);
+    return NextResponse.json({
+      ...parsed,
+      apiUsage: {
+        model: openAI.model,
+        inputTokens: data.usage?.input_tokens || 0,
+        outputTokens: data.usage?.output_tokens || 0,
+        estimatedCostUsd: cost,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "The drafting assistant returned an invalid response." }, { status: 502 });
   }

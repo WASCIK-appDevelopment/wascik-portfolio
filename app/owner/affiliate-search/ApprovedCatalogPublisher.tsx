@@ -162,6 +162,56 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     }
   }
 
+  async function publishAllReadyProducts() {
+    if (loading || displayedProducts.length === 0) return;
+    const count = displayedProducts.length;
+    if (!window.confirm(`Publish all ${count} ready product${count === 1 ? "" : "s"} to their assigned affiliate pages now?`)) return;
+
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    const allPublications = displayedProducts.map((item) => ({
+      id: item.id,
+      pagePath: destinationById[item.id] || item.page_path || suggestedDestination(item.merchant),
+    }));
+    setLoading(true);
+    setError("");
+    setNotice("");
+    try {
+      const proposalResponse = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: "propose_publish", publications: allPublications }),
+      });
+      const proposal = await proposalResponse.json().catch(() => ({}));
+      if (!proposalResponse.ok) throw new Error(proposal.error || "Could not prepare bulk publication.");
+      if (Array.isArray(proposal.duplicateWarnings) && proposal.duplicateWarnings.length) {
+        const names = proposal.duplicateWarnings.map((warning: { title?: string }) => warning.title || "Duplicate product").join(", ");
+        setSelected(displayedProducts.map((item) => item.id));
+        setConfirmationToken("");
+        setConfirmationSummary(`${proposal.warning || "Duplicate products found."} Review: ${names}`);
+        return;
+      }
+      if (!proposal.confirmationToken) throw new Error("The bulk publication confirmation could not be created.");
+
+      const confirmResponse = await fetch("/api/owner/affiliate-search/approved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
+        body: JSON.stringify({ action: "confirm_publish", confirmationToken: proposal.confirmationToken, publications: allPublications }),
+      });
+      const confirmed = await confirmResponse.json().catch(() => ({}));
+      if (!confirmResponse.ok) throw new Error(confirmed.error || "Could not publish all ready products.");
+
+      setSelected([]);
+      setConfirmationToken("");
+      setConfirmationSummary("");
+      setNotice(confirmed.message || `Published all ${count} ready products to their assigned affiliate pages.`);
+      await loadProducts(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not publish all ready products.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function prepareManagement(action: ManagementAction, item: ApprovedProduct) {
     if (loading || managementLoadingId) return;
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -230,11 +280,11 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
     {notice && <p style={{ margin: "10px 0 0", padding: 10, borderRadius: 10, background: "#102d22", color: "#bdf4cd" }}>{notice}</p>}
     {open && <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
       <div><h2 style={{ margin: 0 }}>{mode === "published" ? "All Published Products" : "Ready to Publish"} · {displayedProducts.length}</h2><p style={{ margin: "5px 0 0", color: "#9fb8c5" }}>{mode === "published" ? "This combines products built into WASCIK pages with products published through the console. Every currently published item belongs here." : "Select products, verify their destination pages, then prepare the yellow publication confirmation. Published products automatically leave this workspace."}</p></div>
+      {mode === "workspace" && displayedProducts.length > 0 && <button type="button" onClick={publishAllReadyProducts} disabled={loading} style={{ width: "100%", minHeight: 50, borderRadius: 11, border: "2px solid #ffd45c", background: "#ffd45c", color: "#201800", fontWeight: 950, fontSize: 16, opacity: loading ? .6 : 1 }}>{loading ? "Publishing…" : `Publish All ${displayedProducts.length} Now`}</button>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
         <a href={mode === "published" ? "/owner/affiliate-search" : "/owner/published-products"} style={{ minHeight: 38, display: "grid", placeItems: "center", borderRadius: 999, border: "1px solid #75e4ff", background: "#174e67", color: "white", padding: "7px 12px", fontWeight: 900, textDecoration: "none" }}>{mode === "published" ? "← Back to Affiliate Search" : "Open Published Products →"}</a>
         {mode === "workspace" && selected.length > 0 && <button type="button" onClick={() => { setSelected([]); setConfirmationToken(""); setConfirmationSummary(""); }} style={{ minHeight: 38, borderRadius: 999, border: "1px solid #d1a94a", background: "#352b11", color: "#ffe7a3", padding: "7px 12px", fontWeight: 900 }}>Clear Selection</button>}
       </div>
-      {mode === "workspace" && confirmationToken && selected.length > 0 && <div style={{ padding: 13, borderRadius: 12, border: "2px solid #ffd45c", background: "#403200", color: "#fff4bd" }}><p style={{ margin: "0 0 9px", lineHeight: 1.45 }}>{`Your publication review is ready. This publishes the ${selected.length} confirmed product${selected.length === 1 ? "" : "s"} to their selected pages.`}</p><button type="button" onClick={confirmPublication} disabled={loading} style={{ width: "100%", minHeight: 50, borderRadius: 11, border: 0, background: "#ffd45c", color: "#201800", fontWeight: 950, fontSize: 16, opacity: loading ? .6 : 1 }}>{loading ? "Publishing…" : `Publish All ${selected.length} Now`}</button></div>}
       {displayedProducts.length === 0 ? <p style={{ margin: 0, color: "#9fb8c5" }}>{products.length === 0 ? "No approved products were found." : "No products are in this view."}</p> : displayedProducts.map((item) => {
         const active = selected.includes(item.id);
         return <article key={item.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 11, padding: 10, borderRadius: 11, border: active ? "1px solid #6fe1ff" : "1px solid transparent", background: active ? "rgba(24,111,148,.2)" : "rgba(0,0,0,.24)" }}>

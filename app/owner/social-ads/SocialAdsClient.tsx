@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const SESSION_KEY = "wascik-owner-console-key";
+const PUBLIC_AFFILIATE_BASE = "https://wascik-app-development.netlify.app";
 
 type DraftResult = {
   primaryCopy?: string;
@@ -38,6 +39,7 @@ export default function SocialAdsClient() {
   const [search, setSearch] = useState("");
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [result, setResult] = useState<DraftResult | null>(null);
+  const [subscriptionUrl, setSubscriptionUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailing, setEmailing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -76,6 +78,7 @@ export default function SocialAdsClient() {
     setSelectedId(item.id);
     setPlatform("");
     setResult(null);
+    setSubscriptionUrl("");
     setNotice("");
     setError("");
     setPlatformPickerOpen(true);
@@ -85,16 +88,18 @@ export default function SocialAdsClient() {
     setPlatform(value);
     setPlatformPickerOpen(false);
     setResult(null);
+    setSubscriptionUrl("");
     setNotice("");
   }
 
-  function verifiedFacts(item: CatalogProduct) {
+  function verifiedFacts(item: CatalogProduct, adSubscriptionUrl: string) {
     return [
       item.category ? `Category: ${item.category}` : "",
       item.description ? `Description: ${item.description}` : "",
       item.features?.length ? `Features: ${item.features.join("; ")}` : "",
       item.price ? `Stored price: ${item.price}` : "",
       item.page_path ? `Published WASCIK page: ${item.page_path}` : "",
+      `Email subscription link for this exact ad: ${adSubscriptionUrl}`,
       creativeNotes.trim() ? `Owner creative direction: ${creativeNotes.trim()}` : "",
     ].filter(Boolean).join("\n");
   }
@@ -102,15 +107,25 @@ export default function SocialAdsClient() {
   async function generate() {
     if (!canGenerate || !selectedProduct) return;
     const key = sessionStorage.getItem(SESSION_KEY) || "";
+    const pagePath = selectedProduct.page_path || "/affiliate-services";
+    const adKey = `${selectedProduct.id}-${platform.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString(36)}`.slice(0, 240);
+    const params = new URLSearchParams({
+      wascik_subscribe: "ad",
+      source_key: adKey,
+      product_id: selectedProduct.id,
+      platform,
+    });
+    const adSubscriptionUrl = `${PUBLIC_AFFILIATE_BASE}${pagePath}?${params.toString()}`;
     setLoading(true);
     setError("");
     setNotice("");
     setResult(null);
+    setSubscriptionUrl(adSubscriptionUrl);
     try {
       const response = await fetch("/api/owner/social-ads", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ platform, merchant: selectedProduct.merchant, product: selectedProduct.title, affiliateUrl: selectedProduct.affiliate_url || "", objective, notes: verifiedFacts(selectedProduct) }),
+        body: JSON.stringify({ platform, merchant: selectedProduct.merchant, product: selectedProduct.title, affiliateUrl: selectedProduct.affiliate_url || "", objective, notes: verifiedFacts(selectedProduct, adSubscriptionUrl) }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not generate content.");
@@ -130,6 +145,7 @@ export default function SocialAdsClient() {
       `Brand: ${selectedProduct.merchant}`,
       `Product: ${selectedProduct.title}`,
       selectedProduct.affiliate_url ? `Affiliate link: ${selectedProduct.affiliate_url}` : "",
+      subscriptionUrl ? `Email subscription link: ${subscriptionUrl}` : "",
       result.headline ? `HEADLINE\n${result.headline}` : "",
       result.primaryCopy ? `AD COPY\n${result.primaryCopy}` : "",
       result.cta ? `CTA\n${result.cta}` : "",
@@ -168,6 +184,7 @@ export default function SocialAdsClient() {
           product: selectedProduct.title,
           platform,
           affiliateUrl: selectedProduct.affiliate_url || "",
+          subscriptionUrl,
           headline: result.headline || "",
           primaryCopy: result.primaryCopy || "",
           cta: result.cta || "",
@@ -226,7 +243,8 @@ export default function SocialAdsClient() {
         <button type="button" onClick={downloadAd} style={actionButton}>Download Ad to Phone</button>
         <button type="button" disabled={emailing} onClick={() => void emailAd()} style={{ ...actionButton, opacity: emailing ? .6 : 1 }}>{emailing ? "Emailing…" : "Email Ad"}</button>
       </div>
-      <div style={{ color: "#91a8b7", fontSize: 12, lineHeight: 1.5 }}>For now, Download saves the complete written ad package as a file. When visual/image or video ad generation is added, this same button can download that finished creative instead.</div>
+      <div style={{ color: "#91a8b7", fontSize: 12, lineHeight: 1.5 }}>For now, Download saves the complete written ad package as a file. Each generated ad also receives its own subscription link so future email signups can be attributed to that exact ad.</div>
+      {subscriptionUrl ? <div style={{ border: "1px solid rgba(143,240,184,.25)", borderRadius: 14, padding: 14, background: "rgba(143,240,184,.05)" }}><strong style={{ color: "#8ff0b8" }}>Email subscription link for this ad</strong><div style={{ marginTop: 8, wordBreak: "break-all", color: "#dbe9f1", fontSize: 13 }}>{subscriptionUrl}</div><button type="button" onClick={() => void copyText(subscriptionUrl)} style={{ ...actionButton, marginTop: 10 }}>Copy Subscribe Link</button></div> : null}
       {[{ label: "Primary copy", value: result.primaryCopy }, { label: "Headline", value: result.headline }, { label: "CTA", value: result.cta }].filter((item) => item.value).map((item) => <div key={item.label} style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.03)" }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><strong>{item.label}</strong><button type="button" onClick={() => void copyText(item.value || "")} style={{ ...actionButton, padding: "6px 10px" }}>Copy</button></div><div style={{ marginTop: 9, whiteSpace: "pre-wrap", color: "#dbe9f1", lineHeight: 1.6 }}>{item.value}</div></div>)}
       {result.hashtags?.length ? <div style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.03)" }}><strong>Hashtags</strong><div style={{ marginTop: 8, color: "#71dcff" }}>{result.hashtags.join(" ")}</div></div> : null}
       {result.complianceNotes?.length ? <div style={{ border: "1px solid rgba(255,205,92,.25)", borderRadius: 14, padding: 14, background: "rgba(255,205,92,.05)" }}><strong style={{ color: "#ffd76f" }}>Compliance check</strong><ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>{result.complianceNotes.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}

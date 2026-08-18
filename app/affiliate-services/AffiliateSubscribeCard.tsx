@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const brandLabels: Record<string, string> = {
@@ -14,7 +14,15 @@ const brandLabels: Record<string, string> = {
   "/affiliate-services/ticketnetwork": "TicketNetwork",
 };
 
-function sourceForPath(pathname: string) {
+type SubscriptionSource = {
+  key: string;
+  label: string;
+  type: "brand_page" | "generated_ad" | "affiliate_services";
+  productId?: string;
+  adPlatform?: string;
+};
+
+function sourceForPath(pathname: string): SubscriptionSource {
   const exact = brandLabels[pathname];
   if (exact) return { key: pathname.replace(/^\/affiliate-services\/?/, "") || "all-affiliate-services", label: exact, type: pathname === "/affiliate-services" ? "affiliate_services" : "brand_page" };
   const matching = Object.entries(brandLabels)
@@ -26,12 +34,33 @@ function sourceForPath(pathname: string) {
 
 export default function AffiliateSubscribeCard() {
   const pathname = usePathname();
-  const source = useMemo(() => sourceForPath(pathname), [pathname]);
+  const pageSource = useMemo(() => sourceForPath(pathname), [pathname]);
+  const [attributedSource, setAttributedSource] = useState<SubscriptionSource | null>(null);
+  const source = attributedSource || pageSource;
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("wascik_subscribe") !== "ad") {
+      setAttributedSource(null);
+      return;
+    }
+    const key = (params.get("source_key") || "").trim().slice(0, 240);
+    if (!key) return;
+    const productId = (params.get("product_id") || "").trim().slice(0, 240);
+    const adPlatform = (params.get("platform") || "").trim().slice(0, 80);
+    setAttributedSource({
+      type: "generated_ad",
+      key,
+      label: `${pageSource.label}${adPlatform ? ` · ${adPlatform} ad` : " · generated ad"}`,
+      ...(productId ? { productId } : {}),
+      ...(adPlatform ? { adPlatform } : {}),
+    });
+  }, [pageSource]);
 
   async function subscribe(event: FormEvent) {
     event.preventDefault();
@@ -50,6 +79,8 @@ export default function AffiliateSubscribeCard() {
           sourceKey: source.key,
           sourceLabel: source.label,
           sourcePath: pathname,
+          productId: source.productId || "",
+          adPlatform: source.adPlatform || "",
         }),
       });
       const data = await response.json().catch(() => ({}));

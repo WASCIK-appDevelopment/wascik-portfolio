@@ -13,6 +13,47 @@ function authorized(request: Request) {
 }
 
 
+function syntacticallyUsableAffiliateUrl(value: string) {
+  try {
+    const url = new URL(value.trim().replaceAll("&amp;", "&"));
+    if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+async function affiliateLinkIsUsable(value: string) {
+  const url = syntacticallyUsableAffiliateUrl(value);
+  if (!url) return false;
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+      signal: AbortSignal.timeout(7000),
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1 WASCIK-Link-Check/1.0",
+      },
+    });
+    const finalUrl = syntacticallyUsableAffiliateUrl(response.url || url);
+    if (!finalUrl) return false;
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+      return response.status !== 400 && response.status !== 404 && response.status !== 410 && response.status !== 422;
+    }
+    const text = (await response.text()).slice(0, 120_000);
+    const explicitMalformedMessage = /(?:malformed|invalid|incorrect|bad)\s+(?:affiliate\s+|tracking\s+)?(?:link|url)|(?:link|url)\s+(?:is\s+)?(?:malformed|invalid)|unable\s+to\s+(?:process|parse).{0,40}(?:link|url)/i.test(text);
+    if (explicitMalformedMessage) return false;
+    return true;
+  } catch {
+    // A merchant blocking automated checks does not prove that its link is bad.
+    // Keep it unless the URL is malformed or the destination explicitly says so.
+    return true;
+  }
+}
+
 function searchableText(item: (typeof unifiedAffiliateCatalog)[number]) {
   return [item.title, item.category, item.merchant, item.description, ...item.features].join(" ").toLowerCase();
 }
@@ -147,7 +188,13 @@ export async function POST(request: Request) {
     const localItems = impactConnected ? [] : localCandidates(categoryId, new Set(), targetBrands, batchSize, ticketStateCode)
       .filter((item) => !ids.has(item.id))
       .slice(0, Math.max(0, batchSize - impactItems.length));
-    const items = [...impactItems, ...localItems]
+    const linkChecks = await Promise.all([...impactItems, ...localItems].map(async (item) => ({
+      item,
+      usable: await affiliateLinkIsUsable(item.affiliateUrl),
+    })));
+    const items = linkChecks
+      .filter((result) => result.usable)
+      .map((result) => result.item)
       .slice(0, batchSize)
       .map((item) => ({ ...item, sourceImageUrl: item.imageUrl || null, imageUrl: proxiedAffiliateImageUrl(item.imageUrl) }));
     items.forEach((item) => requestUsedIds.add(item.id));

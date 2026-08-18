@@ -62,6 +62,7 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
   const [managementLoadingId, setManagementLoadingId] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [uploadingImageIds, setUploadingImageIds] = useState<string[]>([]);
 
   async function loadProducts(show = true) {
     const key = sessionStorage.getItem(SESSION_KEY) || "";
@@ -79,6 +80,36 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
       setError(reason instanceof Error ? reason.message : "Could not load approved products.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function uploadReadyProductImage(item: ApprovedProduct, file: File) {
+    if (uploadingImageIds.includes(item.id)) return;
+    const key = sessionStorage.getItem(SESSION_KEY) || "";
+    setUploadingImageIds((current) => [...current, item.id]);
+    setError("");
+    setNotice(`Uploading your photo for ${item.title}…`);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("productId", item.id);
+      form.append("persistApproved", "true");
+      const response = await fetch("/api/owner/affiliate-search/upload", {
+        method: "POST",
+        headers: { "x-wascik-owner-key": key },
+        body: form,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "The photo could not be uploaded.");
+      setProducts((current) => current.map((product) => product.id === item.id
+        ? { ...product, image_url: data.imageUrl || null }
+        : product));
+      setNotice(data.message || `Your photo was attached to ${item.title}.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The photo could not be uploaded.");
+      setNotice("");
+    } finally {
+      setUploadingImageIds((current) => current.filter((id) => id !== item.id));
     }
   }
 
@@ -288,7 +319,14 @@ export default function ApprovedCatalogPublisher({ mode = "workspace" }: Props) 
       {displayedProducts.length === 0 ? <p style={{ margin: 0, color: "#9fb8c5" }}>{products.length === 0 ? "No approved products were found." : "No products are in this view."}</p> : displayedProducts.map((item) => {
         const active = selected.includes(item.id);
         return <article key={item.id} style={{ display: "grid", gridTemplateColumns: "64px minmax(0,1fr)", gap: 11, padding: 10, borderRadius: 11, border: active ? "1px solid #6fe1ff" : "1px solid transparent", background: active ? "rgba(24,111,148,.2)" : "rgba(0,0,0,.24)" }}>
-          {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : <div style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}
+          {item.image_url ? <img src={item.image_url} alt={item.title} style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 9, background: "white" }} /> : mode === "workspace" ? <label aria-label="No product image. Upload a photo." style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#9edfff", border: "1px dashed #67cfff", fontSize: 9, fontWeight: 900, textAlign: "center", cursor: uploadingImageIds.includes(item.id) ? "wait" : "pointer", padding: 4 }}>
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploadingImageIds.includes(item.id)} hidden onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void uploadReadyProductImage(item, file);
+              event.currentTarget.value = "";
+            }} />
+            <span>{uploadingImageIds.includes(item.id) ? "Uploading…" : "No image — tap to upload"}</span>
+          </label> : <div style={{ width: 64, height: 64, display: "grid", placeItems: "center", borderRadius: 9, background: "#18262e", color: "#7f9aa8", fontSize: 10, textAlign: "center" }}>No image</div>}
           <div style={{ display: "grid", gap: 7, minWidth: 0 }}><div><strong style={{ display: "block", lineHeight: 1.3 }}>{item.title}</strong><span style={{ display: "block", color: "#82cfe8", fontSize: 12, marginTop: 3 }}>{item.merchant}{item.category ? ` · ${item.category}` : ""}</span>{item.price && <span style={{ display: "block", color: "#8ff0b6", fontSize: 12, fontWeight: 900 }}>{item.price}</span>}{item.published_at && <span style={{ display: "block", color: "#ffd77e", fontSize: 11, marginTop: 2 }}>Currently published · {item.catalog_source === "builtin" ? "Original website catalog" : "Published through console"}</span>}</div>
             {mode === "workspace" && <label style={{ display: "grid", gap: 4, fontSize: 12 }}><span>Destination page</span><select value={destinationById[item.id] || suggestedDestination(item.merchant)} onChange={(event) => { setDestinationById((current) => ({ ...current, [item.id]: event.target.value })); setConfirmationToken(""); }} style={{ minHeight: 40, borderRadius: 9, border: "1px solid rgba(255,255,255,.18)", background: "#07151d", color: "white", padding: "6px 8px", fontSize: 16 }}>{destinations.map(([path, label]) => <option key={path} value={path}>{label}</option>)}</select></label>}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6 }}>

@@ -93,6 +93,16 @@ function decodeHtmlUrl(value: string) {
     .trim();
 }
 
+function isKnownAffiliateTrackingUrl(value: string) {
+  const url = safePublicUrl(decodeHtmlUrl(value));
+  if (!url) return false;
+  const host = url.hostname.toLowerCase();
+  return [
+    "pxf.io", "sjv.io", "jdoqocy.com", "tkqlhce.com", "anrdoezrs.net",
+    "dpbolvw.net", "kqzyfj.com", "evyy.net", "prf.hn",
+  ].some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 function htmlAttribute(tag: string, name: string) {
   const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i'));
   return decodeHtmlUrl(match?.[1] || match?.[2] || match?.[3] || '');
@@ -304,7 +314,11 @@ function mapImpactProduct(record: ImpactRecord, fallbackCategory: string, campai
   const category = textValue(record, ["Category", "ProductCategory", "CategoryName"]) || fallbackCategory;
   const description = textValue(record, ["Description", "ShortDescription", "ProductDescription"]) || `${title} from ${merchant}.`;
   const productUrl = textValue(record, ["Url", "URL", "ProductUrl", "ProductURL", "LandingPageUrl", "LandingPageURL"]);
-  let affiliateUrl = textValue(record, ["TrackingLink", "DeepLink"]);
+  // Impact ItemSearch can return a complete, item-specific tracking URL in Url.
+  // Never place that tracking URL inside a second campaign tracking wrapper.
+  let affiliateUrl = isKnownAffiliateTrackingUrl(productUrl)
+    ? decodeHtmlUrl(productUrl)
+    : textValue(record, ["TrackingLink", "DeepLink"]);
   if (!affiliateUrl && productUrl) {
     const campaignId = textValue(record, ["CampaignId"]);
     const campaignTrackingLink = campaignTrackingLinks.get(campaignId) || "";

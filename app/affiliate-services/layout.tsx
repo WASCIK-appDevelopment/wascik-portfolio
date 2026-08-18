@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AffiliateSubscribeCard from "./AffiliateSubscribeCard";
 
 export const metadata: Metadata = {
   title: "Affiliate Services | Technology & Product Guides",
@@ -27,5 +28,8 @@ export default function AffiliateServicesLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return <>
+    {children}
+    <AffiliateSubscribeCard />
+  </>;
 }

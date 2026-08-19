@@ -12,9 +12,8 @@ const platforms = ["Facebook", "Instagram", "TikTok", "Threads", "X", "YouTube",
 type DraftResult = { primaryCopy?: string; headline?: string; cta?: string; salesLine?: string; hashtags?: string[]; complianceNotes?: string[]; apiUsage?: { model?: string; inputTokens?: number; outputTokens?: number; estimatedCostUsd?: number | null } };
 type Draft = {
   id: string; product_id: string; merchant: string; title: string; category?: string | null; description?: string | null; features?: string[] | null; destination_url?: string | null; image_url?: string | null; price?: string | null; page_path?: string | null; source?: string | null;
-  platform?: string | null; objective?: string | null; creative_notes?: string | null; subscription_url?: string | null; result?: DraftResult | null; preview_url?: string | null; updated_at?: string;
+  platform?: string | null; objective?: string | null; creative_notes?: string | null; subscription_url?: string | null; result?: DraftResult | null; preview_url?: string | null; voice_url?: string | null; updated_at?: string;
 };
-
 type ProductForAd = { id: string; merchant: string; title: string; category?: string | null; description?: string | null; features?: string[] | null; affiliate_url?: string | null; image_url?: string | null; price?: string | null; page_path?: string | null };
 
 export default function AdWorkspaceClient() {
@@ -29,15 +28,14 @@ export default function AdWorkspaceClient() {
   const [generating, setGenerating] = useState(false);
   const [emailing, setEmailing] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [voiceUrl, setVoiceUrl] = useState("");
+  const [voiceIsLocal, setVoiceIsLocal] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const lastPreviewSizeRef = useRef(0);
-
   const key = () => sessionStorage.getItem(SESSION_KEY) || "";
 
   useEffect(() => {
@@ -50,12 +48,15 @@ export default function AdWorkspaceClient() {
         if (!data.draft) { setDraft(null); return; }
         const next = data.draft as Draft;
         setDraft(next); setPlatform(next.platform || ""); setObjective(next.objective || ""); setCreativeNotes(next.creative_notes || ""); setResult(next.result || null); setSubscriptionUrl(next.subscription_url || "");
+        if (next.voice_url) { setVoiceUrl(next.voice_url); setVoiceIsLocal(false); }
       } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load Ad Work in Progress."); }
       finally { setLoading(false); }
     }
     void load();
-    return () => { streamRef.current?.getTracks().forEach((track) => track.stop()); if (voiceUrl) URL.revokeObjectURL(voiceUrl); };
+    return () => { streamRef.current?.getTracks().forEach((track) => track.stop()); };
   }, []);
+
+  useEffect(() => () => { if (voiceIsLocal && voiceUrl) URL.revokeObjectURL(voiceUrl); }, [voiceIsLocal, voiceUrl]);
 
   async function patch(values: Record<string, unknown>, quiet = false) {
     try {
@@ -117,15 +118,25 @@ export default function AdWorkspaceClient() {
     finally { setGenerating(false); }
   }
 
+  async function saveVoice(blob: Blob) {
+    const form = new FormData(); form.append("file", blob, blob.type.includes("mp4") ? "voice.m4a" : "voice.webm");
+    const response = await fetch("/api/owner/ad-work-progress/voice", { method: "POST", headers: { "x-wascik-owner-key": key() }, body: form });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not save the voice recording.");
+  }
+
   async function startRecording() {
     if (!result?.salesLine || recording) return;
     try {
-      if (voiceUrl) URL.revokeObjectURL(voiceUrl); setVoiceBlob(null); setVoiceUrl("");
+      if (voiceIsLocal && voiceUrl) URL.revokeObjectURL(voiceUrl); setVoiceUrl(""); setVoiceIsLocal(false);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); streamRef.current = stream; chunksRef.current = [];
       const mime = MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm";
       const recorder = new MediaRecorder(stream, { mimeType: mime }); recorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
-      recorder.onstop = () => { const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mime }); const url = URL.createObjectURL(blob); setVoiceBlob(blob); setVoiceUrl(url); setRecording(false); stream.getTracks().forEach((track) => track.stop()); setNotice("Voice recording attached to this browser session."); };
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mime }); const url = URL.createObjectURL(blob); setVoiceUrl(url); setVoiceIsLocal(true); setRecording(false); stream.getTracks().forEach((track) => track.stop());
+        try { await saveVoice(blob); setNotice("Voice recording saved with Ad Work in Progress."); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the voice recording."); }
+      };
       recorder.start(); setRecording(true);
     } catch { setError("Microphone access is required to record your voice."); }
   }
@@ -148,7 +159,7 @@ export default function AdWorkspaceClient() {
   if (!draft || !product) return <div style={{ display: "grid", gap: 12 }}><div style={{ color: "#ffcf70" }}>There is no ad in progress yet.</div><button onClick={() => router.push("/owner/social-ads")} style={action}>Back to Social & Ads</button></div>;
 
   return <div style={{ display: "grid", gap: 16 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}><div><div style={{ color: "#ffd76f", fontSize: 11, fontWeight: 950 }}>AD WORK IN PROGRESS</div><h2 style={{ margin: "4px 0 0" }}>{product.merchant} — {product.title}</h2><div style={{ marginTop: 4, color: "#91a8b7", fontSize: 12 }}>This workspace is saved persistently as you work.</div></div><button type="button" onClick={() => router.push("/owner/social-ads")} style={action}>← Social & Ads Home</button></div>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}><div><div style={{ color: "#ffd76f", fontSize: 11, fontWeight: 950 }}>AD WORK IN PROGRESS</div><h2 style={{ margin: "4px 0 0" }}>{product.merchant} — {product.title}</h2><div style={{ marginTop: 4, color: "#91a8b7", fontSize: 12 }}>Product, platform, copy, preview and voice are saved persistently as you work.</div></div><button type="button" onClick={() => router.push("/owner/social-ads")} style={action}>← Social & Ads Home</button></div>
 
     {draft.preview_url ? <section style={{ border: "1px solid rgba(255,215,111,.25)", borderRadius: 14, padding: 12, background: "rgba(255,215,111,.04)" }}><strong style={{ color: "#ffd76f" }}>Last saved preview</strong><div style={{ marginTop: 8 }}><img src={draft.preview_url} alt="Last saved ad preview" style={{ width: "min(320px,100%)", borderRadius: 12, border: "1px solid rgba(255,255,255,.12)" }} /></div></section> : null}
 
@@ -162,7 +173,7 @@ export default function AdWorkspaceClient() {
 
     {result ? <>
       <PhotoAdComposer product={product} platform={platform} headline={result.headline || product.title} cta={result.cta || (firstParty ? "Learn more from WASCIK" : "Learn more through WASCIK Affiliate Services")} creativeNotes={creativeNotes} />
-      {result.salesLine ? <section style={{ border: "1px solid rgba(255,215,111,.3)", borderRadius: 14, padding: 14, background: "rgba(255,215,111,.05)" }}><strong style={{ color: "#ffd76f" }}>Your sales line</strong><div style={{ marginTop: 8, fontSize: 18, lineHeight: 1.55 }}>{result.salesLine}</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>{!recording ? <button type="button" onClick={() => void startRecording()} style={action}>{voiceBlob ? "Record Again" : "Record My Voice"}</button> : <button type="button" onClick={stopRecording} style={{ ...action, color: "#ffaaaa" }}>Stop Recording</button>}</div>{voiceUrl ? <audio controls src={voiceUrl} style={{ width: "100%", marginTop: 10 }} /> : null}</section> : null}
+      {result.salesLine ? <section style={{ border: "1px solid rgba(255,215,111,.3)", borderRadius: 14, padding: 14, background: "rgba(255,215,111,.05)" }}><strong style={{ color: "#ffd76f" }}>Your sales line</strong><div style={{ marginTop: 8, fontSize: 18, lineHeight: 1.55 }}>{result.salesLine}</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>{!recording ? <button type="button" onClick={() => void startRecording()} style={action}>{voiceUrl ? "Record Again" : "Record My Voice"}</button> : <button type="button" onClick={stopRecording} style={{ ...action, color: "#ffaaaa" }}>Stop Recording</button>}</div>{voiceUrl ? <><audio controls src={voiceUrl} style={{ width: "100%", marginTop: 10 }} /><div style={{ color: "#8ff0b8", fontSize: 11, marginTop: 5 }}>This voice take is saved with your work in progress.</div></> : null}</section> : null}
       <section style={{ border: "1px solid rgba(143,240,184,.24)", borderRadius: 14, padding: 14, background: "rgba(143,240,184,.035)" }}><strong style={{ color: "#8ff0b8" }}>Final actions</strong><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 9, marginTop: 10 }}><button type="button" onClick={download} style={action}>Download to My Phone</button><button type="button" onClick={() => void email()} disabled={emailing} style={action}>{emailing ? "Emailing…" : "Email Ad"}</button><SaveCurrentAdButton brand={product.merchant} productOrService={product.title} platform={platform} headline={result.headline} primaryCopy={result.primaryCopy} cta={result.cta} salesLine={result.salesLine} hashtags={result.hashtags} /></div></section>
       {[{ label: "Headline", value: result.headline }, { label: "Primary copy", value: result.primaryCopy }, { label: "CTA", value: result.cta }].filter((x) => x.value).map((item) => <section key={item.label} style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.025)" }}><strong>{item.label}</strong><div style={{ marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{item.value}</div></section>)}
     </> : null}

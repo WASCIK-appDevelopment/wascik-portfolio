@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getOpenAIConfig } from "../../../../../../lib/ai/openaiConfig";
-import { recordOpenAIUsage } from "../../../../../../lib/ai/openaiUsageLedger";
+import { getOpenAIConfig } from "../../../../../lib/ai/openaiConfig";
+import { recordOpenAIUsage } from "../../../../../lib/ai/openaiUsageLedger";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const DEFAULT_MODEL = "gpt-image-1-mini";

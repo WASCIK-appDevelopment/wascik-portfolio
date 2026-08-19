@@ -136,6 +136,13 @@ export async function DELETE(request: Request) {
   const path = Array.isArray(rows) ? String(rows[0]?.storage_path || "") : "";
   if (!lookup.ok || !path) return NextResponse.json({ error: "Photo not found." }, { status: 404 });
 
+  // Remove any WASCIK service-media assignment that uses this photo first.
+  const unlink = await fetch(`${config.supabaseUrl}/rest/v1/wascik_service_approved_media?photo_id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: headers(config.supabaseServerKey),
+  });
+  if (!unlink.ok) return NextResponse.json({ error: "The photo is assigned to a WASCIK service and could not be unlinked." }, { status: 502 });
+
   const deleteObject = await fetch(`${config.supabaseUrl}/storage/v1/object/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE", headers: headers(config.supabaseServerKey) });
   if (!deleteObject.ok && deleteObject.status !== 404) return NextResponse.json({ error: "The stored photo could not be removed." }, { status: 502 });
 

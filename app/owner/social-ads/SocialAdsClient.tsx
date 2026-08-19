@@ -53,6 +53,7 @@ export default function SocialAdsClient() {
         if (!catalogResponse.ok) throw new Error(catalog.error || "Could not load products and services.");
         const published = (Array.isArray(catalog.products) ? catalog.products as CatalogProduct[] : [])
           .filter((item) => Boolean(item.published_at))
+          .map((item) => item.merchant === "WASCIK App Development" ? { ...item, image_url: null } : item)
           .sort((a, b) => `${a.merchant} ${a.title}`.localeCompare(`${b.merchant} ${b.title}`));
         setProducts(published);
         if (draftResponse.ok && draftData.draft) setDraft(draftData.draft as DraftSummary);
@@ -75,14 +76,16 @@ export default function SocialAdsClient() {
 
   async function startAd(item: CatalogProduct) {
     if (opening) return;
+    if (draft && !window.confirm(`Replace your current ad in progress (${draft.merchant || "Ad"} — ${draft.title || "current draft"}) with ${item.merchant} — ${item.title}?`)) return;
     setOpening(item.id);
     setError("");
     try {
       const key = sessionStorage.getItem(SESSION_KEY) || "";
+      const safeItem = item.merchant === "WASCIK App Development" ? { ...item, image_url: null } : item;
       const response = await fetch("/api/owner/ad-work-progress", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ product: item }),
+        body: JSON.stringify({ product: safeItem }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not open the ad workspace.");
@@ -118,10 +121,10 @@ export default function SocialAdsClient() {
     </section>
 
     <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, background: "rgba(113,220,255,.035)" }}>
-      <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 950, letterSpacing: ".13em" }}>WASCIK APP DEVELOPMENT</div><h2 style={{ margin: "5px 0 0" }}>My Products & Services</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Pinned first so your own company is always the fastest thing to advertise.</p></div>
+      <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 950, letterSpacing: ".13em" }}>WASCIK APP DEVELOPMENT</div><h2 style={{ margin: "5px 0 0" }}>My Products & Services</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Pinned first. WASCIK service imagery is owner-approved only—no automatic affiliate or web image recovery is used here.</p></div>
       {loading ? <div style={{ marginTop: 12, color: "#71dcff" }}>Loading WASCIK services…</div> : null}
       {!loading && wascikServices.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 9, marginTop: 13 }}>
-        {wascikServices.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={cardStyle(item, true)} disabled={Boolean(opening)}><div style={{ color: "#71dcff", fontSize: 10, fontWeight: 900 }}>{item.category || "WASCIK SERVICE"}</div><div style={{ marginTop: 5, fontSize: 15, fontWeight: 900 }}>{item.title}</div><div style={{ marginTop: 5, color: "#9fb5c5", fontSize: 11 }}>{opening === item.id ? "Opening workspace…" : "Tap to build an ad →"}</div></button>)}
+        {wascikServices.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={cardStyle(item, true)} disabled={Boolean(opening)}><div style={{ minHeight: 52, borderRadius: 10, border: "1px solid rgba(113,220,255,.18)", background: "radial-gradient(circle at 20% 20%,rgba(113,220,255,.18),rgba(3,12,21,.75))", display: "grid", placeItems: "center", color: "#71dcff", fontSize: 11, fontWeight: 950, letterSpacing: ".12em", marginBottom: 8 }}>WASCIK APPROVED MEDIA</div><div style={{ color: "#71dcff", fontSize: 10, fontWeight: 900 }}>{item.category || "WASCIK SERVICE"}</div><div style={{ marginTop: 5, fontSize: 15, fontWeight: 900 }}>{item.title}</div><div style={{ marginTop: 5, color: "#9fb5c5", fontSize: 11 }}>{opening === item.id ? "Opening workspace…" : "Tap to build an ad →"}</div></button>)}
       </div> : null}
     </section>
 

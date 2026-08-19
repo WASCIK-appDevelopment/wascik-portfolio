@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../lib/ai/openaiConfig";
+import { estimateTextCostUsd, recordOpenAIUsage } from "../../../../lib/ai/openaiUsageLedger";
 import { retrieveWascikKnowledge } from "../../../../lib/ai/knowledgeBase";
 import { ConversationTurn, LeadProfile, qualifyLead } from "../../../../lib/ai/leadQualification";
 import { resolveAssistantPageContext } from "../../../../lib/ai/pageContext";
@@ -11,6 +12,11 @@ type ResponsesPayload = {
   incomplete_details?: { reason?: string } | null;
   error?: { message?: string } | null;
   output?: Array<{ content?: Array<{ type?: string; text?: string; refusal?: string }> }>;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_details?: { cached_tokens?: number };
+  };
 };
 
 function extractResponseText(payload: unknown): string {
@@ -85,18 +91,25 @@ export async function POST(request: Request) {
     const text = extractResponseText(data);
     if (!text) return NextResponse.json({ error: data.status === "incomplete" ? "The representative ran out of response capacity. Please try again." : "The representative returned an empty response." }, { status: 502 });
 
+    const estimatedCostUsd = estimateTextCostUsd(config.model, data.usage);
+    await recordOpenAIUsage({
+      feature: "leads",
+      route: "/api/ai-funnel/chat",
+      model: config.model,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      estimatedCostUsd,
+      metadata: { pathname, pageMode: pageContext.mode, contactCapturedCandidate: hasContact },
+    });
+
     let leadPersistence: Awaited<ReturnType<typeof persistQualifiedLead>> | undefined;
     let leadAlert: Awaited<ReturnType<typeof sendLeadAlert>> | undefined;
     let leadAlertRecording: Awaited<ReturnType<typeof markLeadAlertSent>> | undefined;
     if (leadQualification && hasContact) {
       leadPersistence = await persistQualifiedLead({ profile: leadQualification.profile, pathname, summary: text, conversation: [...fullConversation, { role: "assistant", content: text }], qualificationScore: leadQualification.score, qualificationStatus: leadQualification.status, sessionId: typeof body.sessionId === "string" ? body.sessionId : undefined, referrer: request.headers.get("referer") || undefined });
-      // Supabase is the source of truth for alert idempotency. If a prior alert
-      // was recorded, later enrichment must not send another owner email.
       if (leadPersistence.saved && leadPersistence.leadId && !leadPersistence.alertSentAt) {
         leadAlert = await sendLeadAlert({ profile: leadQualification.profile, pathname, leadId: leadPersistence.leadId });
-        if (leadAlert.sent) {
-          leadAlertRecording = await markLeadAlertSent(leadPersistence.leadId);
-        }
+        if (leadAlert.sent) leadAlertRecording = await markLeadAlertSent(leadPersistence.leadId);
       }
     }
 

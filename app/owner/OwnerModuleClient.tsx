@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
+import OwnerUsageGauges from "./OwnerUsageGauges";
 
 const SESSION_KEY = "wascik-owner-console-key";
 const AFFILIATE_SEARCH_SESSION_KEY = "wascik-affiliate-search-session-v1";
@@ -98,6 +99,8 @@ export default function OwnerModuleClient({ title, kicker = "WASCIK PRIVATE CONS
         <p style={{ color: "#a9bdcc", lineHeight: 1.6, maxWidth: 760, margin: 0 }}>{description}</p></div>
         <button type="button" onClick={signOut} style={{ flex: "0 0 auto", minHeight: 42, padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)", color: "#d5e8f2", fontWeight: 850 }}>Sign out</button>
       </header>
+
+      <OwnerUsageGauges />
 
       <nav style={{ marginBottom: 14 }} aria-label="Owner console modules">
         <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="wascik-console-menu" style={{ width: "100%", display: "grid", gridTemplateColumns: "52px minmax(0,1fr) auto", gap: 11, alignItems: "center", minHeight: 64, padding: "8px 12px", borderRadius: 17, border: "1px solid rgba(91,216,255,.55)", background: "linear-gradient(135deg,rgba(15,73,111,.94),rgba(4,26,43,.96))", color: "white", boxShadow: "inset 0 0 24px rgba(52,189,255,.09),0 10px 28px rgba(0,0,0,.24)", textAlign: "left" }}>

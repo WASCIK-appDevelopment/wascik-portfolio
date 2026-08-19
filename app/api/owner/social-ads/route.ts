@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../lib/ai/openaiConfig";
+import { estimateTextCostUsd, recordOpenAIUsage } from "../../../../lib/ai/openaiUsageLedger";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 
@@ -10,12 +11,6 @@ type ResponsesPayload = {
     output_tokens?: number;
     input_tokens_details?: { cached_tokens?: number };
   };
-};
-
-const TEXT_PRICING_PER_MILLION: Record<string, { input: number; cachedInput: number; output: number }> = {
-  "gpt-5-mini": { input: 0.25, cachedInput: 0.025, output: 2.0 },
-  "gpt-5.4-mini": { input: 0.75, cachedInput: 0.075, output: 4.5 },
-  "gpt-5.4-nano": { input: 0.2, cachedInput: 0.02, output: 1.25 },
 };
 
 function authorized(request: Request) {
@@ -32,16 +27,6 @@ function extractResponseText(payload: ResponsesPayload) {
     .filter(Boolean)
     .join("\n")
     .trim();
-}
-
-function requestCostUsd(model: string, usage?: ResponsesPayload["usage"]) {
-  const pricing = TEXT_PRICING_PER_MILLION[model];
-  if (!pricing || !usage) return null;
-  const input = Math.max(0, Number(usage.input_tokens || 0));
-  const output = Math.max(0, Number(usage.output_tokens || 0));
-  const cached = Math.min(input, Math.max(0, Number(usage.input_tokens_details?.cached_tokens || 0)));
-  const uncached = input - cached;
-  return ((uncached * pricing.input) + (cached * pricing.cachedInput) + (output * pricing.output)) / 1_000_000;
 }
 
 export async function POST(request: Request) {
@@ -117,7 +102,16 @@ export async function POST(request: Request) {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Record<string, unknown>;
-    const cost = requestCostUsd(openAI.model, data.usage);
+    const cost = estimateTextCostUsd(openAI.model, data.usage);
+    await recordOpenAIUsage({
+      feature: "ads",
+      route: "/api/owner/social-ads",
+      model: openAI.model,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      estimatedCostUsd: cost,
+      metadata: { platform, merchant, product },
+    });
     return NextResponse.json({
       ...parsed,
       apiUsage: {

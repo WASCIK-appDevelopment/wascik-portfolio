@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import SavedAdLibrary from "./SavedAdLibrary";
 import WascikServicesSection from "./WascikServicesSection";
+import MyPhotoLibraryManager from "./MyPhotoLibraryManager";
 
 const SESSION_KEY = "wascik-owner-console-key";
 
@@ -122,6 +123,8 @@ export default function SocialAdsClient() {
     </section>
 
     {loading ? <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, color: "#71dcff" }}>Loading WASCIK services…</section> : <WascikServicesSection services={wascikServices} opening={opening} onStart={startAd} />}
+
+    <MyPhotoLibraryManager />
 
     <SavedAdLibrary />
 

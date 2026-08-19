@@ -74,6 +74,7 @@ export default function PhotoAdComposer({ product, platform, headline, cta, crea
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const photoLibraryRef = useRef<HTMLDivElement | null>(null);
 
   const effectiveOwnerUrl = ownerEditedUrl || ownerPhotoUrl;
 
@@ -97,6 +98,14 @@ export default function PhotoAdComposer({ product, platform, headline, cta, crea
       setPhotos(Array.isArray(data.photos) ? data.photos : []);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load My Photos."); }
     finally { setLibraryLoading(false); }
+  }
+
+  function openSavedPhotoPicker() {
+    setPhotoLibraryOpen(true);
+    void loadPhotoLibrary();
+    window.requestAnimationFrame(() => {
+      photoLibraryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   async function uploadPhotos(event: ChangeEvent<HTMLInputElement>) {
@@ -209,18 +218,28 @@ export default function PhotoAdComposer({ product, platform, headline, cta, crea
   return <section style={{ display: "grid", gap: 14, border: "1px solid rgba(113,220,255,.24)", borderRadius: 16, padding: 16, background: "rgba(113,220,255,.035)" }}>
     <div><div style={{ color: "#71dcff", fontSize: 12, fontWeight: 900 }}>AI PHOTO AD GENERATOR</div><h2 style={{ margin: "5px 0 0" }}>Create the downloadable picture ad</h2><p style={{ margin: "7px 0 0", color: "#9fb5c5", lineHeight: 1.55 }}>Pick a saved photo, optionally apply AI pose/product directions to that photo, then build the ad around the edited or original version.</p></div>
 
-    <div style={{ border: "1px solid rgba(113,220,255,.24)", borderRadius: 14, padding: 13, background: "rgba(2,12,21,.62)" }}>
+    <div ref={photoLibraryRef} style={{ border: "1px solid rgba(113,220,255,.24)", borderRadius: 14, padding: 13, background: "rgba(2,12,21,.62)" }}>
       <button type="button" onClick={() => setPhotoLibraryOpen(v => !v)} style={{ ...smallButton, width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between" }}><span>MY PHOTOS · {photos.length} saved</span><span>{photoLibraryOpen ? "▲" : "▼"}</span></button>
       {photoLibraryOpen ? <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8, alignItems: "end" }}><label style={labelStyle}>Category<select value={photoCategory} onChange={e => setPhotoCategory(e.target.value)} style={fieldStyle}>{photoCategories.map(x => <option key={x}>{x}</option>)}</select></label><label style={{ ...smallButton, minHeight: 44, display: "grid", placeItems: "center" }}>{uploading ? "Uploading…" : "Upload Photos"}<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={uploading} onChange={uploadPhotos} style={{ display: "none" }} /></label></div>
-        <div style={{ color: "#8fa6b6", fontSize: 11 }}>You can also manage the full library from Social & Ads → My Photos.</div>
+        <div style={{ color: "#cfe8f5", fontSize: 12, fontWeight: 850 }}>Tap any saved thumbnail below to use it in this ad.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 8, alignItems: "end" }}><label style={labelStyle}>Category<select value={photoCategory} onChange={e => setPhotoCategory(e.target.value)} style={fieldStyle}>{photoCategories.map(x => <option key={x}>{x}</option>)}</select></label><label style={{ ...smallButton, minHeight: 44, display: "grid", placeItems: "center" }}>{uploading ? "Uploading…" : "Upload New Photo from Phone"}<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" disabled={uploading} onChange={uploadPhotos} style={{ display: "none" }} /></label></div>
+        <div style={{ color: "#8fa6b6", fontSize: 11 }}>Saved photos come from the console library. Use the phone upload only when you want to add a new image.</div>
         {libraryLoading ? <div style={{ color: "#71dcff" }}>Loading My Photos…</div> : null}
         {!libraryLoading && !photos.length ? <div style={{ color: "#9fb5c5", padding: 12, border: "1px dashed rgba(255,255,255,.15)", borderRadius: 12 }}>No saved photos yet.</div> : null}
         {photos.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 9, maxHeight: 380, overflowY: "auto" }}>{photos.map(photo => <div key={photo.id} style={{ border: ownerPhotoUrl === photo.url ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: 6, background: ownerPhotoUrl === photo.url ? "rgba(113,220,255,.1)" : "rgba(255,255,255,.03)" }}><button type="button" onClick={() => selectSavedPhoto(photo)} style={{ width: "100%", border: 0, padding: 0, background: "transparent", color: "white", cursor: "pointer", textAlign: "left" }}><img src={photo.url} alt={photo.label} style={{ width: "100%", height: 130, objectFit: "cover", objectPosition: "center", borderRadius: 8, display: "block" }} /><div style={{ marginTop: 5, fontSize: 10, fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{photo.label}</div><div style={{ fontSize: 9, color: "#8fa6b6" }}>{photo.category}</div></button><button type="button" onClick={() => void deleteSavedPhoto(photo)} style={{ width: "100%", marginTop: 6, border: "1px solid rgba(255,110,110,.32)", borderRadius: 8, background: "rgba(255,90,90,.07)", color: "#ffaaaa", padding: "7px 5px", fontSize: 10, fontWeight: 900, cursor: "pointer" }}>Delete Photo</button></div>)}</div> : null}
       </div> : null}
     </div>
 
-    <div style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 13, padding: 11, background: "rgba(255,255,255,.025)" }}><strong>Photo selected for this ad</strong><div style={{ marginTop: 7, color: ownerPhotoName ? "#8ff0b8" : "#8fa6b6", fontSize: 12 }}>{ownerPhotoName || "None — this will be a product-only ad."}</div>{ownerEditedUrl ? <div style={{ marginTop: 5, color: "#ffd76f", fontSize: 11 }}>AI-directed version is active for this ad.</div> : null}<div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 9 }}><label style={smallButton}>Use One-Time Photo<input type="file" accept="image/*" onChange={temporaryPhotoChanged} style={{ display: "none" }} /></label>{effectiveOwnerUrl ? <button type="button" onClick={removeOwnerPhoto} style={{ ...smallButton, color: "#ffaaaa", borderColor: "rgba(255,120,120,.35)" }}>Remove from this ad</button> : null}</div></div>
+    <div style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 13, padding: 11, background: "rgba(255,255,255,.025)" }}>
+      <strong>Photo selected for this ad</strong>
+      <div style={{ marginTop: 7, color: ownerPhotoName ? "#8ff0b8" : "#8fa6b6", fontSize: 12 }}>{ownerPhotoName || "None — this will be a product-only ad."}</div>
+      {ownerEditedUrl ? <div style={{ marginTop: 5, color: "#ffd76f", fontSize: 11 }}>AI-directed version is active for this ad.</div> : null}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8, marginTop: 9 }}>
+        <button type="button" onClick={openSavedPhotoPicker} style={{ ...smallButton, minHeight: 44, fontSize: 13 }}>Choose from My Photos</button>
+        <label style={{ ...smallButton, minHeight: 44, display: "grid", placeItems: "center", fontSize: 13 }}>Upload New Photo from Phone<input type="file" accept="image/*" onChange={temporaryPhotoChanged} style={{ display: "none" }} /></label>
+        {effectiveOwnerUrl ? <button type="button" onClick={removeOwnerPhoto} style={{ ...smallButton, minHeight: 44, color: "#ffaaaa", borderColor: "rgba(255,120,120,.35)" }}>Remove from this ad</button> : null}
+      </div>
+    </div>
 
     <div style={{ border: "1px solid rgba(255,215,111,.24)", borderRadius: 14, padding: 13, background: "rgba(255,215,111,.04)", display: "grid", gap: 10 }}>
       <div><strong style={{ color: "#ffd76f" }}>Owner Photo Directions</strong><div style={{ marginTop: 4, color: "#9fb5c5", fontSize: 11 }}>These controls use an actual AI image edit on the saved photo. Applying them has an additional image-edit cost.</div></div>

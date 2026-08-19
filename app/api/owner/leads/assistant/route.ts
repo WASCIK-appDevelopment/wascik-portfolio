@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../../lib/ai/openaiConfig";
+import { estimateTextCostUsd, recordOpenAIUsage } from "../../../../../lib/ai/openaiUsageLedger";
 import { getStage6Config } from "../../../../../lib/ai/stage6Config";
 
 const OWNER_HEADER = "x-wascik-owner-key";
@@ -9,6 +10,11 @@ type ResponsesPayload = {
   output?: Array<{ content?: Array<{ type?: string; text?: string; refusal?: string }> }>;
   status?: string;
   error?: { message?: string } | null;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_details?: { cached_tokens?: number };
+  };
 };
 
 type ActionProposal = {
@@ -24,7 +30,6 @@ type ActionProposal = {
 };
 
 type AssistantEnvelope = { text: string; proposal?: ActionProposal | null };
-
 type OwnerConversationTurn = { role: "owner" | "assistant"; content: string };
 
 function authorized(request: Request) {
@@ -59,10 +64,7 @@ function sanitizeHistory(value: unknown): OwnerConversationTurn[] {
     .filter((item) => item && typeof item === "object")
     .map((item) => item as { role?: unknown; content?: unknown })
     .filter((item) => (item.role === "owner" || item.role === "assistant") && typeof item.content === "string")
-    .map((item) => ({
-      role: item.role as OwnerConversationTurn["role"],
-      content: (item.content as string).trim().slice(0, 1200),
-    }))
+    .map((item) => ({ role: item.role as OwnerConversationTurn["role"], content: (item.content as string).trim().slice(0, 1200) }))
     .filter((item) => item.content)
     .slice(-10);
 }
@@ -95,15 +97,7 @@ function validateProposal(value: unknown, leadIds: Set<string>): ActionProposal 
 }
 
 function signedPayload(proposal: ActionProposal, expiresAt: number) {
-  return JSON.stringify({
-    actionType: proposal.actionType,
-    leadId: proposal.leadId,
-    status: proposal.status || "",
-    note: proposal.note || "",
-    nextAction: proposal.nextAction || "",
-    followUpAt: proposal.followUpAt || "",
-    expiresAt,
-  });
+  return JSON.stringify({ actionType: proposal.actionType, leadId: proposal.leadId, status: proposal.status || "", note: proposal.note || "", nextAction: proposal.nextAction || "", followUpAt: proposal.followUpAt || "", expiresAt });
 }
 
 function signProposal(proposal: ActionProposal) {
@@ -170,6 +164,18 @@ export async function POST(request: Request) {
   }
   const raw = extractResponseText(data);
   if (!raw) return NextResponse.json({ error: "The owner assistant returned an empty response." }, { status: 502 });
+
+  const estimatedCostUsd = estimateTextCostUsd(openAI.model, data.usage);
+  await recordOpenAIUsage({
+    feature: "leads",
+    route: "/api/owner/leads/assistant",
+    model: openAI.model,
+    inputTokens: data.usage?.input_tokens || 0,
+    outputTokens: data.usage?.output_tokens || 0,
+    estimatedCostUsd,
+    metadata: { leadCount: leads.length },
+  });
+
   const envelope = parseEnvelope(raw);
   const proposal = validateProposal(envelope.proposal, leadIds);
   return NextResponse.json({ text: envelope.text, proposal: proposal ? signProposal(proposal) : null, leadCount: leads.length, mode: "owner-leads-confirmed-actions" });

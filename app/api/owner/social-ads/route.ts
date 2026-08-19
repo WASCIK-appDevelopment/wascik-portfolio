@@ -71,7 +71,12 @@ export async function POST(request: Request) {
     !isFirstPartyWascik ? "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page." : "",
     "Also write one short first-person SALES LINE for Michael to read aloud in his own voice. It should sound natural when spoken, promote the selected product or service without exaggeration, and normally fit in about 8 to 20 seconds.",
     !isFirstPartyWascik ? "Do not claim Michael personally owns, uses, tested, or recommends the product unless that fact was explicitly supplied." : "For a WASCIK first-party service, Michael may speak as the business owner using 'we' or 'WASCIK' but do not invent personal achievements, client results, or guarantees.",
-    "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"salesLine\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
+    "For the IMAGE AD specifically, create three separate visual fields: visualHook, visualSupportLine, and visualCta.",
+    "visualHook must be punchy and short enough for a graphic headline, normally 3 to 8 words and never more than 55 characters.",
+    "visualSupportLine must add one useful benefit or positioning idea in one compact line, normally 5 to 14 words and never more than 90 characters.",
+    "visualCta must be a short button label, normally 2 to 5 words and never more than 28 characters. Do not put a sentence in the visual CTA button.",
+    "Do not merely repeat the same wording in headline, visualHook, visualSupportLine, and visualCta. Make the visual fields work together as an actual ad hierarchy.",
+    "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"salesLine\":\"...\",\"visualHook\":\"...\",\"visualSupportLine\":\"...\",\"visualCta\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
     isFirstPartyWascik
       ? "The CTA should promote the WASCIK service directly and should not mention affiliate links."
       : "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
@@ -99,7 +104,7 @@ export async function POST(request: Request) {
       instructions,
       input: [{ role: "user", content: JSON.stringify(input) }],
       reasoning: { effort: "minimal" },
-      max_output_tokens: 760,
+      max_output_tokens: 900,
       store: false,
     }),
   });

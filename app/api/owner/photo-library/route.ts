@@ -37,6 +37,16 @@ function extensionFor(file: File) {
   return "jpg";
 }
 
+async function removeStorageObject(supabaseUrl: string, key: string, path: string) {
+  const response = await fetch(`${supabaseUrl}/storage/v1/object/${BUCKET}`, {
+    method: "DELETE",
+    headers: headers(key),
+    body: JSON.stringify({ prefixes: [path] }),
+  });
+  const body = await response.json().catch(() => ({}));
+  return { response, body };
+}
+
 async function signedUrl(supabaseUrl: string, key: string, path: string) {
   const response = await fetch(`${supabaseUrl}/storage/v1/object/sign/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`, {
     method: "POST",
@@ -116,7 +126,7 @@ export async function POST(request: Request) {
   });
   const inserted = await insertResponse.json().catch(() => []);
   if (!insertResponse.ok) {
-    await fetch(`${config.supabaseUrl}/storage/v1/object/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE", headers: headers(config.supabaseServerKey) }).catch(() => null);
+    await removeStorageObject(config.supabaseUrl, config.supabaseServerKey, path).catch(() => null);
     return NextResponse.json({ error: "The photo uploaded but could not be added to My Photos." }, { status: 502 });
   }
 
@@ -136,15 +146,17 @@ export async function DELETE(request: Request) {
   const path = Array.isArray(rows) ? String(rows[0]?.storage_path || "") : "";
   if (!lookup.ok || !path) return NextResponse.json({ error: "Photo not found." }, { status: 404 });
 
-  // Remove any WASCIK service-media assignment that uses this photo first.
   const unlink = await fetch(`${config.supabaseUrl}/rest/v1/wascik_service_approved_media?photo_id=eq.${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: headers(config.supabaseServerKey),
   });
   if (!unlink.ok) return NextResponse.json({ error: "The photo is assigned to a WASCIK service and could not be unlinked." }, { status: 502 });
 
-  const deleteObject = await fetch(`${config.supabaseUrl}/storage/v1/object/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE", headers: headers(config.supabaseServerKey) });
-  if (!deleteObject.ok && deleteObject.status !== 404) return NextResponse.json({ error: "The stored photo could not be removed." }, { status: 502 });
+  const { response: deleteObject, body: deleteObjectBody } = await removeStorageObject(config.supabaseUrl, config.supabaseServerKey, path);
+  if (!deleteObject.ok && deleteObject.status !== 404) {
+    console.error("Owner photo storage delete failed", deleteObject.status, deleteObjectBody);
+    return NextResponse.json({ error: "The stored photo could not be removed." }, { status: 502 });
+  }
 
   const deleteRow = await fetch(`${config.supabaseUrl}/rest/v1/owner_photo_library?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", headers: headers(config.supabaseServerKey) });
   if (!deleteRow.ok) return NextResponse.json({ error: "The photo record could not be removed." }, { status: 502 });

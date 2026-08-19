@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import SavedAdLibrary from "./SavedAdLibrary";
+import WascikServicesSection from "./WascikServicesSection";
 
 const SESSION_KEY = "wascik-owner-console-key";
 
@@ -96,16 +97,16 @@ export default function SocialAdsClient() {
     }
   }
 
-  const cardStyle = (item: CatalogProduct, firstParty = false) => ({
+  const affiliateCardStyle = {
     textAlign: "left" as const,
-    border: firstParty ? "1px solid rgba(113,220,255,.38)" : "1px solid rgba(255,255,255,.11)",
+    border: "1px solid rgba(255,255,255,.11)",
     borderRadius: 14,
     padding: 11,
-    background: firstParty ? "linear-gradient(145deg,rgba(22,111,168,.18),rgba(255,255,255,.03))" : "rgba(255,255,255,.03)",
+    background: "rgba(255,255,255,.03)",
     color: "#eef8ff",
     cursor: opening ? "wait" : "pointer",
     minHeight: 92,
-  });
+  };
 
   return <div style={{ display: "grid", gap: 16 }}>
     <section style={{ border: "1px solid rgba(255,215,111,.36)", borderRadius: 17, padding: 14, background: "linear-gradient(135deg,rgba(255,215,111,.08),rgba(5,20,33,.88))" }}>
@@ -120,13 +121,7 @@ export default function SocialAdsClient() {
       {draft?.preview_url ? <img src={draft.preview_url} alt="Latest ad work preview" style={{ width: 96, height: 120, objectFit: "cover", borderRadius: 10, marginTop: 12, border: "1px solid rgba(255,255,255,.12)" }} /> : null}
     </section>
 
-    <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, background: "rgba(113,220,255,.035)" }}>
-      <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 950, letterSpacing: ".13em" }}>WASCIK APP DEVELOPMENT</div><h2 style={{ margin: "5px 0 0" }}>My Products & Services</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Pinned first. WASCIK service imagery is owner-approved only—no automatic affiliate or web image recovery is used here.</p></div>
-      {loading ? <div style={{ marginTop: 12, color: "#71dcff" }}>Loading WASCIK services…</div> : null}
-      {!loading && wascikServices.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 9, marginTop: 13 }}>
-        {wascikServices.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={cardStyle(item, true)} disabled={Boolean(opening)}><div style={{ minHeight: 52, borderRadius: 10, border: "1px solid rgba(113,220,255,.18)", background: "radial-gradient(circle at 20% 20%,rgba(113,220,255,.18),rgba(3,12,21,.75))", display: "grid", placeItems: "center", color: "#71dcff", fontSize: 11, fontWeight: 950, letterSpacing: ".12em", marginBottom: 8 }}>WASCIK APPROVED MEDIA</div><div style={{ color: "#71dcff", fontSize: 10, fontWeight: 900 }}>{item.category || "WASCIK SERVICE"}</div><div style={{ marginTop: 5, fontSize: 15, fontWeight: 900 }}>{item.title}</div><div style={{ marginTop: 5, color: "#9fb5c5", fontSize: 11 }}>{opening === item.id ? "Opening workspace…" : "Tap to build an ad →"}</div></button>)}
-      </div> : null}
-    </section>
+    {loading ? <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, color: "#71dcff" }}>Loading WASCIK services…</section> : <WascikServicesSection services={wascikServices} opening={opening} onStart={startAd} />}
 
     <SavedAdLibrary />
 
@@ -135,7 +130,7 @@ export default function SocialAdsClient() {
       <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search affiliate brand, product, or category" style={{ width: "100%", marginTop: 13, borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(3,10,18,.72)", color: "#eef8ff", padding: "11px 12px", fontSize: 16 }} />
       {error ? <div style={{ marginTop: 10, color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}
       {!loading && filteredAffiliate.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 9, marginTop: 13, maxHeight: 470, overflowY: "auto" }}>
-        {filteredAffiliate.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={cardStyle(item)} disabled={Boolean(opening)}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8 }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850 }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900 }}>{item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11 }}>{item.category}</div> : null}</button>)}
+        {filteredAffiliate.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={affiliateCardStyle} disabled={Boolean(opening)}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8 }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850 }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900 }}>{item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11 }}>{item.category}</div> : null}</button>)}
       </div> : null}
     </section>
   </div>;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import PhotoAdComposer from "./PhotoAdComposer";
 
 const SESSION_KEY = "wascik-owner-console-key";
 const PUBLIC_AFFILIATE_BASE = "https://wascik-app-development.netlify.app";
@@ -71,7 +72,10 @@ export default function SocialAdsClient() {
     async function loadCatalog() {
       setCatalogLoading(true);
       try {
-        const response = await fetch("/api/owner/affiliate-search/approved", { headers: { "x-wascik-owner-key": key }, cache: "no-store" });
+        const response = await fetch("/api/owner/affiliate-search/approved", {
+          headers: { "x-wascik-owner-key": key },
+          cache: "no-store",
+        });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || "Could not load your affiliate products.");
         const published = (Array.isArray(data.products) ? data.products as CatalogProduct[] : [])
@@ -88,10 +92,12 @@ export default function SocialAdsClient() {
 
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      if (voiceUrl) URL.revokeObjectURL(voiceUrl);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    return () => { if (voiceUrl) URL.revokeObjectURL(voiceUrl); };
+  }, [voiceUrl]);
 
   const selectedProduct = useMemo(() => products.find((item) => item.id === selectedId) || null, [products, selectedId]);
   const filteredProducts = useMemo(() => {
@@ -101,6 +107,15 @@ export default function SocialAdsClient() {
   }, [products, search]);
   const canGenerate = Boolean(platform && selectedProduct && !loading);
   const trackedRemaining = Math.max(0, DEFAULT_AD_BUDGET_USD - trackedSpend);
+
+  function addTrackedCost(cost: number) {
+    if (!Number.isFinite(cost) || cost <= 0) return;
+    setTrackedSpend((current) => {
+      const next = current + cost;
+      localStorage.setItem(AD_BUDGET_KEY, String(next));
+      return next;
+    });
+  }
 
   function clearVoice() {
     if (voiceUrl) URL.revokeObjectURL(voiceUrl);
@@ -157,18 +172,21 @@ export default function SocialAdsClient() {
       const response = await fetch("/api/owner/social-ads", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ platform, merchant: selectedProduct.merchant, product: selectedProduct.title, affiliateUrl: selectedProduct.affiliate_url || "", objective, notes: verifiedFacts(selectedProduct, adSubscriptionUrl) }),
+        body: JSON.stringify({
+          platform,
+          merchant: selectedProduct.merchant,
+          product: selectedProduct.title,
+          affiliateUrl: selectedProduct.affiliate_url || "",
+          objective,
+          notes: verifiedFacts(selectedProduct, adSubscriptionUrl),
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not generate content.");
       const next = data as DraftResult;
       setResult(next);
       const cost = Number(next.apiUsage?.estimatedCostUsd);
-      if (Number.isFinite(cost) && cost > 0) {
-        const nextSpend = trackedSpend + cost;
-        setTrackedSpend(nextSpend);
-        localStorage.setItem(AD_BUDGET_KEY, String(nextSpend));
-      }
+      if (Number.isFinite(cost) && cost > 0) addTrackedCost(cost);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate content.");
     } finally {
@@ -222,7 +240,7 @@ export default function SocialAdsClient() {
       subscriptionUrl ? `Email subscription link: ${subscriptionUrl}` : "",
       result.apiUsage?.estimatedCostUsd != null ? `Estimated OpenAI cost for copy: $${result.apiUsage.estimatedCostUsd.toFixed(6)}` : "",
       result.salesLine ? `VOICE SALES LINE\n${result.salesLine}` : "",
-      voiceBlob ? "VOICE RECORDING: Included as a separate audio component until visual-ad video assembly is enabled." : "",
+      voiceBlob ? "VOICE RECORDING: Included as a separate audio component." : "",
       result.headline ? `HEADLINE\n${result.headline}` : "",
       result.primaryCopy ? `AD COPY\n${result.primaryCopy}` : "",
       result.cta ? `CTA\n${result.cta}` : "",
@@ -254,9 +272,9 @@ export default function SocialAdsClient() {
     if (voiceBlob) {
       const extension = voiceBlob.type.includes("mp4") ? "m4a" : "webm";
       setTimeout(() => downloadBlob(voiceBlob, `${base}-voice.${extension}`), 300);
-      setNotice("Ad package and your exact voice recording downloaded to your device.");
+      setNotice("Written ad package and your exact voice recording downloaded to your device.");
     } else {
-      setNotice("Ad package downloaded. Record your voice first if you want the narration component included.");
+      setNotice("Written ad package downloaded. The photo ad has its own PNG download button below.");
     }
   }
 
@@ -270,7 +288,19 @@ export default function SocialAdsClient() {
       const response = await fetch("/api/owner/social-ads/email", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
-        body: JSON.stringify({ merchant: selectedProduct.merchant, product: selectedProduct.title, platform, affiliateUrl: selectedProduct.affiliate_url || "", subscriptionUrl, headline: result.headline || "", primaryCopy: result.primaryCopy || "", cta: result.cta || "", salesLine: result.salesLine || "", hashtags: result.hashtags || [], complianceNotes: result.complianceNotes || [] }),
+        body: JSON.stringify({
+          merchant: selectedProduct.merchant,
+          product: selectedProduct.title,
+          platform,
+          affiliateUrl: selectedProduct.affiliate_url || "",
+          subscriptionUrl,
+          headline: result.headline || "",
+          primaryCopy: result.primaryCopy || "",
+          cta: result.cta || "",
+          salesLine: result.salesLine || "",
+          hashtags: result.hashtags || [],
+          complianceNotes: result.complianceNotes || [],
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "The ad could not be emailed.");
@@ -295,21 +325,45 @@ export default function SocialAdsClient() {
         <div style={{ border: "1px solid rgba(255,215,111,.25)", borderRadius: 14, padding: 13, background: "rgba(255,215,111,.05)" }}><strong style={{ color: "#ffd76f" }}>Tracked OpenAI ad budget: ${trackedRemaining.toFixed(4)} left of ${DEFAULT_AD_BUDGET_USD.toFixed(2)}</strong><div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>This is the console’s tracked ad-generation budget on this device, not OpenAI’s authoritative account balance.</div></div>
         <label style={labelStyle}>Find a product<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search product, brand, or category" style={fieldStyle} /></label>
         {catalogLoading ? <div style={{ color: "#71dcff" }}>Loading your published affiliate catalog…</div> : null}
+        {!catalogLoading && !products.length ? <div style={{ color: "#ffcf70" }}>No published affiliate products were found.</div> : null}
         {!catalogLoading && filteredProducts.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 10, maxHeight: 430, overflowY: "auto" }}>
-          {filteredProducts.map((item) => <button key={item.id} type="button" onClick={() => selectProduct(item)} style={{ textAlign: "left", border: item.id === selectedId ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.11)", borderRadius: 14, padding: 10, background: item.id === selectedId ? "rgba(113,220,255,.10)" : "rgba(255,255,255,.03)", color: "#eef8ff", cursor: "pointer" }}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 120, objectFit: "contain", borderRadius: 10, background: "rgba(255,255,255,.04)", marginBottom: 9 }} /> : null}<div style={{ color: "#71dcff", fontSize: 12, fontWeight: 800 }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 800 }}>{item.title}</div>{item.category ? <div style={{ marginTop: 5, color: "#9fb5c5", fontSize: 12 }}>{item.category}</div> : null}</button>)}
+          {filteredProducts.map((item) => <button key={item.id} type="button" onClick={() => selectProduct(item)} style={{ textAlign: "left", border: item.id === selectedId ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.11)", borderRadius: 14, padding: 10, background: item.id === selectedId ? "rgba(113,220,255,.10)" : "rgba(255,255,255,.03)", color: "#eef8ff", cursor: "pointer" }}>
+            {item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 120, objectFit: "contain", borderRadius: 10, background: "rgba(255,255,255,.04)", marginBottom: 9 }} /> : null}
+            <div style={{ color: "#71dcff", fontSize: 12, fontWeight: 800 }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 800 }}>{item.title}</div>{item.category ? <div style={{ marginTop: 5, color: "#9fb5c5", fontSize: 12 }}>{item.category}</div> : null}
+          </button>)}
         </div> : null}
       </div>
     </section>
 
-    <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 16, background: "rgba(255,255,255,.025)" }}><div style={{ display: "grid", gap: 12 }}><h2 style={{ margin: 0 }}>Create the ad</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}><div style={labelStyle}>Platform<button type="button" disabled={!selectedProduct} onClick={() => setPlatformPickerOpen(true)} style={{ ...fieldStyle, textAlign: "left", cursor: selectedProduct ? "pointer" : "not-allowed" }}>{platform || (selectedProduct ? "Choose platform" : "Pick a product first")}</button></div><label style={labelStyle}>Goal<input value={objective} onChange={(event) => setObjective(event.target.value)} style={fieldStyle} /></label></div><label style={labelStyle}>Optional direction<textarea value={creativeNotes} onChange={(event) => setCreativeNotes(event.target.value)} rows={3} placeholder="Optional: emphasize a feature, say LINK IN BIO, make it energetic, etc." style={{ ...fieldStyle, resize: "vertical" }} /></label><button type="button" disabled={!canGenerate} onClick={generate} style={{ border: 0, borderRadius: 12, padding: "13px 16px", fontWeight: 900, cursor: canGenerate ? "pointer" : "not-allowed", background: canGenerate ? "#71dcff" : "#314653", color: "#031019", fontSize: 16 }}>{loading ? "AI is building your ad…" : !selectedProduct ? "Pick a product first" : !platform ? "Choose a platform" : `Generate ${platform} Ad`}</button>{error ? <div style={{ color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}{notice ? <div style={{ color: "#8ff0b8", fontSize: 13 }}>{notice}</div> : null}</div></section>
+    <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 16, padding: 16, background: "rgba(255,255,255,.025)" }}>
+      <div style={{ display: "grid", gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Create the ad</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+          <div style={labelStyle}>Platform<button type="button" disabled={!selectedProduct} onClick={() => setPlatformPickerOpen(true)} style={{ ...fieldStyle, textAlign: "left", cursor: selectedProduct ? "pointer" : "not-allowed" }}>{platform || (selectedProduct ? "Choose platform" : "Pick a product first")}</button></div>
+          <label style={labelStyle}>Goal<input value={objective} onChange={(event) => setObjective(event.target.value)} style={fieldStyle} /></label>
+        </div>
+        <label style={labelStyle}>Optional direction<textarea value={creativeNotes} onChange={(event) => setCreativeNotes(event.target.value)} rows={3} placeholder="Optional: emphasize a feature, say LINK IN BIO, make it energetic, etc." style={{ ...fieldStyle, resize: "vertical" }} /></label>
+        <button type="button" disabled={!canGenerate} onClick={generate} style={{ border: 0, borderRadius: 12, padding: "13px 16px", fontWeight: 900, cursor: canGenerate ? "pointer" : "not-allowed", background: canGenerate ? "#71dcff" : "#314653", color: "#031019", fontSize: 16 }}>{loading ? "AI is building your ad…" : !selectedProduct ? "Pick a product first" : !platform ? "Choose a platform" : `Generate ${platform} Ad`}</button>
+        {error ? <div style={{ color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}{notice ? <div style={{ color: "#8ff0b8", fontSize: 13 }}>{notice}</div> : null}
+      </div>
+    </section>
 
     {result && selectedProduct ? <section style={{ display: "grid", gap: 12 }}>
       {result.apiUsage ? <div style={{ border: "1px solid rgba(143,240,184,.28)", borderRadius: 14, padding: 14, background: "rgba(143,240,184,.06)" }}><strong style={{ color: "#8ff0b8" }}>OpenAI usage for this ad</strong><div style={{ marginTop: 7, color: "#dbe9f1" }}>Model: {result.apiUsage.model || "unknown"} · Input: {result.apiUsage.inputTokens || 0} tokens · Output: {result.apiUsage.outputTokens || 0} tokens</div><div style={{ marginTop: 5, fontWeight: 900 }}>Estimated copy cost: {result.apiUsage.estimatedCostUsd != null ? `$${result.apiUsage.estimatedCostUsd.toFixed(6)}` : "pricing unavailable"}</div><div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>Tracked ad budget remaining: ${trackedRemaining.toFixed(4)} of ${DEFAULT_AD_BUDGET_USD.toFixed(2)}</div></div> : null}
 
+      <PhotoAdComposer
+        product={selectedProduct}
+        platform={platform}
+        headline={result.headline || selectedProduct.title}
+        cta={result.cta || "Learn more through WASCIK Affiliate Services"}
+        creativeNotes={creativeNotes}
+        onImageCost={addTrackedCost}
+      />
+
       {result.salesLine ? <div style={{ border: "1px solid rgba(255,215,111,.3)", borderRadius: 14, padding: 14, background: "rgba(255,215,111,.05)" }}><strong style={{ color: "#ffd76f" }}>Your sales line — read this in your voice</strong><div style={{ marginTop: 9, fontSize: 18, lineHeight: 1.55, color: "#f4f8fb" }}>{result.salesLine}</div><div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>{!recording ? <button type="button" onClick={() => void startRecording()} style={actionButton}>{voiceBlob ? "Record Again" : "Record My Voice"}</button> : <button type="button" onClick={stopRecording} style={{ ...actionButton, borderColor: "rgba(255,120,120,.5)", color: "#ffaaaa" }}>Stop Recording</button>}<button type="button" onClick={() => void copyText(result.salesLine || "")} style={actionButton}>Copy Sales Line</button></div>{recording ? <div style={{ marginTop: 10, color: "#ffaaaa", fontWeight: 850 }}>● Recording your microphone…</div> : null}{voiceUrl ? <div style={{ marginTop: 12 }}><audio controls src={voiceUrl} style={{ width: "100%" }} /><div style={{ marginTop: 7, color: "#8ff0b8", fontSize: 12 }}>This is your exact recording—no AI voice generation.</div></div> : null}</div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10 }}><button type="button" onClick={downloadAd} style={actionButton}>Download Ad to Phone</button><button type="button" disabled={emailing} onClick={() => void emailAd()} style={{ ...actionButton, opacity: emailing ? .6 : 1 }}>{emailing ? "Emailing…" : "Email Ad"}</button></div>
-      <div style={{ color: "#91a8b7", fontSize: 12, lineHeight: 1.5 }}>Until photo-ad generation is connected, Download saves the written package plus your recorded audio as separate ad components. When the generated picture is available, the same recording will be merged with that still image into one narrated video download.</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10 }}><button type="button" onClick={downloadAd} style={actionButton}>Download Written Ad</button><button type="button" disabled={emailing} onClick={() => void emailAd()} style={{ ...actionButton, opacity: emailing ? .6 : 1 }}>{emailing ? "Emailing…" : "Email Ad"}</button></div>
+      <div style={{ color: "#91a8b7", fontSize: 12, lineHeight: 1.5 }}>The photo generator above downloads the finished picture as PNG. Your microphone recording remains your real voice and carries no AI voice-generation charge. Video assembly remains reserved for a future premium module.</div>
       {subscriptionUrl ? <div style={{ border: "1px solid rgba(143,240,184,.25)", borderRadius: 14, padding: 14, background: "rgba(143,240,184,.05)" }}><strong style={{ color: "#8ff0b8" }}>Email subscription link for this ad</strong><div style={{ marginTop: 8, wordBreak: "break-all", color: "#dbe9f1", fontSize: 13 }}>{subscriptionUrl}</div><button type="button" onClick={() => void copyText(subscriptionUrl)} style={{ ...actionButton, marginTop: 10 }}>Copy Subscribe Link</button></div> : null}
       {[{ label: "Primary copy", value: result.primaryCopy }, { label: "Headline", value: result.headline }, { label: "CTA", value: result.cta }].filter((item) => item.value).map((item) => <div key={item.label} style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.03)" }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><strong>{item.label}</strong><button type="button" onClick={() => void copyText(item.value || "")} style={{ ...actionButton, padding: "6px 10px" }}>Copy</button></div><div style={{ marginTop: 9, whiteSpace: "pre-wrap", color: "#dbe9f1", lineHeight: 1.6 }}>{item.value}</div></div>)}
       {result.hashtags?.length ? <div style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 14, padding: 14, background: "rgba(255,255,255,.03)" }}><strong>Hashtags</strong><div style={{ marginTop: 8, color: "#71dcff" }}>{result.hashtags.join(" ")}</div></div> : null}

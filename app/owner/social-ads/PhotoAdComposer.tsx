@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 
 const SESSION_KEY = "wascik-owner-console-key";
 
@@ -55,6 +56,13 @@ function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, width
   const drawWidth = image.naturalWidth * scale;
   const drawHeight = image.naturalHeight * scale;
   ctx.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+}
+
+function drawCoverInRect(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
 }
 
 function drawContain(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
@@ -166,9 +174,7 @@ export default function PhotoAdComposer({ product, platform, headline, cta, crea
           ctx.save();
           roundedRect(ctx, ownerX, ownerY, ownerW, ownerH, 32);
           ctx.clip();
-          drawCover(ctx, ownerImage, ownerW, ownerH);
-          const ownerCanvas = ctx.getImageData(0, 0, 1, 1);
-          void ownerCanvas;
+          drawCoverInRect(ctx, ownerImage, ownerX, ownerY, ownerW, ownerH);
           ctx.restore();
           ctx.strokeStyle = "rgba(255,215,111,.9)";
           ctx.lineWidth = 5;

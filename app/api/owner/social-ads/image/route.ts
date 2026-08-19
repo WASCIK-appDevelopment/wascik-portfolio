@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../../lib/ai/openaiConfig";
+import { recordOpenAIUsage } from "../../../../../lib/ai/openaiUsageLedger";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const DEFAULT_IMAGE_MODEL = "gpt-image-1-mini";
@@ -100,13 +101,7 @@ export async function POST(request: Request) {
       Authorization: `Bearer ${openAI.apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      prompt,
-      size,
-      quality,
-      n: 1,
-    }),
+    body: JSON.stringify({ model, prompt, size, quality, n: 1 }),
   });
 
   const payload = (await response.json().catch(() => ({}))) as ImageApiPayload;
@@ -120,6 +115,14 @@ export async function POST(request: Request) {
 
   const imageDataUrl = image.b64_json ? `data:image/png;base64,${image.b64_json}` : image.url || "";
   const estimatedCostUsd = model === DEFAULT_IMAGE_MODEL ? IMAGE_COST_USD[quality][size] : null;
+
+  await recordOpenAIUsage({
+    feature: "ads",
+    route: "/api/owner/social-ads/image",
+    model,
+    estimatedCostUsd,
+    metadata: { merchant, product, platform, quality, layout, size, style },
+  });
 
   return NextResponse.json({
     imageDataUrl,

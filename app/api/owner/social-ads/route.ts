@@ -49,29 +49,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "OpenAI is not configured." }, { status: 503 });
   }
 
+  const isFirstPartyWascik = merchant.toLowerCase() === "wascik app development";
+  const isFutureOffer = isFirstPartyWascik && /owner console/i.test(product);
+
   const instructions = [
     "You are the private WASCIK Social & Advertising drafting assistant.",
-    "Create accurate affiliate promotional copy using only the owner-supplied facts.",
+    isFirstPartyWascik
+      ? "Create accurate first-party promotional copy for a WASCIK App Development service using only the supplied facts. This is WASCIK's own service, not an affiliate product."
+      : "Create accurate affiliate promotional copy using only the owner-supplied facts.",
     "Do not invent prices, discounts, specifications, availability, warranties, medical claims, customer results, or personal use claims.",
-    "Never say WASCIK personally uses or endorses a product unless the owner explicitly supplied that fact.",
-    "Preserve affiliate compliance: make the commercial relationship clear and do not disguise the destination or tracking link.",
+    isFirstPartyWascik
+      ? "Do not use affiliate-disclosure language, commission language, or call the destination an affiliate link. Direct people to WASCIK itself for the service."
+      : "Never say WASCIK personally uses or endorses a product unless the owner explicitly supplied that fact.",
+    !isFirstPartyWascik ? "Preserve affiliate compliance: make the commercial relationship clear and do not disguise the destination or tracking link." : "",
+    isFutureOffer ? "The AI Owner Console is a future/internal WASCIK offer. Do not state or imply that it is currently available for purchase, subscription, or public signup unless the owner explicitly supplied launch-ready facts in the notes." : "",
     "If the notes contain uncertain claims, omit them rather than strengthening them.",
     "Return concise content suitable for the named platform.",
-    "EVERY generated ad must include a clear final invitation to subscribe for future WASCIK Affiliate Services email deals, product updates, and recommendations. Do not imply the person is subscribed until they actively submit their email.",
-    "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page.",
-    "Also write one short first-person SALES LINE for Michael to read aloud in his own voice. It should sound natural when spoken, sell the product without exaggeration, and normally fit in about 8 to 20 seconds. Do not claim Michael personally owns, uses, tested, or recommends the product unless that fact was explicitly supplied.",
+    isFirstPartyWascik
+      ? "For first-party WASCIK service ads, use a direct business CTA such as visiting WASCIK, learning more, requesting information, or starting a project when supported by the supplied facts."
+      : "EVERY generated affiliate ad must include a clear final invitation to subscribe for future WASCIK Affiliate Services email deals, product updates, and recommendations. Do not imply the person is subscribed until they actively submit their email.",
+    !isFirstPartyWascik ? "The subscription invitation should fit naturally into primaryCopy and should direct interested people to subscribe through WASCIK Affiliate Services or the relevant WASCIK affiliate brand page." : "",
+    "Also write one short first-person SALES LINE for Michael to read aloud in his own voice. It should sound natural when spoken, promote the selected product or service without exaggeration, and normally fit in about 8 to 20 seconds.",
+    !isFirstPartyWascik ? "Do not claim Michael personally owns, uses, tested, or recommends the product unless that fact was explicitly supplied." : "For a WASCIK first-party service, Michael may speak as the business owner using 'we' or 'WASCIK' but do not invent personal achievements, client results, or guarantees.",
     "OUTPUT FORMAT IS STRICT JSON ONLY with this shape: {\"primaryCopy\":\"...\",\"headline\":\"...\",\"cta\":\"...\",\"salesLine\":\"...\",\"hashtags\":[\"...\"],\"complianceNotes\":[\"...\"]}.",
-    "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
+    isFirstPartyWascik
+      ? "The CTA should promote the WASCIK service directly and should not mention affiliate links."
+      : "The CTA should normally direct people to the supplied affiliate link or to the link in bio when that fits the platform; the email-subscription invitation is an additional opt-in invitation, not a replacement for the product CTA.",
     "Keep hashtags relevant and restrained. Avoid spammy tag stuffing.",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   const input = {
     platform,
-    merchant,
-    product,
-    affiliateUrl: affiliateUrl || "not supplied",
-    objective: objective || "Drive qualified product interest and affiliate clicks",
-    notes: notes || "No additional product claims supplied",
+    brand: merchant,
+    productOrService: product,
+    destinationUrl: affiliateUrl || "not supplied",
+    offerType: isFirstPartyWascik ? (isFutureOffer ? "WASCIK first-party future offer" : "WASCIK first-party service") : "affiliate product",
+    objective: objective || (isFirstPartyWascik ? "Drive qualified interest in the selected WASCIK service" : "Drive qualified product interest and affiliate clicks"),
+    notes: notes || "No additional claims supplied",
   };
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -110,10 +124,11 @@ export async function POST(request: Request) {
       inputTokens: data.usage?.input_tokens || 0,
       outputTokens: data.usage?.output_tokens || 0,
       estimatedCostUsd: cost,
-      metadata: { platform, merchant, product },
+      metadata: { platform, merchant, product, offerType: isFirstPartyWascik ? "first-party" : "affiliate" },
     });
     return NextResponse.json({
       ...parsed,
+      offerType: isFirstPartyWascik ? "first-party" : "affiliate",
       apiUsage: {
         model: openAI.model,
         inputTokens: data.usage?.input_tokens || 0,

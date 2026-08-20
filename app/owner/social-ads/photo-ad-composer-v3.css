@@ -1,0 +1,95 @@
+.photoAdV3,
+.photoAdV3 * {
+  box-sizing: border-box;
+}
+
+.photoAdV3 {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.photoAdV3__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  gap: 9px;
+  min-width: 0;
+}
+
+.photoAdV3__directionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(155px, 100%), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.photoAdV3__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.photoAdV3__libraryTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  gap: 8px;
+  align-items: center;
+}
+
+.photoAdV3 button,
+.photoAdV3 input,
+.photoAdV3 select,
+.photoAdV3 textarea,
+.photoAdV3 label,
+.photoAdV3 div,
+.photoAdV3 section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.photoAdV3 button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.photoAdV3 canvas,
+.photoAdV3 img {
+  display: block;
+  max-width: 100%;
+}
+
+.photoAdV3__canvasWrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.photoAdV3__canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+@media (max-width: 560px) {
+  .photoAdV3 {
+    padding: 12px !important;
+  }
+
+  .photoAdV3__grid,
+  .photoAdV3__directionGrid,
+  .photoAdV3__actions,
+  .photoAdV3__libraryTop {
+    grid-template-columns: 1fr;
+  }
+
+  .photoAdV3 button,
+  .photoAdV3 select,
+  .photoAdV3 input,
+  .photoAdV3 textarea {
+    width: 100% !important;
+  }
+}

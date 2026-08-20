@@ -24,6 +24,8 @@ type Layout = "square" | "portrait" | "story";
 type Style = "clean-product" | "social" | "reel-cover" | "flyer";
 type CreativeMode = "product" | "composite" | "lifestyle";
 type Refinement = "balanced" | "premium" | "bold" | "minimal" | "lifestyle";
+type IdentityLock = "strong" | "medium" | "flexible";
+type HeroPriority = "product" | "shared" | "owner";
 type SavedPhoto = { id: string; label: string; category: string; url: string };
 type ImageResult = { imageDataUrl?: string; model?: string; estimatedCostUsd?: number | null; error?: string };
 type EditResult = ImageResult & { productReferenceIncluded?: boolean };
@@ -37,7 +39,8 @@ const dims: Record<Layout, { width: number; height: number; label: string }> = {
 const categories = ["General", "Business", "Welding", "Gaming", "Hunting", "Poolside", "Fashion", "Wellness / RevoMatic"];
 const gazes = ["Look at viewer", "Look at product", "Look at screen / workspace", "Look off to the side", "Preserve original"];
 const expressions = ["Friendly", "Confident", "Focused", "Serious", "Energetic", "Preserve original"];
-const interactions = ["Preserve original pose", "Hold the product in my hand", "Put the tool in my hand", "Show me using the product", "Show me wearing the product", "Sit on / use the product naturally", "Stand beside the product", "Product displayed next to me"];
+const interactions = ["Preserve original pose", "Hold the product clearly in my hand", "Put the tool in my hand", "Show me using the product", "Show me wearing the product", "Sit on / use the product naturally", "Stand beside the product", "Product featured prominently in foreground", "Product displayed next to me"];
+const genericCtas = new Set(["learn more", "see details", "view catalog", "explore", "explore now", "shop", "shop now", "view details"]);
 
 function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -61,6 +64,12 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, max: number) {
   if (line) lines.push(line); return lines;
 }
 function compact(text: string, max: number) { const s = text.trim().replace(/\s+/g, " "); return s.length <= max ? s : `${s.slice(0, max - 1).trimEnd()}…`; }
+function platformAwareCta(platform: string, visualCta: string, cta: string) {
+  const candidate = compact(visualCta || (cta.length < 28 ? cta : ""), 24).trim();
+  const socialBioPlatform = /instagram|tiktok|threads/i.test(platform);
+  if (!candidate || genericCtas.has(candidate.toLowerCase())) return socialBioPlatform ? "LINK IN BIO" : "SEE DETAILS";
+  return candidate.toUpperCase();
+}
 
 export default function PhotoAdComposerV3({ product, platform, headline, cta, visualHook = "", visualSupportLine = "", visualCta = "", creativeNotes = "", onImageCost }: Props) {
   const profile = useMemo(() => resolveCreativeProfile(product.merchant, product.category || "", product.title), [product.merchant, product.category, product.title]);
@@ -69,6 +78,8 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   const [style, setStyle] = useState<Style>("clean-product");
   const [creativeMode, setCreativeMode] = useState<CreativeMode>(profile.defaultMode);
   const [refinement, setRefinement] = useState<Refinement>("premium");
+  const [identityLock, setIdentityLock] = useState<IdentityLock>("strong");
+  const [heroPriority, setHeroPriority] = useState<HeroPriority>("shared");
   const [background, setBackground] = useState("");
   const [ownerUrl, setOwnerUrl] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -78,8 +89,8 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [gaze, setGaze] = useState("Look at viewer");
-  const [expression, setExpression] = useState("Friendly");
+  const [gaze, setGaze] = useState("Preserve original");
+  const [expression, setExpression] = useState("Preserve original");
   const [interaction, setInteraction] = useState("Preserve original pose");
   const [directions, setDirections] = useState("");
   const [model, setModel] = useState("");
@@ -92,7 +103,7 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   const heroOwner = editedOwnerUrl || ownerUrl;
   const hook = compact(visualHook || headline || product.title, 58);
   const support = compact(visualSupportLine || "", 84);
-  const button = compact(visualCta || (cta.length < 28 ? cta : "Learn More"), 24);
+  const button = platformAwareCta(platform, visualCta, cta);
   const key = () => sessionStorage.getItem(SESSION_KEY) || "";
 
   useEffect(() => { void loadLibrary(); }, []);
@@ -124,10 +135,13 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
     const response = await fetch("/api/owner/social-ads/owner-edit", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-wascik-owner-key": key() },
-      body: JSON.stringify({ ownerPhotoUrl: ownerUrl, productImageUrl: product.image_url || "", merchant: product.merchant, product: product.title, category: product.category || "", gaze, expression, interaction, directions, creativeMode, refinement, quality: quality === "high" ? "medium" : "low", layout }),
+      body: JSON.stringify({ ownerPhotoUrl: ownerUrl, productImageUrl: product.image_url || "", merchant: product.merchant, product: product.title, category: product.category || "", gaze, expression, interaction, directions, creativeMode, refinement, identityLock, heroPriority, quality: quality === "high" ? "medium" : "low", layout }),
     });
     const data = await response.json().catch(() => ({})) as EditResult;
     if (!response.ok || !data.imageDataUrl) throw new Error(data.error || "The owner/product image could not be intelligently integrated.");
+    if (product.image_url && heroPriority !== "owner" && !data.productReferenceIncluded) {
+      throw new Error("The exact product image was not included in the AI integration. The ad was stopped instead of generating without the selected product.");
+    }
     setEditedOwnerUrl(data.imageDataUrl);
     const cost = typeof data.estimatedCostUsd === "number" ? data.estimatedCostUsd : null; setEditCost(cost); if (cost && onImageCost) onImageCost(cost);
     return { url: data.imageDataUrl, productReferenceIncluded: Boolean(data.productReferenceIncluded) };
@@ -135,16 +149,16 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
 
   function addCopyOverlay(ctx: CanvasRenderingContext2D, width: number, height: number) {
     const margin = Math.round(width * .065); const top = Math.round(height * .052); const textWidth = width - margin * 2;
-    const topShade = ctx.createLinearGradient(0, 0, 0, height * .38); topShade.addColorStop(0, "rgba(0,0,0,.78)"); topShade.addColorStop(.55, "rgba(0,0,0,.42)"); topShade.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = topShade; ctx.fillRect(0, 0, width, height * .40);
-    const bottomShade = ctx.createLinearGradient(0, height * .68, 0, height); bottomShade.addColorStop(0, "rgba(0,0,0,0)"); bottomShade.addColorStop(.50, "rgba(0,0,0,.44)"); bottomShade.addColorStop(1, "rgba(0,0,0,.78)"); ctx.fillStyle = bottomShade; ctx.fillRect(0, height * .66, width, height * .34);
+    const topShade = ctx.createLinearGradient(0, 0, 0, height * .38); topShade.addColorStop(0, "rgba(0,0,0,.82)"); topShade.addColorStop(.55, "rgba(0,0,0,.42)"); topShade.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = topShade; ctx.fillRect(0, 0, width, height * .40);
+    const bottomShade = ctx.createLinearGradient(0, height * .68, 0, height); bottomShade.addColorStop(0, "rgba(0,0,0,0)"); bottomShade.addColorStop(.50, "rgba(0,0,0,.46)"); bottomShade.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = bottomShade; ctx.fillRect(0, height * .66, width, height * .34);
     ctx.textAlign = "left"; ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = `800 ${Math.round(width * .020)}px system-ui,sans-serif`; ctx.fillText(product.merchant.toUpperCase().slice(0, 40), margin, top);
     let headlineSize = Math.round(width * (layout === "story" ? .055 : .050)); ctx.font = `900 ${headlineSize}px system-ui,sans-serif`; let hookLines = wrap(ctx, hook, textWidth);
     while (hookLines.length > 2 && headlineSize > Math.round(width * .040)) { headlineSize -= 3; ctx.font = `900 ${headlineSize}px system-ui,sans-serif`; hookLines = wrap(ctx, hook, textWidth); }
     hookLines = hookLines.slice(0, 2); const hookGap = Math.round(headlineSize * 1.05); const hookY = top + Math.round(width * .067); ctx.fillStyle = "#fff"; hookLines.forEach((line, i) => ctx.fillText(line, margin, hookY + i * hookGap));
-    if (support) { ctx.fillStyle = "rgba(255,255,255,.86)"; ctx.font = `600 ${Math.round(width * .022)}px system-ui,sans-serif`; const supportLines = wrap(ctx, support, textWidth).slice(0, 2); const supportY = hookY + hookLines.length * hookGap + Math.round(width * .018); supportLines.forEach((line, i) => ctx.fillText(line, margin, supportY + i * Math.round(width * .030))); }
-    const ctaW = width - margin * 2; const ctaH = Math.round(height * .058); const ctaY = Math.round(height * .835); ctx.fillStyle = "rgba(0,0,0,.70)"; roundRect(ctx, margin, ctaY, ctaW, ctaH, Math.round(ctaH * .18)); ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `900 ${Math.round(width * .026)}px system-ui,sans-serif`; ctx.fillText(button, width / 2, ctaY + Math.round(ctaH * .66));
-    ctx.fillStyle = "rgba(255,255,255,.60)"; ctx.font = `700 ${Math.round(width * .014)}px system-ui,sans-serif`; ctx.fillText(product.merchant === "WASCIK App Development" ? "WASCIK App Development" : "WASCIK Affiliate Services", width / 2, height - Math.round(height * .020));
+    if (support) { ctx.fillStyle = "rgba(255,255,255,.90)"; ctx.font = `600 ${Math.round(width * .022)}px system-ui,sans-serif`; const supportLines = wrap(ctx, support, textWidth).slice(0, 2); const supportY = hookY + hookLines.length * hookGap + Math.round(width * .018); supportLines.forEach((line, i) => ctx.fillText(line, margin, supportY + i * Math.round(width * .030))); }
+    const ctaW = width - margin * 2; const ctaH = Math.round(height * .060); const ctaY = Math.round(height * .835); ctx.fillStyle = "rgba(0,0,0,.78)"; roundRect(ctx, margin, ctaY, ctaW, ctaH, Math.round(ctaH * .14)); ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `900 ${Math.round(width * .028)}px system-ui,sans-serif`; ctx.fillText(button, width / 2, ctaY + Math.round(ctaH * .66));
+    ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.font = `700 ${Math.round(width * .014)}px system-ui,sans-serif`; ctx.fillText(product.merchant === "WASCIK App Development" ? "WASCIK App Development" : "WASCIK Affiliate Services", width / 2, height - Math.round(height * .020));
   }
 
   async function compose(bgUrl: string, editedScene: EditedScene | null) {
@@ -155,8 +169,8 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
     } else {
       const bg = await loadImage(bgUrl); cover(ctx, bg, 0, 0, width, height);
       if (product.image_url) {
-        const productImage = await loadImage(product.image_url); const safeTop = Math.round(height * .27); const safeBottom = Math.round(height * .79); const boxW = Math.round(width * .72); const boxH = safeBottom - safeTop; const boxX = Math.round((width - boxW) / 2);
-        ctx.save(); ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = Math.round(width * .025); ctx.fillStyle = "rgba(255,255,255,.08)"; roundRect(ctx, boxX, safeTop, boxW, boxH, Math.round(width * .025)); ctx.fill(); ctx.restore(); contain(ctx, productImage, boxX + 28, safeTop + 28, boxW - 56, boxH - 56);
+        const productImage = await loadImage(product.image_url); const safeTop = Math.round(height * .25); const safeBottom = Math.round(height * .79); const boxW = heroPriority === "product" ? Math.round(width * .84) : Math.round(width * .72); const boxH = safeBottom - safeTop; const boxX = Math.round((width - boxW) / 2);
+        ctx.save(); ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = Math.round(width * .025); ctx.fillStyle = "rgba(255,255,255,.08)"; roundRect(ctx, boxX, safeTop, boxW, boxH, Math.round(width * .025)); ctx.fill(); ctx.restore(); contain(ctx, productImage, boxX + 24, safeTop + 24, boxW - 48, boxH - 48);
       }
     }
     addCopyOverlay(ctx, width, height);
@@ -166,10 +180,10 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
     if (busy) return; setBusy(true); setError(""); setNotice("Building one cohesive intelligent ad scene…");
     try {
       const editedScene = ownerUrl && creativeMode !== "product" ? await editOwnerIfNeeded() : null;
-      const response = await fetch("/api/owner/social-ads/image", { method: "POST", headers: { "Content-Type": "application/json", "x-wascik-owner-key": key() }, body: JSON.stringify({ merchant: product.merchant, product: product.title, category: product.category || "", platform, headline: hook, creativeNotes: [creativeNotes, support ? `Visual support: ${support}` : "", `CTA: ${button}`].filter(Boolean).join("\n"), quality, layout, style, creativeMode, refinement }) });
+      const response = await fetch("/api/owner/social-ads/image", { method: "POST", headers: { "Content-Type": "application/json", "x-wascik-owner-key": key() }, body: JSON.stringify({ merchant: product.merchant, product: product.title, category: product.category || "", platform, headline: hook, creativeNotes: [creativeNotes, support ? `Visual support: ${support}` : "", `CTA: ${button}`, `Hero priority: ${heroPriority}`].filter(Boolean).join("\n"), quality, layout, style, creativeMode, refinement }) });
       const data = await response.json().catch(() => ({})) as ImageResult; if (!response.ok || !data.imageDataUrl) throw new Error(data.error || "The ad environment could not be generated.");
       setBackground(data.imageDataUrl); setModel(data.model || ""); const cost = typeof data.estimatedCostUsd === "number" ? data.estimatedCostUsd : null; setBackgroundCost(cost); if (cost && onImageCost) onImageCost(cost);
-      await compose(data.imageDataUrl, editedScene); setNotice(`Ad ready · ${profile.label} · full-scene ${creativeMode === "lifestyle" ? "lifestyle integration" : creativeMode === "composite" ? "owner + product composition" : "product campaign"}.`);
+      await compose(data.imageDataUrl, editedScene); setNotice(`Ad ready · ${profile.label} · ${identityLock} identity lock · ${heroPriority} hero priority.`);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "The intelligent ad could not be generated."); }
     finally { setBusy(false); }
   }
@@ -189,13 +203,14 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   return <section className="photoAdV3" style={{ display: "grid", gap: 14, border: "1px solid rgba(113,220,255,.22)", borderRadius: 14, padding: 15, background: "rgba(113,220,255,.025)" }}>
     <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 900, letterSpacing: ".1em" }}>INTELLIGENT PHOTO AD · V3</div><h2 style={{ margin: "5px 0 0" }}>Full-scene art director</h2><div style={{ marginTop: 6, color: "#9fb5c5", fontSize: 12 }}>Creative profile: <strong style={{ color: "#dcecf5" }}>{profile.label}</strong> · {profile.mood}</div></div>
     <div className="photoAdV3__grid"><label style={label}>Ad mode<select value={creativeMode} onChange={(e) => { setCreativeMode(e.target.value as CreativeMode); resetEdit(); }} style={field}><option value="product">Product Only</option><option value="composite">Product + Owner</option><option value="lifestyle">Lifestyle Integration</option></select></label><label style={label}>Quality<select value={quality} onChange={(e) => setQuality(e.target.value as Quality)} style={field}><option value="low">Economy</option><option value="medium">Standard</option><option value="high">High</option></select></label><label style={label}>Size<select value={layout} onChange={(e) => setLayout(e.target.value as Layout)} style={field}>{Object.entries(dims).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label><label style={label}>Base style<select value={style} onChange={(e) => setStyle(e.target.value as Style)} style={field}><option value="clean-product">Clean Campaign</option><option value="social">Social</option><option value="reel-cover">Story / Reel</option><option value="flyer">Flyer</option></select></label></div>
+    {creativeMode !== "product" ? <div className="photoAdV3__grid"><label style={label}>Identity Lock<select value={identityLock} onChange={(e) => { setIdentityLock(e.target.value as IdentityLock); resetEdit(); }} style={field}><option value="strong">Strong · preserve me closely</option><option value="medium">Medium</option><option value="flexible">Flexible</option></select></label><label style={label}>Hero Priority<select value={heroPriority} onChange={(e) => { setHeroPriority(e.target.value as HeroPriority); resetEdit(); }} style={field}><option value="product">Product Hero</option><option value="shared">Shared Hero · product + me</option><option value="owner">Owner Hero</option></select></label></div> : null}
     <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><div className="photoAdV3__libraryTop"><strong>My Photos</strong><button type="button" onClick={() => setLibraryOpen((v) => !v)} style={buttonStyle}>{libraryOpen ? "Close Library" : "Choose from My Photos"}</button></div>{ownerUrl ? <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0,1fr)", gap: 10, marginTop: 10, alignItems: "center" }}><img src={heroOwner} alt="Selected owner" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8 }} /><div style={{ minWidth: 0 }}><div style={{ color: "#8ff0b8", fontWeight: 800 }}>Selected for this ad</div><div style={{ fontSize: 11, color: "#9fb5c5", marginTop: 3, overflowWrap: "anywhere" }}>{ownerName}</div><button type="button" onClick={() => { setOwnerUrl(""); setOwnerName(""); resetEdit(); }} style={{ ...buttonStyle, marginTop: 7, color: "#ffaaaa" }}>Remove</button></div></div> : null}{libraryOpen ? <div style={{ marginTop: 10, display: "grid", gap: 9 }}><div className="photoAdV3__libraryTop"><select value={photoCategory} onChange={(e) => setPhotoCategory(e.target.value)} style={field}>{categories.map((c) => <option key={c}>{c}</option>)}</select><label style={{ ...buttonStyle, display: "grid", placeItems: "center" }}>{uploading ? "Uploading…" : "Upload from Phone"}<input type="file" multiple accept="image/*" onChange={upload} style={{ display: "none" }} /></label></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100px,100%),1fr))", gap: 8, maxHeight: 320, overflowY: "auto" }}>{photos.map((p) => <button key={p.id} type="button" onClick={() => selectPhoto(p)} style={{ border: ownerUrl === p.url ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: 5, background: "rgba(255,255,255,.02)", color: "white", textAlign: "left", minWidth: 0 }}><img src={p.url} alt={p.label} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 5 }} /><div style={{ fontSize: 9, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</div></button>)}</div></div> : null}</div>
-    {creativeMode !== "product" ? <div style={{ display: "grid", gap: 9, borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><strong>Owner / Product Direction</strong><div className="photoAdV3__directionGrid"><label style={label}>Gaze<select value={gaze} onChange={(e) => { setGaze(e.target.value); resetEdit(); }} style={field}>{gazes.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Expression<select value={expression} onChange={(e) => { setExpression(e.target.value); resetEdit(); }} style={field}>{expressions.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Interaction<select value={interaction} onChange={(e) => { setInteraction(e.target.value); resetEdit(); }} style={field}>{interactions.map((x) => <option key={x}>{x}</option>)}</select></label></div><label style={label}>Specific directions<textarea value={directions} onChange={(e) => { setDirections(e.target.value); resetEdit(); }} rows={3} placeholder="Example: Seat me naturally in the AquaCurve chair, keep the poolside setting upscale, and make the whole image look like one professional campaign photo." style={{ ...field, resize: "vertical" }} /></label></div> : null}
+    {creativeMode !== "product" ? <div style={{ display: "grid", gap: 9, borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><strong>Owner / Product Direction</strong><div className="photoAdV3__directionGrid"><label style={label}>Gaze<select value={gaze} onChange={(e) => { setGaze(e.target.value); resetEdit(); }} style={field}>{gazes.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Expression<select value={expression} onChange={(e) => { setExpression(e.target.value); resetEdit(); }} style={field}>{expressions.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Interaction<select value={interaction} onChange={(e) => { setInteraction(e.target.value); resetEdit(); }} style={field}>{interactions.map((x) => <option key={x}>{x}</option>)}</select></label></div><label style={label}>Specific directions<textarea value={directions} onChange={(e) => { setDirections(e.target.value); resetEdit(); }} rows={3} placeholder="Example: Preserve me closely. Make the exact product a major hero and place it clearly in my hands or natural use position." style={{ ...field, resize: "vertical" }} /></label></div> : null}
     <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><strong>Creative refinement</strong><div className="photoAdV3__grid" style={{ marginTop: 8 }}>{(["premium", "bold", "minimal", "lifestyle", "balanced"] as Refinement[]).map((x) => <button key={x} type="button" onClick={() => refine(x)} style={{ ...buttonStyle, background: refinement === x ? "rgba(113,220,255,.18)" : buttonStyle.background }}>{x === "premium" ? "More Premium" : x === "bold" ? "More Bold" : x === "minimal" ? "More Minimal" : x === "lifestyle" ? "More Lifestyle" : "Balanced"}</button>)}</div></div>
     <button type="button" disabled={busy || (creativeMode !== "product" && !ownerUrl)} onClick={() => void generate()} style={{ width: "100%", minWidth: 0, border: 0, borderRadius: 8, padding: "14px 16px", fontWeight: 900, background: busy ? "#314653" : "#71dcff", color: "#031019", fontSize: 16, whiteSpace: "normal" }}>{busy ? "AI is art-directing one cohesive scene…" : "Generate Intelligent Photo Ad"}</button>
     {error ? <div style={{ color: "#ff9f9f", fontSize: 12, overflowWrap: "anywhere" }}>{error}</div> : null}{notice ? <div style={{ color: "#8ff0b8", fontSize: 12, overflowWrap: "anywhere" }}>{notice}</div> : null}
     <div className="photoAdV3__canvasWrap"><canvas ref={canvasRef} className="photoAdV3__canvas" style={{ display: background ? "block" : "none" }} /></div>
     {background ? <div className="photoAdV3__actions"><button type="button" onClick={() => void saveImage()} style={buttonStyle}>Save Image to iPhone / Photos</button><button type="button" onClick={() => void generate()} style={buttonStyle}>Regenerate Same Direction</button></div> : null}
-    {(backgroundCost != null || editCost != null) ? <div style={{ fontSize: 11, color: "#9fb5c5", borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 9, overflowWrap: "anywhere" }}>Model: {model || "image model"} · Background: {backgroundCost != null ? `$${backgroundCost.toFixed(3)}` : "—"} · Owner/product edit: {editCost != null ? `$${editCost.toFixed(4)}` : "—"}</div> : null}
+    {(backgroundCost != null || editCost != null) ? <div style={{ fontSize: 11, color: "#9fb5c5", borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 9, overflowWrap: "anywhere" }}>Model: {model || "image model"} · Background: {backgroundCost != null ? `$${backgroundCost.toFixed(3)}` : "—"} · Owner/product edit: {editCost != null ? `$${editCost.toFixed(4)}` : "—"} · Identity: {identityLock} · Hero: {heroPriority}</div> : null}
   </section>;
 }

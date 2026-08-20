@@ -79,6 +79,8 @@ export async function POST(request: Request) {
   const directions = clean(body.directions, 1400);
   const creativeMode = ["product", "composite", "lifestyle"].includes(body.creativeMode) ? body.creativeMode : "composite";
   const refinement = ["balanced", "premium", "bold", "minimal", "lifestyle"].includes(body.refinement) ? body.refinement : "balanced";
+  const identityLock = ["strong", "medium", "flexible"].includes(body.identityLock) ? body.identityLock : "strong";
+  const heroPriority = ["product", "shared", "owner"].includes(body.heroPriority) ? body.heroPriority : "shared";
   const quality = ["low", "medium", "high"].includes(body.quality) ? body.quality : "low";
   const layout = ["square", "portrait", "story"].includes(body.layout) ? body.layout : "portrait";
   if (!ownerPhotoUrl || !merchant || !product) return NextResponse.json({ error: "Select a saved owner photo and product/service first." }, { status: 400 });
@@ -109,22 +111,42 @@ export async function POST(request: Request) {
         ? "Compose for a square social campaign frame with a strong central visual balance."
         : "Compose for a 4:5 portrait social advertisement with editorial vertical balance.";
 
+    const identityDirection = identityLock === "strong"
+      ? "IDENTITY LOCK — STRONG. The FIRST image is the non-negotiable identity source of truth. Preserve the same recognizable person: facial geometry, head shape, baldness/hairline, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions. Do not beautify, age, de-age, masculinize, feminize, slim, bulk up, or redesign the face. If a scene or pose request conflicts with identity fidelity, preserve identity and simplify the scene instead."
+      : identityLock === "medium"
+        ? "IDENTITY LOCK — MEDIUM. Preserve the person's recognizable face, body build, skin tone, facial hair and major distinguishing features while allowing modest pose and expression changes."
+        : "IDENTITY LOCK — FLEXIBLE. Keep the person recognizably based on the first reference while allowing broader art-direction changes.";
+
+    const heroDirection = heroPriority === "product"
+      ? "HERO PRIORITY — PRODUCT. The exact advertised product must be one of the dominant visual subjects, clearly recognizable, prominently sized, unobstructed in its important features, and visually impossible to miss. The owner supports the product rather than overpowering it."
+      : heroPriority === "owner"
+        ? "HERO PRIORITY — OWNER. The owner is the primary visual subject, but the exact product must still be clearly recognizable and intentionally present when a product reference is supplied."
+        : "HERO PRIORITY — SHARED. Treat the owner and exact product as co-heroes. Both must be immediately visible and important at first glance; neither may be reduced to a tiny background detail or incidental prop.";
+
+    const interactionDirection = interaction === "Preserve original pose"
+      ? "POSE LOCK. Preserve the owner's original pose and body orientation as closely as practical. Do not reinterpret 'preserve original' as permission to redesign the person or substitute a different pose. Integrate the product around that preserved person/pose when possible."
+      : interaction
+        ? `PRODUCT INTERACTION — REQUIRED: ${interaction}. This is a primary composition requirement, not an optional suggestion. Make the interaction obvious, physically plausible, and clearly visible. If the instruction says hold/use/wear/sit on the product, visibly show that exact interaction.`
+        : "";
+
     const prompt = [
       "Create one cohesive, photorealistic, campaign-ready advertising scene from the supplied references.",
-      "The FIRST image is the owner/person reference. Preserve recognizable facial identity, bald head, facial hair, skin tone, tattoos, body proportions and overall likeness closely.",
-      productReferenceIncluded ? "The SECOND image is the exact advertised product reference. Preserve its recognizable form, proportions, materials and design. Do not replace it with an invented product." : `Advertising context: ${merchant} — ${product}. Do not invent logos or readable packaging text.`,
+      identityDirection,
+      "The FIRST image is the owner/person reference. Do not replace the person with a similar-looking substitute.",
+      productReferenceIncluded ? "The SECOND image is the exact advertised product reference. Preserve its recognizable form, proportions, materials and design. Do not replace it with an invented or approximate product." : `Advertising context: ${merchant} — ${product}. Do not invent logos or readable packaging text.`,
+      heroDirection,
       `Creative profile: ${profile.label}; mood: ${profile.mood}.`,
       `Ad mode: ${creativeMode}. Refinement: ${refinement}.`,
       formatDirection,
       "IMPORTANT COMPOSITION RULE: make the result look like ONE photograph or one professionally art-directed campaign scene. Never place the owner or product inside a separate rectangular photo, floating card, inset panel, split-screen tile, picture-in-picture frame, phone mockup, or dashboard box.",
       "The person must belong naturally in the environment with consistent perspective, lighting, shadows, scale, depth of field and contact with nearby furniture or products.",
-      creativeMode === "lifestyle" && productReferenceIncluded ? "For lifestyle mode, integrate the owner and exact product into a believable real-world use scene. If the product is furniture, seat or position the person naturally on/with it. If it is wearable or handheld, make the physical interaction convincing." : "",
-      creativeMode === "composite" && productReferenceIncluded ? "For composite mode, use sophisticated editorial depth and overlap, but still make the owner and product feel captured in the same visual world rather than pasted together." : "",
+      creativeMode === "lifestyle" && productReferenceIncluded ? "For lifestyle mode, integrate the owner and exact product into a believable real-world use scene. The product must remain a major campaign subject, not a small incidental background object." : "",
+      creativeMode === "composite" && productReferenceIncluded ? "For composite mode, use sophisticated editorial depth and overlap while keeping both owner and product visually important and clearly recognizable." : "",
       "Reserve approximately the upper 22–28% as visually calm copy-safe space for external headline typography. Keep important faces and product details out of that copy-safe zone unless natural composition requires otherwise.",
       "Reserve the lower 12–15% with enough visual calm for an external CTA bar. Do not draw the CTA yourself.",
-      gaze ? `Gaze: ${gaze}. When 'Look at viewer', direct both eyes naturally toward the camera/viewer.` : "",
-      expression && expression !== "Preserve original" ? `Expression: ${expression}. Make the facial expression visibly match this direction while preserving identity.` : "Preserve the original expression unless another instruction requires a subtle natural change.",
-      interaction && interaction !== "Preserve original pose" ? `Product interaction / pose: ${interaction}. Make the interaction physically convincing.` : "Preserve the original pose only when it still works naturally inside the requested scene.",
+      gaze === "Preserve original" ? "GAZE LOCK. Preserve the original eye direction from the first image." : gaze ? `Gaze: ${gaze}. When 'Look at viewer', direct both eyes naturally toward the camera/viewer while preserving facial identity.` : "",
+      expression === "Preserve original" ? "EXPRESSION LOCK. Preserve the original facial expression from the first image." : expression ? `Expression: ${expression}. Make the expression visibly match this direction without changing the person's identity.` : "",
+      interactionDirection,
       directions ? `Specific owner directions: ${directions}.` : "",
       `Visual environment direction: ${profile.backgroundDirection}.`,
       "Use premium advertising photography, believable materials, natural anatomy and realistic hands. Avoid duplicate people or duplicate products unless explicitly requested.",
@@ -142,8 +164,8 @@ export async function POST(request: Request) {
     if (!image?.b64_json && !image?.url) return NextResponse.json({ error: "The image editor returned no image." }, { status: 502 });
     const imageDataUrl = image.b64_json ? `data:image/png;base64,${image.b64_json}` : image.url || "";
     const estimatedCostUsd = estimateCost(model, payload.usage, quality, size !== "1024x1024");
-    await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0, estimatedCostUsd, metadata: { merchant, product, gaze, expression, interaction, productReferenceIncluded, quality, size, creativeMode, refinement, creativeProfile: profile.key } });
-    return NextResponse.json({ imageDataUrl, model, estimatedCostUsd, productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, mode: "owner-product-cohesive-full-scene-edit" });
+    await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0, estimatedCostUsd, metadata: { merchant, product, gaze, expression, interaction, productReferenceIncluded, quality, size, creativeMode, refinement, identityLock, heroPriority, creativeProfile: profile.key } });
+    return NextResponse.json({ imageDataUrl, model, estimatedCostUsd, productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, identityLock, heroPriority, mode: "owner-product-cohesive-full-scene-edit" });
   } catch (error) {
     console.error("Owner image edit failed", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "The owner photo could not be edited." }, { status: 502 });

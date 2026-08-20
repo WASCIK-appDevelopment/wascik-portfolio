@@ -11,6 +11,7 @@ type EditPayload = {
   usage?: { input_tokens?: number; output_tokens?: number; input_tokens_details?: { image_tokens?: number; text_tokens?: number } };
   error?: { message?: string };
 };
+
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
@@ -76,19 +77,32 @@ export async function POST(request: Request) {
       } catch { productReferenceIncluded = false; }
     }
 
+    const formatDirection = layout === "story"
+      ? "Compose for a tall 9:16 social story frame. Keep the subject and product comfortably inside the frame with breathing room."
+      : layout === "square"
+        ? "Compose for a square social campaign frame with a strong central visual balance."
+        : "Compose for a 4:5 portrait social advertisement with editorial vertical balance.";
+
     const prompt = [
-      "Edit the FIRST supplied image, which is the owner/person reference. Preserve recognizable facial identity, bald head, facial hair, skin tone, tattoos, body proportions and overall likeness closely.",
-      `Advertising creative profile: ${profile.label}; ${profile.mood}.`,
+      "Create one cohesive, photorealistic, campaign-ready advertising scene from the supplied references.",
+      "The FIRST image is the owner/person reference. Preserve recognizable facial identity, bald head, facial hair, skin tone, tattoos, body proportions and overall likeness closely.",
+      productReferenceIncluded ? "The SECOND image is the exact advertised product reference. Preserve its recognizable form, proportions, materials and design. Do not replace it with an invented product." : `Advertising context: ${merchant} — ${product}. Do not invent logos or readable packaging text.`,
+      `Creative profile: ${profile.label}; mood: ${profile.mood}.`,
       `Ad mode: ${creativeMode}. Refinement: ${refinement}.`,
-      productReferenceIncluded ? "The SECOND supplied image is the exact advertised product reference. Preserve its recognizable form and design; do not replace it with an invented product." : `Advertising context: ${merchant} — ${product}. Do not invent logos or readable packaging text.`,
-      creativeMode === "lifestyle" && productReferenceIncluded ? "Integrate the person and exact product into one believable lifestyle scene. Make their physical relationship natural: believable scale, perspective, contact, shadows and body positioning. Do not present them as two pasted images or separate cards." : "",
-      creativeMode === "composite" && productReferenceIncluded ? "Create an art-directed person/product promotional image with sophisticated depth and overlap. It may remain a designed composition, but it must not look like two unrelated thumbnails." : "",
+      formatDirection,
+      "IMPORTANT COMPOSITION RULE: make the result look like ONE photograph or one professionally art-directed campaign scene. Never place the owner or product inside a separate rectangular photo, floating card, inset panel, split-screen tile, picture-in-picture frame, phone mockup, or dashboard box.",
+      "The person must belong naturally in the environment with consistent perspective, lighting, shadows, scale, depth of field and contact with nearby furniture or products.",
+      creativeMode === "lifestyle" && productReferenceIncluded ? "For lifestyle mode, integrate the owner and exact product into a believable real-world use scene. If the product is furniture, seat or position the person naturally on/with it. If it is wearable or handheld, make the physical interaction convincing." : "",
+      creativeMode === "composite" && productReferenceIncluded ? "For composite mode, use sophisticated editorial depth and overlap, but still make the owner and product feel captured in the same visual world rather than pasted together." : "",
+      "Reserve approximately the upper 22–28% as visually calm copy-safe space for external headline typography. Keep important faces and product details out of that copy-safe zone unless natural composition requires otherwise.",
+      "Reserve the lower 12–15% with enough visual calm for an external CTA bar. Do not draw the CTA yourself.",
       gaze ? `Gaze: ${gaze}. When 'Look at viewer', direct both eyes naturally toward the camera/viewer.` : "",
-      expression && expression !== "Preserve original" ? `Expression: ${expression}. Make the facial expression visibly match this direction while preserving identity.` : "Preserve the original expression unless another instruction requires a small natural change.",
-      interaction && interaction !== "Preserve original pose" ? `Product interaction / pose: ${interaction}. Make the interaction physically convincing.` : "Preserve the original pose unless directed otherwise.",
+      expression && expression !== "Preserve original" ? `Expression: ${expression}. Make the facial expression visibly match this direction while preserving identity.` : "Preserve the original expression unless another instruction requires a subtle natural change.",
+      interaction && interaction !== "Preserve original pose" ? `Product interaction / pose: ${interaction}. Make the interaction physically convincing.` : "Preserve the original pose only when it still works naturally inside the requested scene.",
       directions ? `Specific owner directions: ${directions}.` : "",
-      `Visual mood: ${profile.backgroundDirection}.`,
-      "Keep the result photorealistic. Do not add ad copy, captions, prices, badges, watermarks or extra readable text.",
+      `Visual environment direction: ${profile.backgroundDirection}.`,
+      "Use premium advertising photography, believable materials, natural anatomy and realistic hands. Avoid duplicate people or duplicate products unless explicitly requested.",
+      "Do not add ad copy, captions, prices, badges, watermarks, logos or extra readable text. Exact typography and CTA are added afterward by the WASCIK compositor.",
     ].filter(Boolean).join("\n");
     form.append("prompt", prompt);
 
@@ -103,7 +117,7 @@ export async function POST(request: Request) {
     const imageDataUrl = image.b64_json ? `data:image/png;base64,${image.b64_json}` : image.url || "";
     const estimatedCostUsd = estimateCost(model, payload.usage, quality, size !== "1024x1024");
     await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0, estimatedCostUsd, metadata: { merchant, product, gaze, expression, interaction, productReferenceIncluded, quality, size, creativeMode, refinement, creativeProfile: profile.key } });
-    return NextResponse.json({ imageDataUrl, model, estimatedCostUsd, productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, mode: "owner-photo-ai-edit" });
+    return NextResponse.json({ imageDataUrl, model, estimatedCostUsd, productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, mode: "owner-product-cohesive-full-scene-edit" });
   } catch (error) {
     console.error("Owner image edit failed", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "The owner photo could not be edited." }, { status: 502 });

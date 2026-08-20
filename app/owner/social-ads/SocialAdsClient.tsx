@@ -84,17 +84,26 @@ export default function SocialAdsClient() {
     try {
       const key = sessionStorage.getItem(SESSION_KEY) || "";
       const safeItem = item.merchant === "WASCIK App Development" ? { ...item, image_url: null } : item;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
       const response = await fetch("/api/owner/ad-work-progress", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-wascik-owner-key": key },
         body: JSON.stringify({ product: safeItem }),
+        signal: controller.signal,
       });
+      window.clearTimeout(timeout);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not open the ad workspace.");
+      setOpening("");
       router.push("/owner/social-ads/work-in-progress");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not open the ad workspace.");
       setOpening("");
+      if (reason instanceof DOMException && reason.name === "AbortError") {
+        setError("Opening the ad workspace timed out. Tap the product again.");
+      } else {
+        setError(reason instanceof Error ? reason.message : "Could not open the ad workspace.");
+      }
     }
   }
 
@@ -107,6 +116,10 @@ export default function SocialAdsClient() {
     color: "#eef8ff",
     cursor: opening ? "wait" : "pointer",
     minHeight: 92,
+    position: "relative" as const,
+    zIndex: 1,
+    touchAction: "manipulation" as const,
+    WebkitTapHighlightColor: "rgba(113,220,255,.12)",
   };
 
   return <div style={{ display: "grid", gap: 16 }}>
@@ -128,12 +141,12 @@ export default function SocialAdsClient() {
 
     <SavedAdLibrary />
 
-    <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 17, padding: 15, background: "rgba(255,255,255,.025)" }}>
+    <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 17, padding: 15, background: "rgba(255,255,255,.025)", position: "relative", zIndex: 1 }}>
       <div><div style={{ color: "#8fa6b6", fontSize: 11, fontWeight: 950, letterSpacing: ".12em" }}>AFFILIATE ADVERTISING</div><h2 style={{ margin: "5px 0 0" }}>Affiliate products</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Search only when you want an affiliate product. Tapping one opens the dedicated ad workspace.</p></div>
       <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search affiliate brand, product, or category" style={{ width: "100%", marginTop: 13, borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(3,10,18,.72)", color: "#eef8ff", padding: "11px 12px", fontSize: 16 }} />
       {error ? <div style={{ marginTop: 10, color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}
-      {!loading && filteredAffiliate.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 9, marginTop: 13, maxHeight: 470, overflowY: "auto" }}>
-        {filteredAffiliate.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={affiliateCardStyle} disabled={Boolean(opening)}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8 }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850 }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900 }}>{item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11 }}>{item.category}</div> : null}</button>)}
+      {!loading && filteredAffiliate.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 9, marginTop: 13, maxHeight: 470, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        {filteredAffiliate.map((item) => <button key={item.id} type="button" onClick={() => void startAd(item)} style={affiliateCardStyle} disabled={Boolean(opening)}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8, pointerEvents: "none" }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850, pointerEvents: "none" }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900, pointerEvents: "none" }}>{item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11, pointerEvents: "none" }}>{item.category}</div> : null}</button>)}
       </div> : null}
     </section>
   </div>;

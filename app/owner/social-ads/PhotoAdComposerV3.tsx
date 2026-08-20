@@ -26,10 +26,31 @@ type CreativeMode = "product" | "composite" | "lifestyle";
 type Refinement = "balanced" | "premium" | "bold" | "minimal" | "lifestyle";
 type IdentityLock = "strong" | "medium" | "flexible";
 type HeroPriority = "product" | "shared" | "owner";
+type CopyZone = "top" | "bottom";
 type SavedPhoto = { id: string; label: string; category: string; url: string };
+type ValidationResult = {
+  pass?: boolean;
+  identityScore?: number;
+  productScore?: number;
+  interactionScore?: number;
+  heroScore?: number;
+  recommendedCopyZone?: CopyZone;
+  reasons?: string[];
+};
 type ImageResult = { imageDataUrl?: string; model?: string; estimatedCostUsd?: number | null; error?: string };
-type EditResult = ImageResult & { productReferenceIncluded?: boolean };
-type EditedScene = { url: string; productReferenceIncluded: boolean };
+type EditResult = ImageResult & {
+  productReferenceIncluded?: boolean;
+  recommendedCopyZone?: CopyZone;
+  attemptsUsed?: number;
+  validation?: ValidationResult;
+};
+type EditedScene = {
+  url: string;
+  productReferenceIncluded: boolean;
+  copyZone: CopyZone;
+  attemptsUsed: number;
+  validation?: ValidationResult;
+};
 
 const dims: Record<Layout, { width: number; height: number; label: string }> = {
   square: { width: 1080, height: 1080, label: "Square · 1:1" },
@@ -96,6 +117,8 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   const [model, setModel] = useState("");
   const [backgroundCost, setBackgroundCost] = useState<number | null>(null);
   const [editCost, setEditCost] = useState<number | null>(null);
+  const [lastValidation, setLastValidation] = useState<ValidationResult | null>(null);
+  const [lastAttempts, setLastAttempts] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -114,7 +137,7 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
     const data = await response.json().catch(() => ({}));
     if (response.ok) setPhotos(Array.isArray(data.photos) ? data.photos : []);
   }
-  function selectPhoto(photo: SavedPhoto) { setOwnerUrl(photo.url); setOwnerName(`${photo.category} · ${photo.label}`); setEditedOwnerUrl(""); setLibraryOpen(false); setNotice(`${photo.label} selected for this ad.`); }
+  function selectPhoto(photo: SavedPhoto) { setOwnerUrl(photo.url); setOwnerName(`${photo.category} · ${photo.label}`); setEditedOwnerUrl(""); setLastValidation(null); setLibraryOpen(false); setNotice(`${photo.label} selected for this ad.`); }
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []); event.target.value = ""; if (!files.length) return;
     setUploading(true); setError("");
@@ -128,7 +151,7 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Photo upload failed."); }
     finally { setUploading(false); }
   }
-  function resetEdit() { setEditedOwnerUrl(""); setEditCost(null); }
+  function resetEdit() { setEditedOwnerUrl(""); setEditCost(null); setLastValidation(null); setLastAttempts(0); }
 
   async function editOwnerIfNeeded(): Promise<EditedScene | null> {
     if (!ownerUrl || creativeMode === "product") return null;
@@ -138,27 +161,56 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
       body: JSON.stringify({ ownerPhotoUrl: ownerUrl, productImageUrl: product.image_url || "", merchant: product.merchant, product: product.title, category: product.category || "", gaze, expression, interaction, directions, creativeMode, refinement, identityLock, heroPriority, quality: quality === "high" ? "medium" : "low", layout }),
     });
     const data = await response.json().catch(() => ({})) as EditResult;
-    if (!response.ok || !data.imageDataUrl) throw new Error(data.error || "The owner/product image could not be intelligently integrated.");
+    if (!response.ok || !data.imageDataUrl) {
+      const reason = data.validation?.reasons?.[0];
+      throw new Error([data.error || "The owner/product image could not be intelligently integrated.", reason].filter(Boolean).join(" "));
+    }
     if (product.image_url && heroPriority !== "owner" && !data.productReferenceIncluded) {
       throw new Error("The exact product image was not included in the AI integration. The ad was stopped instead of generating without the selected product.");
     }
     setEditedOwnerUrl(data.imageDataUrl);
-    const cost = typeof data.estimatedCostUsd === "number" ? data.estimatedCostUsd : null; setEditCost(cost); if (cost && onImageCost) onImageCost(cost);
-    return { url: data.imageDataUrl, productReferenceIncluded: Boolean(data.productReferenceIncluded) };
+    setModel(data.model || "");
+    const cost = typeof data.estimatedCostUsd === "number" ? data.estimatedCostUsd : null;
+    setEditCost(cost); setBackgroundCost(null); if (cost && onImageCost) onImageCost(cost);
+    const validation = data.validation || null;
+    setLastValidation(validation); setLastAttempts(data.attemptsUsed || 1);
+    return { url: data.imageDataUrl, productReferenceIncluded: Boolean(data.productReferenceIncluded), copyZone: data.recommendedCopyZone === "bottom" ? "bottom" : "top", attemptsUsed: data.attemptsUsed || 1, validation: validation || undefined };
   }
 
-  function addCopyOverlay(ctx: CanvasRenderingContext2D, width: number, height: number) {
-    const margin = Math.round(width * .065); const top = Math.round(height * .052); const textWidth = width - margin * 2;
-    const topShade = ctx.createLinearGradient(0, 0, 0, height * .38); topShade.addColorStop(0, "rgba(0,0,0,.82)"); topShade.addColorStop(.55, "rgba(0,0,0,.42)"); topShade.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = topShade; ctx.fillRect(0, 0, width, height * .40);
-    const bottomShade = ctx.createLinearGradient(0, height * .68, 0, height); bottomShade.addColorStop(0, "rgba(0,0,0,0)"); bottomShade.addColorStop(.50, "rgba(0,0,0,.46)"); bottomShade.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = bottomShade; ctx.fillRect(0, height * .66, width, height * .34);
-    ctx.textAlign = "left"; ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = `800 ${Math.round(width * .020)}px system-ui,sans-serif`; ctx.fillText(product.merchant.toUpperCase().slice(0, 40), margin, top);
-    let headlineSize = Math.round(width * (layout === "story" ? .055 : .050)); ctx.font = `900 ${headlineSize}px system-ui,sans-serif`; let hookLines = wrap(ctx, hook, textWidth);
+  function addCopyOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, copyZone: CopyZone = "top") {
+    const margin = Math.round(width * .065); const textWidth = width - margin * 2;
+    const topShade = ctx.createLinearGradient(0, 0, 0, height * .34); topShade.addColorStop(0, "rgba(0,0,0,.78)"); topShade.addColorStop(.58, "rgba(0,0,0,.36)"); topShade.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = topShade; ctx.fillRect(0, 0, width, height * .36);
+    const bottomShade = ctx.createLinearGradient(0, height * .58, 0, height); bottomShade.addColorStop(0, "rgba(0,0,0,0)"); bottomShade.addColorStop(.48, "rgba(0,0,0,.40)"); bottomShade.addColorStop(1, "rgba(0,0,0,.84)"); ctx.fillStyle = bottomShade; ctx.fillRect(0, height * .56, width, height * .44);
+
+    let headlineSize = Math.round(width * (layout === "story" ? .055 : .050));
+    ctx.font = `900 ${headlineSize}px system-ui,sans-serif`;
+    let hookLines = wrap(ctx, hook, textWidth);
     while (hookLines.length > 2 && headlineSize > Math.round(width * .040)) { headlineSize -= 3; ctx.font = `900 ${headlineSize}px system-ui,sans-serif`; hookLines = wrap(ctx, hook, textWidth); }
-    hookLines = hookLines.slice(0, 2); const hookGap = Math.round(headlineSize * 1.05); const hookY = top + Math.round(width * .067); ctx.fillStyle = "#fff"; hookLines.forEach((line, i) => ctx.fillText(line, margin, hookY + i * hookGap));
-    if (support) { ctx.fillStyle = "rgba(255,255,255,.90)"; ctx.font = `600 ${Math.round(width * .022)}px system-ui,sans-serif`; const supportLines = wrap(ctx, support, textWidth).slice(0, 2); const supportY = hookY + hookLines.length * hookGap + Math.round(width * .018); supportLines.forEach((line, i) => ctx.fillText(line, margin, supportY + i * Math.round(width * .030))); }
-    const ctaW = width - margin * 2; const ctaH = Math.round(height * .060); const ctaY = Math.round(height * .835); ctx.fillStyle = "rgba(0,0,0,.78)"; roundRect(ctx, margin, ctaY, ctaW, ctaH, Math.round(ctaH * .14)); ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2; ctx.stroke();
+    hookLines = hookLines.slice(0, 2);
+    const hookGap = Math.round(headlineSize * 1.05);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#fff";
+    if (copyZone === "top") {
+      const brandY = Math.round(height * .050);
+      ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = `800 ${Math.round(width * .020)}px system-ui,sans-serif`; ctx.fillText(product.merchant.toUpperCase().slice(0, 40), margin, brandY);
+      ctx.fillStyle = "#fff"; ctx.font = `900 ${headlineSize}px system-ui,sans-serif`;
+      const hookY = brandY + Math.round(width * .067);
+      hookLines.forEach((line, i) => ctx.fillText(line, margin, hookY + i * hookGap));
+      if (support) { ctx.fillStyle = "rgba(255,255,255,.90)"; ctx.font = `600 ${Math.round(width * .022)}px system-ui,sans-serif`; const supportLines = wrap(ctx, support, textWidth).slice(0, 2); const supportY = hookY + hookLines.length * hookGap + Math.round(width * .018); supportLines.forEach((line, i) => ctx.fillText(line, margin, supportY + i * Math.round(width * .030))); }
+    } else {
+      const blockTop = Math.round(height * .675);
+      ctx.fillStyle = "rgba(255,255,255,.82)"; ctx.font = `800 ${Math.round(width * .020)}px system-ui,sans-serif`; ctx.fillText(product.merchant.toUpperCase().slice(0, 40), margin, blockTop);
+      ctx.fillStyle = "#fff"; ctx.font = `900 ${headlineSize}px system-ui,sans-serif`;
+      const hookY = blockTop + Math.round(width * .060);
+      hookLines.forEach((line, i) => ctx.fillText(line, margin, hookY + i * hookGap));
+      if (support) { ctx.fillStyle = "rgba(255,255,255,.90)"; ctx.font = `600 ${Math.round(width * .020)}px system-ui,sans-serif`; const supportLines = wrap(ctx, support, textWidth).slice(0, 1); const supportY = hookY + hookLines.length * hookGap + Math.round(width * .012); supportLines.forEach((line, i) => ctx.fillText(line, margin, supportY + i * Math.round(width * .028))); }
+    }
+
+    const ctaW = width - margin * 2; const ctaH = Math.round(height * .058); const ctaY = Math.round(height * .890);
+    ctx.fillStyle = "rgba(0,0,0,.80)"; roundRect(ctx, margin, ctaY, ctaW, ctaH, Math.round(ctaH * .14)); ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.30)"; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `900 ${Math.round(width * .028)}px system-ui,sans-serif`; ctx.fillText(button, width / 2, ctaY + Math.round(ctaH * .66));
-    ctx.fillStyle = "rgba(255,255,255,.62)"; ctx.font = `700 ${Math.round(width * .014)}px system-ui,sans-serif`; ctx.fillText(product.merchant === "WASCIK App Development" ? "WASCIK App Development" : "WASCIK Affiliate Services", width / 2, height - Math.round(height * .020));
+    ctx.fillStyle = "rgba(255,255,255,.64)"; ctx.font = `700 ${Math.round(width * .014)}px system-ui,sans-serif`; ctx.fillText(product.merchant === "WASCIK App Development" ? "WASCIK App Development" : "WASCIK Affiliate Services", width / 2, height - Math.round(height * .014));
   }
 
   async function compose(bgUrl: string, editedScene: EditedScene | null) {
@@ -173,17 +225,25 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
         ctx.save(); ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = Math.round(width * .025); ctx.fillStyle = "rgba(255,255,255,.08)"; roundRect(ctx, boxX, safeTop, boxW, boxH, Math.round(width * .025)); ctx.fill(); ctx.restore(); contain(ctx, productImage, boxX + 24, safeTop + 24, boxW - 48, boxH - 48);
       }
     }
-    addCopyOverlay(ctx, width, height);
+    addCopyOverlay(ctx, width, height, editedScene?.copyZone || "top");
   }
 
   async function generate() {
-    if (busy) return; setBusy(true); setError(""); setNotice("Building one cohesive intelligent ad scene…");
+    if (busy) return; setBusy(true); setError(""); setNotice("Building and validating the intelligent ad scene…");
     try {
       const editedScene = ownerUrl && creativeMode !== "product" ? await editOwnerIfNeeded() : null;
+      if (editedScene) {
+        setBackground(editedScene.url);
+        await compose(editedScene.url, editedScene);
+        const v = editedScene.validation;
+        setNotice(`Validated ad ready after ${editedScene.attemptsUsed} attempt${editedScene.attemptsUsed === 1 ? "" : "s"} · identity ${v?.identityScore ?? "—"}/100 · product ${v?.productScore ?? "—"}/100 · hero ${v?.heroScore ?? "—"}/100 · copy zone ${editedScene.copyZone}.`);
+        return;
+      }
+
       const response = await fetch("/api/owner/social-ads/image", { method: "POST", headers: { "Content-Type": "application/json", "x-wascik-owner-key": key() }, body: JSON.stringify({ merchant: product.merchant, product: product.title, category: product.category || "", platform, headline: hook, creativeNotes: [creativeNotes, support ? `Visual support: ${support}` : "", `CTA: ${button}`, `Hero priority: ${heroPriority}`].filter(Boolean).join("\n"), quality, layout, style, creativeMode, refinement }) });
       const data = await response.json().catch(() => ({})) as ImageResult; if (!response.ok || !data.imageDataUrl) throw new Error(data.error || "The ad environment could not be generated.");
       setBackground(data.imageDataUrl); setModel(data.model || ""); const cost = typeof data.estimatedCostUsd === "number" ? data.estimatedCostUsd : null; setBackgroundCost(cost); if (cost && onImageCost) onImageCost(cost);
-      await compose(data.imageDataUrl, editedScene); setNotice(`Ad ready · ${profile.label} · ${identityLock} identity lock · ${heroPriority} hero priority.`);
+      await compose(data.imageDataUrl, null); setNotice(`Product-only ad ready · ${profile.label}.`);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "The intelligent ad could not be generated."); }
     finally { setBusy(false); }
   }
@@ -201,16 +261,17 @@ export default function PhotoAdComposerV3({ product, platform, headline, cta, vi
   const label = { display: "grid", minWidth: 0, maxWidth: "100%", gap: 5, color: "#b7cad8", fontSize: 12 } as const;
 
   return <section className="photoAdV3" style={{ display: "grid", gap: 14, border: "1px solid rgba(113,220,255,.22)", borderRadius: 14, padding: 15, background: "rgba(113,220,255,.025)" }}>
-    <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 900, letterSpacing: ".1em" }}>INTELLIGENT PHOTO AD · V3</div><h2 style={{ margin: "5px 0 0" }}>Full-scene art director</h2><div style={{ marginTop: 6, color: "#9fb5c5", fontSize: 12 }}>Creative profile: <strong style={{ color: "#dcecf5" }}>{profile.label}</strong> · {profile.mood}</div></div>
+    <div><div style={{ color: "#71dcff", fontSize: 11, fontWeight: 900, letterSpacing: ".1em" }}>INTELLIGENT PHOTO AD · V3</div><h2 style={{ margin: "5px 0 0" }}>Validated multi-pass art director</h2><div style={{ marginTop: 6, color: "#9fb5c5", fontSize: 12 }}>Creative profile: <strong style={{ color: "#dcecf5" }}>{profile.label}</strong> · {profile.mood}</div></div>
     <div className="photoAdV3__grid"><label style={label}>Ad mode<select value={creativeMode} onChange={(e) => { setCreativeMode(e.target.value as CreativeMode); resetEdit(); }} style={field}><option value="product">Product Only</option><option value="composite">Product + Owner</option><option value="lifestyle">Lifestyle Integration</option></select></label><label style={label}>Quality<select value={quality} onChange={(e) => setQuality(e.target.value as Quality)} style={field}><option value="low">Economy</option><option value="medium">Standard</option><option value="high">High</option></select></label><label style={label}>Size<select value={layout} onChange={(e) => setLayout(e.target.value as Layout)} style={field}>{Object.entries(dims).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label><label style={label}>Base style<select value={style} onChange={(e) => setStyle(e.target.value as Style)} style={field}><option value="clean-product">Clean Campaign</option><option value="social">Social</option><option value="reel-cover">Story / Reel</option><option value="flyer">Flyer</option></select></label></div>
     {creativeMode !== "product" ? <div className="photoAdV3__grid"><label style={label}>Identity Lock<select value={identityLock} onChange={(e) => { setIdentityLock(e.target.value as IdentityLock); resetEdit(); }} style={field}><option value="strong">Strong · preserve me closely</option><option value="medium">Medium</option><option value="flexible">Flexible</option></select></label><label style={label}>Hero Priority<select value={heroPriority} onChange={(e) => { setHeroPriority(e.target.value as HeroPriority); resetEdit(); }} style={field}><option value="product">Product Hero</option><option value="shared">Shared Hero · product + me</option><option value="owner">Owner Hero</option></select></label></div> : null}
     <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><div className="photoAdV3__libraryTop"><strong>My Photos</strong><button type="button" onClick={() => setLibraryOpen((v) => !v)} style={buttonStyle}>{libraryOpen ? "Close Library" : "Choose from My Photos"}</button></div>{ownerUrl ? <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0,1fr)", gap: 10, marginTop: 10, alignItems: "center" }}><img src={heroOwner} alt="Selected owner" style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 8 }} /><div style={{ minWidth: 0 }}><div style={{ color: "#8ff0b8", fontWeight: 800 }}>Selected for this ad</div><div style={{ fontSize: 11, color: "#9fb5c5", marginTop: 3, overflowWrap: "anywhere" }}>{ownerName}</div><button type="button" onClick={() => { setOwnerUrl(""); setOwnerName(""); resetEdit(); }} style={{ ...buttonStyle, marginTop: 7, color: "#ffaaaa" }}>Remove</button></div></div> : null}{libraryOpen ? <div style={{ marginTop: 10, display: "grid", gap: 9 }}><div className="photoAdV3__libraryTop"><select value={photoCategory} onChange={(e) => setPhotoCategory(e.target.value)} style={field}>{categories.map((c) => <option key={c}>{c}</option>)}</select><label style={{ ...buttonStyle, display: "grid", placeItems: "center" }}>{uploading ? "Uploading…" : "Upload from Phone"}<input type="file" multiple accept="image/*" onChange={upload} style={{ display: "none" }} /></label></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100px,100%),1fr))", gap: 8, maxHeight: 320, overflowY: "auto" }}>{photos.map((p) => <button key={p.id} type="button" onClick={() => selectPhoto(p)} style={{ border: ownerUrl === p.url ? "2px solid #71dcff" : "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: 5, background: "rgba(255,255,255,.02)", color: "white", textAlign: "left", minWidth: 0 }}><img src={p.url} alt={p.label} style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 5 }} /><div style={{ fontSize: 9, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.label}</div></button>)}</div></div> : null}</div>
     {creativeMode !== "product" ? <div style={{ display: "grid", gap: 9, borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><strong>Owner / Product Direction</strong><div className="photoAdV3__directionGrid"><label style={label}>Gaze<select value={gaze} onChange={(e) => { setGaze(e.target.value); resetEdit(); }} style={field}>{gazes.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Expression<select value={expression} onChange={(e) => { setExpression(e.target.value); resetEdit(); }} style={field}>{expressions.map((x) => <option key={x}>{x}</option>)}</select></label><label style={label}>Interaction<select value={interaction} onChange={(e) => { setInteraction(e.target.value); resetEdit(); }} style={field}>{interactions.map((x) => <option key={x}>{x}</option>)}</select></label></div><label style={label}>Specific directions<textarea value={directions} onChange={(e) => { setDirections(e.target.value); resetEdit(); }} rows={3} placeholder="Example: Preserve me closely. Make the exact product a major hero and place it clearly in my hands or natural use position." style={{ ...field, resize: "vertical" }} /></label></div> : null}
     <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 12 }}><strong>Creative refinement</strong><div className="photoAdV3__grid" style={{ marginTop: 8 }}>{(["premium", "bold", "minimal", "lifestyle", "balanced"] as Refinement[]).map((x) => <button key={x} type="button" onClick={() => refine(x)} style={{ ...buttonStyle, background: refinement === x ? "rgba(113,220,255,.18)" : buttonStyle.background }}>{x === "premium" ? "More Premium" : x === "bold" ? "More Bold" : x === "minimal" ? "More Minimal" : x === "lifestyle" ? "More Lifestyle" : "Balanced"}</button>)}</div></div>
-    <button type="button" disabled={busy || (creativeMode !== "product" && !ownerUrl)} onClick={() => void generate()} style={{ width: "100%", minWidth: 0, border: 0, borderRadius: 8, padding: "14px 16px", fontWeight: 900, background: busy ? "#314653" : "#71dcff", color: "#031019", fontSize: 16, whiteSpace: "normal" }}>{busy ? "AI is art-directing one cohesive scene…" : "Generate Intelligent Photo Ad"}</button>
+    <button type="button" disabled={busy || (creativeMode !== "product" && !ownerUrl)} onClick={() => void generate()} style={{ width: "100%", minWidth: 0, border: 0, borderRadius: 8, padding: "14px 16px", fontWeight: 900, background: busy ? "#314653" : "#71dcff", color: "#031019", fontSize: 16, whiteSpace: "normal" }}>{busy ? "AI is generating, checking, and retrying if needed…" : "Generate Intelligent Photo Ad"}</button>
     {error ? <div style={{ color: "#ff9f9f", fontSize: 12, overflowWrap: "anywhere" }}>{error}</div> : null}{notice ? <div style={{ color: "#8ff0b8", fontSize: 12, overflowWrap: "anywhere" }}>{notice}</div> : null}
+    {lastValidation?.pass ? <div style={{ border: "1px solid rgba(143,240,184,.22)", borderRadius: 8, padding: 9, color: "#a9eec5", fontSize: 11 }}>QC passed · {lastAttempts} attempt{lastAttempts === 1 ? "" : "s"} · identity {lastValidation.identityScore ?? "—"}/100 · product {lastValidation.productScore ?? "—"}/100 · interaction {lastValidation.interactionScore ?? "—"}/100 · hero {lastValidation.heroScore ?? "—"}/100 · text zone {lastValidation.recommendedCopyZone || "top"}</div> : null}
     <div className="photoAdV3__canvasWrap"><canvas ref={canvasRef} className="photoAdV3__canvas" style={{ display: background ? "block" : "none" }} /></div>
     {background ? <div className="photoAdV3__actions"><button type="button" onClick={() => void saveImage()} style={buttonStyle}>Save Image to iPhone / Photos</button><button type="button" onClick={() => void generate()} style={buttonStyle}>Regenerate Same Direction</button></div> : null}
-    {(backgroundCost != null || editCost != null) ? <div style={{ fontSize: 11, color: "#9fb5c5", borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 9, overflowWrap: "anywhere" }}>Model: {model || "image model"} · Background: {backgroundCost != null ? `$${backgroundCost.toFixed(3)}` : "—"} · Owner/product edit: {editCost != null ? `$${editCost.toFixed(4)}` : "—"} · Identity: {identityLock} · Hero: {heroPriority}</div> : null}
+    {(backgroundCost != null || editCost != null) ? <div style={{ fontSize: 11, color: "#9fb5c5", borderTop: "1px solid rgba(255,255,255,.08)", paddingTop: 9, overflowWrap: "anywhere" }}>Model: {model || "image model"} · Product-only background: {backgroundCost != null ? `$${backgroundCost.toFixed(3)}` : "skipped for validated full scene"} · Validated owner/product scene: {editCost != null ? `$${editCost.toFixed(4)}` : "—"} · Identity: {identityLock} · Hero: {heroPriority}</div> : null}
   </section>;
 }

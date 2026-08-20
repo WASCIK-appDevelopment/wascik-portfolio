@@ -8,6 +8,9 @@
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .photoAdV3__grid {
@@ -49,9 +52,27 @@
   max-width: 100%;
 }
 
+.photoAdV3 button,
+.photoAdV3 label,
+.photoAdV3 select,
+.photoAdV3 textarea,
+.photoAdV3 input {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(113, 220, 255, .14);
+}
+
 .photoAdV3 button {
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.photoAdV3 button > img,
+.photoAdV3 button > div,
+.photoAdV3 button > span {
+  pointer-events: none;
 }
 
 .photoAdV3 canvas,
@@ -65,6 +86,7 @@
   max-width: 100%;
   overflow: hidden;
   border-radius: 12px;
+  pointer-events: none;
 }
 
 .photoAdV3__canvas {
@@ -72,6 +94,12 @@
   height: auto;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,.1);
+  pointer-events: none;
+}
+
+.photoAdV3 [style*="overflowY"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 560px) {

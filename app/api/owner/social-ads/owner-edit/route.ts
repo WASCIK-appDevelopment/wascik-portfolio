@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { getOpenAIConfig } from "../../../../../lib/ai/openaiConfig";
 import { recordOpenAIUsage } from "../../../../../lib/ai/openaiUsageLedger";
 import { resolveCreativeProfile } from "../../../../../lib/ai/socialAdCreativeProfile";
+import { safeAffiliateImageUrl, verifyAffiliateImageSignature } from "../../../../../lib/affiliateImageProxy";
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const DEFAULT_MODEL = "gpt-image-1-mini";
+const AFFILIATE_IMAGE_PROXY_PATH = "/api/owner/affiliate-search/image";
 
 type EditPayload = {
   data?: Array<{ b64_json?: string; url?: string }>;
@@ -18,7 +20,31 @@ function authorized(request: Request) {
   return Boolean(expected && provided && provided === expected);
 }
 function clean(value: unknown, max: number) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
-function safeRemoteUrl(value: string) { try { const url = new URL(value); return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : ""; } catch { return ""; } }
+function safeRemoteUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+function verifiedProductImageUrl(value: string, requestUrl: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  try {
+    const parsed = new URL(trimmed, requestUrl);
+    if (parsed.pathname === AFFILIATE_IMAGE_PROXY_PATH) {
+      const original = parsed.searchParams.get("url") || "";
+      const signature = parsed.searchParams.get("sig") || "";
+      const safe = safeAffiliateImageUrl(original);
+      if (!safe || !verifyAffiliateImageSignature(safe.toString(), signature)) return "";
+      return safe.toString();
+    }
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
 async function fetchImage(url: string) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error("Could not load the selected source image.");
@@ -43,7 +69,7 @@ export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const ownerPhotoUrl = safeRemoteUrl(clean(body.ownerPhotoUrl, 4000));
-  const productImageUrl = safeRemoteUrl(clean(body.productImageUrl, 4000));
+  const productImageUrl = verifiedProductImageUrl(clean(body.productImageUrl, 4000), request.url);
   const merchant = clean(body.merchant, 140);
   const product = clean(body.product, 280);
   const category = clean(body.category, 180);

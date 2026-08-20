@@ -1,5 +1,6 @@
 import OwnerModuleClient from "../../OwnerModuleClient";
 import AdWorkspaceClient from "./AdWorkspaceClient";
+import "./workspace-mobile.css";
 
 export default function AdWorkInProgressPage() {
   return <OwnerModuleClient
@@ -7,6 +8,8 @@ export default function AdWorkInProgressPage() {
     description="A dedicated persistent workspace for the current WASCIK or affiliate ad. Your selected product or service, platform, direction, generated copy, and latest preview are saved while you work."
     currentPath="/owner/social-ads"
   >
-    <AdWorkspaceClient />
+    <div className="adWorkspaceShell">
+      <AdWorkspaceClient />
+    </div>
   </OwnerModuleClient>;
 }

@@ -104,8 +104,13 @@ export default function SocialAdsClient() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not open the ad workspace.");
+
       setOpening("");
-      window.location.assign("/owner/social-ads/work-in-progress");
+      setDraft(data.draft ? data.draft as DraftSummary : { merchant: item.merchant, title: item.title });
+      // Keep navigation inside the Next.js application. A hard window.location
+      // navigation can escape a GitHub Codespaces forwarded-port preview and land
+      // on the Codespaces/GitHub host instead of the running app.
+      router.push("/owner/social-ads/work-in-progress");
     } catch (reason) {
       setOpening("");
       if (reason instanceof DOMException && reason.name === "AbortError") {

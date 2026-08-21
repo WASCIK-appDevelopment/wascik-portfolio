@@ -1,5 +1,5 @@
-import { SummitSite } from "../page";
+import ConversionProjectPage from "./ConversionProjectPage";
 
 export default function StartProjectPage() {
-  return <SummitSite mode="project" />;
+  return <ConversionProjectPage />;
 }

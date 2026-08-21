@@ -130,27 +130,31 @@ export async function GET(request: Request) {
   } while (page && pagesRead < MAX_PAGES);
 
   const feature = await featureSpend(startTime);
+  const trackedFeatureUsd = feature.leadsUsd + feature.adsUsd;
+  const effectiveSpendUsd = feature.trackingAvailable ? Math.max(totalUsd, trackedFeatureUsd) : totalUsd;
   const mapRows = (map: Map<string, number>, keyName: string) => Array.from(map.entries())
     .map(([key, costUsd]) => ({ [keyName]: key, costUsd }))
     .sort((a, b) => Number(b.costUsd) - Number(a.costUsd));
 
   return NextResponse.json({
-    source: "openai-organization-costs",
+    source: "openai-organization-costs-plus-wascik-ledger",
     authoritativeSpend: true,
     lookbackDays: days,
     startTime,
     endTime,
-    totalUsd,
+    totalUsd: effectiveSpendUsd,
+    postedOpenAIUsd: totalUsd,
+    trackedFeatureUsd,
     workingBudgetUsd: budgetUsd,
-    calculatedRemainingUsd: Math.max(0, budgetUsd - totalUsd),
-    budgetUsedPercent: budgetUsd > 0 ? Math.min(100, (totalUsd / budgetUsd) * 100) : 0,
+    calculatedRemainingUsd: Math.max(0, budgetUsd - effectiveSpendUsd),
+    budgetUsedPercent: budgetUsd > 0 ? Math.min(100, (effectiveSpendUsd / budgetUsd) * 100) : 0,
     leadsUsd: feature.leadsUsd,
     adsUsd: feature.adsUsd,
     leadsUsedPercent: budgetUsd > 0 ? Math.min(100, (feature.leadsUsd / budgetUsd) * 100) : 0,
     adsUsedPercent: budgetUsd > 0 ? Math.min(100, (feature.adsUsd / budgetUsd) * 100) : 0,
     featureTrackingAvailable: feature.trackingAvailable,
-    featureTrackingNote: "Lead and Ads gauges use the WASCIK feature ledger from the time feature tracking was enabled. The Overall gauge uses OpenAI organization costs and may include other API activity.",
-    budgetNote: "Remaining is calculated from the configured WASCIK working budget minus organization costs in this reporting window; it is not OpenAI prepaid-credit balance data.",
+    featureTrackingNote: "Lead and Ads gauges use the WASCIK feature ledger. Overall uses whichever is higher: posted OpenAI organization costs or the currently tracked WASCIK feature spend, so reporting lag cannot make the remaining amount look too high.",
+    budgetNote: "Remaining is an estimated current amount from the configured WASCIK working budget. It is not a direct OpenAI prepaid-credit balance endpoint.",
     byLineItem: mapRows(byLineItem, "lineItem"),
     byProject: mapRows(byProject, "projectId"),
     byApiKey: mapRows(byApiKey, "apiKeyId"),

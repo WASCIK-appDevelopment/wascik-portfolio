@@ -30,6 +30,8 @@ type ValidationResult = {
   reasons: string[];
 };
 
+type ImageBytes = { bytes: ArrayBuffer; contentType: string };
+
 function authorized(request: Request) {
   const expected = process.env.WASCIK_OWNER_CONSOLE_KEY?.trim();
   const provided = request.headers.get(OWNER_HEADER)?.trim();
@@ -40,9 +42,7 @@ function safeRemoteUrl(value: string) {
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 function verifiedProductImageUrl(value: string, requestUrl: string) {
   const trimmed = value.trim();
@@ -57,11 +57,15 @@ function verifiedProductImageUrl(value: string, requestUrl: string) {
       return safe.toString();
     }
     return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : "";
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
-async function fetchImage(url: string) {
+async function fetchImage(url: string): Promise<ImageBytes> {
+  if (url.startsWith("data:image/")) {
+    const match = url.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if (!match) throw new Error("The generated image data is not usable.");
+    const buffer = Buffer.from(match[2], "base64");
+    return { bytes: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength), contentType: match[1] };
+  }
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error("Could not load the selected source image.");
   const contentType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg";
@@ -69,7 +73,7 @@ async function fetchImage(url: string) {
   if (!contentType.startsWith("image/") || bytes.byteLength > 15 * 1024 * 1024) throw new Error("The source image is not usable for AI editing.");
   return { bytes, contentType };
 }
-function estimateCost(model: string, usage: EditPayload["usage"], quality: string, portrait: boolean) {
+function estimateImageCost(model: string, usage: EditPayload["usage"], quality: string, portrait: boolean) {
   if (model !== DEFAULT_MODEL) return null;
   if (usage) {
     const imageInput = Number(usage.input_tokens_details?.image_tokens || 0);
@@ -85,64 +89,58 @@ function extractVisionText(payload: VisionPayload) {
 }
 function clampScore(value: unknown) {
   const score = Number(value);
-  if (!Number.isFinite(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
+  return Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 0;
+}
+function extension(contentType: string) { return contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg"; }
+function imageData(payload: EditPayload) {
+  const image = payload.data?.[0];
+  return image?.b64_json ? `data:image/png;base64,${image.b64_json}` : image?.url || "";
+}
+
+async function callImageEdit(args: { apiKey: string; model: string; size: string; quality: string; images: ImageBytes[]; prompt: string }) {
+  const form = new FormData();
+  form.append("model", args.model); form.append("size", args.size); form.append("quality", args.quality); form.append("output_format", "png");
+  args.images.forEach((image, index) => form.append("image[]", new Blob([image.bytes], { type: image.contentType }), `reference-${index + 1}.${extension(image.contentType)}`));
+  form.append("prompt", args.prompt);
+  const response = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${args.apiKey}` }, body: form });
+  const payload = (await response.json().catch(() => ({}))) as EditPayload;
+  if (!response.ok) throw new Error(payload.error?.message || "The image editor could not complete this pass.");
+  const dataUrl = imageData(payload);
+  if (!dataUrl) throw new Error("The image editor returned no image.");
+  return { dataUrl, usage: payload.usage };
 }
 
 async function validateScene(args: {
-  apiKey: string;
-  validatorModel: string;
-  ownerPhotoUrl: string;
-  productImageUrl: string;
-  generatedImageUrl: string;
-  productReferenceIncluded: boolean;
-  identityLock: string;
-  heroPriority: string;
-  interaction: string;
-  gaze: string;
-  expression: string;
+  apiKey: string; validatorModel: string; ownerPhotoUrl: string; productImageUrl: string; generatedImageUrl: string;
+  productReferenceIncluded: boolean; identityLock: string; heroPriority: string; interaction: string; gaze: string; expression: string;
 }) {
   const content: Array<Record<string, unknown>> = [
-    {
-      type: "input_text",
-      text: [
-        "You are a strict advertising-image quality-control validator.",
-        "Image 1 is the original owner/person reference. Image 2, when present, is the exact product reference. The final image is the generated campaign scene.",
-        `Identity lock: ${args.identityLock}. Hero priority: ${args.heroPriority}. Requested interaction: ${args.interaction || "none"}. Gaze: ${args.gaze || "unspecified"}. Expression: ${args.expression || "unspecified"}.`,
-        "Judge only visible compliance. Do not be generous. Strong identity lock requires the generated person's face and overall appearance to remain very close to Image 1, not merely a similar person.",
-        "If a product reference exists, the exact product must remain recognizable. For product/shared hero priority, it must be visually prominent rather than a tiny background detail.",
-        "If a hold/use/wear/sit interaction is requested, the final image must visibly show that exact interaction. Merely placing the product nearby fails.",
-        "Also determine whether the person's face overlaps the upper 30% copy-safe zone. Recommend TOP only when the upper zone is genuinely clear of the face; otherwise recommend BOTTOM.",
-        "Return STRICT JSON ONLY: {\"pass\":true|false,\"identityScore\":0-100,\"productScore\":0-100,\"interactionScore\":0-100,\"heroScore\":0-100,\"faceInTopCopyZone\":true|false,\"recommendedCopyZone\":\"top\"|\"bottom\",\"reasons\":[\"short concrete failure reason\"]}.",
-      ].join("\n"),
-    },
+    { type: "input_text", text: [
+      "You are a strict advertising-image quality-control validator.",
+      "Image 1 is the original owner/person reference. Image 2, when present, is the exact product reference. The final image is the generated campaign scene.",
+      `Identity lock: ${args.identityLock}. Hero priority: ${args.heroPriority}. Requested interaction: ${args.interaction || "none"}. Gaze: ${args.gaze || "unspecified"}. Expression: ${args.expression || "unspecified"}.`,
+      "Judge only visible compliance. Strong identity lock requires the generated person's face and overall appearance to remain very close to Image 1, not merely a similar person.",
+      "If a product reference exists, the exact product must remain recognizable. For product/shared hero priority, it must be visually prominent rather than a tiny background detail.",
+      "If a hold/use/wear/sit interaction is requested, the final image must visibly show that exact interaction. Merely placing the product nearby fails.",
+      "Determine whether the person's face overlaps the upper 30% copy-safe zone. Recommend TOP only when the upper zone is genuinely clear of the face; otherwise recommend BOTTOM.",
+      "Return STRICT JSON ONLY: {\"pass\":true|false,\"identityScore\":0-100,\"productScore\":0-100,\"interactionScore\":0-100,\"heroScore\":0-100,\"faceInTopCopyZone\":true|false,\"recommendedCopyZone\":\"top\"|\"bottom\",\"reasons\":[\"short concrete failure reason\"]}."
+    ].join("\n") },
     { type: "input_text", text: "IMAGE 1 — ORIGINAL OWNER REFERENCE" },
     { type: "input_image", image_url: args.ownerPhotoUrl, detail: "high" },
   ];
   if (args.productReferenceIncluded && args.productImageUrl) {
-    content.push({ type: "input_text", text: "IMAGE 2 — EXACT PRODUCT REFERENCE" });
-    content.push({ type: "input_image", image_url: args.productImageUrl, detail: "high" });
+    content.push({ type: "input_text", text: "IMAGE 2 — EXACT PRODUCT REFERENCE" }, { type: "input_image", image_url: args.productImageUrl, detail: "high" });
   }
-  content.push({ type: "input_text", text: "FINAL IMAGE — GENERATED CAMPAIGN SCENE" });
-  content.push({ type: "input_image", image_url: args.generatedImageUrl, detail: "high" });
-
+  content.push({ type: "input_text", text: "FINAL IMAGE — GENERATED CAMPAIGN SCENE" }, { type: "input_image", image_url: args.generatedImageUrl, detail: "high" });
   const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${args.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: args.validatorModel,
-      reasoning: { effort: "minimal" },
-      input: [{ role: "user", content }],
-      max_output_tokens: 350,
-      store: false,
-    }),
+    method: "POST", headers: { Authorization: `Bearer ${args.apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: args.validatorModel, reasoning: { effort: "minimal" }, input: [{ role: "user", content }], max_output_tokens: 350, store: false }),
   });
   const payload = (await response.json().catch(() => ({}))) as VisionPayload;
   if (!response.ok) throw new Error("The generated scene could not be quality-checked.");
   const raw = extractVisionText(payload).replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   let parsed: Record<string, unknown> = {};
   try { parsed = JSON.parse(raw); } catch { throw new Error("The scene validator returned an invalid result."); }
-
   const identityScore = clampScore(parsed.identityScore);
   const productScore = args.productReferenceIncluded ? clampScore(parsed.productScore) : 100;
   const interactionScore = clampScore(parsed.interactionScore);
@@ -159,10 +157,7 @@ async function validateScene(args: {
   const faceInTopCopyZone = Boolean(parsed.faceInTopCopyZone);
   const recommendedCopyZone = parsed.recommendedCopyZone === "bottom" || faceInTopCopyZone ? "bottom" : "top";
   const pass = identityScore >= identityMinimum && productScore >= 78 && heroScore >= heroMinimum && (!requiresInteraction || interactionScore >= interactionMinimum);
-  return {
-    validation: { pass, identityScore, productScore, interactionScore, heroScore, faceInTopCopyZone, recommendedCopyZone, reasons: Array.from(new Set(reasons)).slice(0, 6) } as ValidationResult,
-    usage: payload.usage,
-  };
+  return { validation: { pass, identityScore, productScore, interactionScore, heroScore, faceInTopCopyZone, recommendedCopyZone, reasons: Array.from(new Set(reasons)).slice(0, 6) } as ValidationResult, usage: payload.usage };
 }
 
 export async function POST(request: Request) {
@@ -170,13 +165,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const ownerPhotoUrl = safeRemoteUrl(clean(body.ownerPhotoUrl, 4000));
   const productImageUrl = verifiedProductImageUrl(clean(body.productImageUrl, 4000), request.url);
-  const merchant = clean(body.merchant, 140);
-  const product = clean(body.product, 280);
-  const category = clean(body.category, 180);
-  const gaze = clean(body.gaze, 100);
-  const expression = clean(body.expression, 100);
-  const interaction = clean(body.interaction, 160);
-  const directions = clean(body.directions, 1400);
+  const merchant = clean(body.merchant, 140); const product = clean(body.product, 280); const category = clean(body.category, 180);
+  const gaze = clean(body.gaze, 100); const expression = clean(body.expression, 100); const interaction = clean(body.interaction, 160); const directions = clean(body.directions, 1400);
   const creativeMode = ["product", "composite", "lifestyle"].includes(body.creativeMode) ? body.creativeMode : "composite";
   const refinement = ["balanced", "premium", "bold", "minimal", "lifestyle"].includes(body.refinement) ? body.refinement : "balanced";
   const identityLock = ["strong", "medium", "flexible"].includes(body.identityLock) ? body.identityLock : "strong";
@@ -191,170 +181,89 @@ export async function POST(request: Request) {
   const validatorModel = process.env.OPENAI_IMAGE_VALIDATOR_MODEL?.trim() || openAI.model;
   const size = layout === "square" ? "1024x1024" : "1024x1536";
   const profile = resolveCreativeProfile(merchant, category, product);
-  const maxAttempts = identityLock === "strong" ? 3 : 2;
 
   try {
     const owner = await fetchImage(ownerPhotoUrl);
-    let productReference: { bytes: ArrayBuffer; contentType: string } | null = null;
-    if (productImageUrl) {
-      try { productReference = await fetchImage(productImageUrl); } catch { productReference = null; }
-    }
+    let productReference: ImageBytes | null = null;
+    if (productImageUrl) { try { productReference = await fetchImage(productImageUrl); } catch { productReference = null; } }
     const productReferenceIncluded = Boolean(productReference);
-
-    const formatDirection = layout === "story"
-      ? "Compose for a tall 9:16 social story frame. Keep the subject and product comfortably inside the frame with breathing room."
-      : layout === "square"
-        ? "Compose for a square social campaign frame with a strong central visual balance."
-        : "Compose for a 4:5 portrait social advertisement with editorial vertical balance.";
-
+    const formatDirection = layout === "story" ? "Compose for a tall 9:16 social story frame." : layout === "square" ? "Compose for a square social campaign frame." : "Compose for a 4:5 portrait social advertisement.";
     const identityDirection = identityLock === "strong"
-      ? "IDENTITY LOCK — STRONG. The FIRST image is the non-negotiable identity source of truth. Preserve the same recognizable person: facial geometry, head shape, baldness/hairline, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions. Do not beautify, age, de-age, masculinize, feminize, slim, bulk up, or redesign the face. If a scene or pose request conflicts with identity fidelity, preserve identity and simplify the scene instead."
-      : identityLock === "medium"
-        ? "IDENTITY LOCK — MEDIUM. Preserve the person's recognizable face, body build, skin tone, facial hair and major distinguishing features while allowing modest pose and expression changes."
-        : "IDENTITY LOCK — FLEXIBLE. Keep the person recognizably based on the first reference while allowing broader art-direction changes.";
-
+      ? "IDENTITY LOCK — STRONG. The owner reference is non-negotiable. Preserve facial geometry, head shape, hairline/baldness, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions. Do not beautify, age, de-age, slim, bulk up, or redesign the face."
+      : identityLock === "medium" ? "IDENTITY LOCK — MEDIUM. Preserve the person's recognizable face and major distinguishing features while allowing modest changes." : "IDENTITY LOCK — FLEXIBLE. Keep the person recognizably based on the owner reference while allowing broader art direction.";
     const heroDirection = heroPriority === "product"
-      ? "HERO PRIORITY — PRODUCT. The exact advertised product must be one of the dominant visual subjects, clearly recognizable, prominently sized, unobstructed in its important features, and visually impossible to miss. The owner supports the product rather than overpowering it."
-      : heroPriority === "owner"
-        ? "HERO PRIORITY — OWNER. The owner is the primary visual subject, but the exact product must still be clearly recognizable and intentionally present when a product reference is supplied."
-        : "HERO PRIORITY — SHARED. Treat the owner and exact product as co-heroes. Both must be immediately visible and important at first glance; neither may be reduced to a tiny background detail or incidental prop.";
-
+      ? "HERO PRIORITY — PRODUCT. The exact product must be dominant, clearly recognizable, prominently sized and impossible to miss."
+      : heroPriority === "owner" ? "HERO PRIORITY — OWNER. The owner is primary, but the exact product must remain clearly recognizable and intentional." : "HERO PRIORITY — SHARED. Owner and exact product are co-heroes; both must be immediately visible and important.";
     const interactionDirection = interaction === "Preserve original pose"
-      ? "POSE LOCK. Preserve the owner's original pose and body orientation as closely as practical. Do not reinterpret 'preserve original' as permission to redesign the person or substitute a different pose. Integrate the product around that preserved person/pose when possible."
-      : interaction
-        ? `PRODUCT INTERACTION — REQUIRED: ${interaction}. This is a primary composition requirement, not an optional suggestion. Make the interaction obvious, physically plausible, and clearly visible. If the instruction says hold/use/wear/sit on the product, visibly show that exact interaction.`
-        : "";
+      ? "POSE LOCK. Preserve the owner's original pose and body orientation as closely as practical."
+      : interaction ? `PRODUCT INTERACTION — REQUIRED: ${interaction}. This is a hard composition requirement. Make the exact interaction obvious, physically plausible and clearly visible.` : "";
+
+    const commonPrompt = [
+      "Create one cohesive, photorealistic, campaign-ready advertising scene.", identityDirection,
+      "The FIRST image is the owner/person reference. Do not replace the person with a similar-looking substitute.",
+      productReferenceIncluded ? "The SECOND image is the exact product reference. Preserve its recognizable form, proportions, materials and design." : `Advertising context: ${merchant} — ${product}.`,
+      heroDirection, `Creative profile: ${profile.label}; mood: ${profile.mood}.`, `Ad mode: ${creativeMode}. Refinement: ${refinement}.`, formatDirection,
+      "Make the result look like ONE photograph. No floating cards, split screens, picture-in-picture, inset panels, or pasted-photo layouts.",
+      "Use consistent perspective, lighting, shadows, scale, depth and physical contact.",
+      "Leave either the upper 30% OR lower 22% visually calm enough for external copy.",
+      gaze === "Preserve original" ? "GAZE LOCK. Preserve the original eye direction." : gaze ? `Gaze: ${gaze}.` : "",
+      expression === "Preserve original" ? "EXPRESSION LOCK. Preserve the original facial expression." : expression ? `Expression: ${expression}.` : "",
+      interactionDirection, directions ? `Specific owner directions: ${directions}.` : "", `Visual environment direction: ${profile.backgroundDirection}.`,
+      "Use premium advertising photography, believable materials, natural anatomy and realistic hands. Do not add ad copy or readable text."
+    ].filter(Boolean).join("\n");
 
     let retryFeedback = "";
     let finalImageDataUrl = "";
     let finalValidation: ValidationResult | null = null;
-    let totalImageCost = 0;
-    let totalValidationCost = 0;
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-    let attemptsUsed = 0;
+    let totalImageCost = 0; let totalValidationCost = 0; let totalInputTokens = 0; let totalOutputTokens = 0; let attemptsUsed = 0;
+    const sceneAttempts = identityLock === "strong" ? 2 : 2;
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      attemptsUsed = attempt;
-      const form = new FormData();
-      form.append("model", model); form.append("size", size); form.append("quality", quality); form.append("output_format", "png");
-      form.append("image[]", new Blob([owner.bytes], { type: owner.contentType }), `owner.${owner.contentType.includes("png") ? "png" : "jpg"}`);
-      if (productReference) form.append("image[]", new Blob([productReference.bytes], { type: productReference.contentType }), `product.${productReference.contentType.includes("png") ? "png" : "jpg"}`);
-
-      const prompt = [
-        "Create one cohesive, photorealistic, campaign-ready advertising scene from the supplied references.",
-        identityDirection,
-        "The FIRST image is the owner/person reference. Do not replace the person with a similar-looking substitute.",
-        productReferenceIncluded ? "The SECOND image is the exact advertised product reference. Preserve its recognizable form, proportions, materials and design. Do not replace it with an invented or approximate product." : `Advertising context: ${merchant} — ${product}. Do not invent logos or readable packaging text.`,
-        heroDirection,
-        `Creative profile: ${profile.label}; mood: ${profile.mood}.`,
-        `Ad mode: ${creativeMode}. Refinement: ${refinement}.`,
-        formatDirection,
-        "IMPORTANT COMPOSITION RULE: make the result look like ONE photograph or one professionally art-directed campaign scene. Never place the owner or product inside a separate rectangular photo, floating card, inset panel, split-screen tile, picture-in-picture frame, phone mockup, or dashboard box.",
-        "The person must belong naturally in the environment with consistent perspective, lighting, shadows, scale, depth of field and contact with nearby furniture or products.",
-        creativeMode === "lifestyle" && productReferenceIncluded ? "For lifestyle mode, integrate the owner and exact product into a believable real-world use scene. The product must remain a major campaign subject, not a small incidental background object." : "",
-        creativeMode === "composite" && productReferenceIncluded ? "For composite mode, use sophisticated editorial depth and overlap while keeping both owner and product visually important and clearly recognizable." : "",
-        "Leave either the upper 30% OR lower 22% visually calm enough for external ad copy. Prefer keeping the owner's face and critical product details away from the upper 30% when natural composition allows.",
-        gaze === "Preserve original" ? "GAZE LOCK. Preserve the original eye direction from the first image." : gaze ? `Gaze: ${gaze}. When 'Look at viewer', direct both eyes naturally toward the camera/viewer while preserving facial identity.` : "",
-        expression === "Preserve original" ? "EXPRESSION LOCK. Preserve the original facial expression from the first image." : expression ? `Expression: ${expression}. Make the expression visibly match this direction without changing the person's identity.` : "",
-        interactionDirection,
-        directions ? `Specific owner directions: ${directions}.` : "",
-        retryFeedback ? `QUALITY-CONTROL RETRY FEEDBACK FROM THE PRIOR ATTEMPT — CORRECT EVERY ITEM: ${retryFeedback}` : "",
-        `Visual environment direction: ${profile.backgroundDirection}.`,
-        "Use premium advertising photography, believable materials, natural anatomy and realistic hands. Avoid duplicate people or duplicate products unless explicitly requested.",
-        "Do not add ad copy, captions, prices, badges, watermarks, logos or extra readable text. Exact typography and CTA are added afterward by the WASCIK compositor.",
-      ].filter(Boolean).join("\n");
-      form.append("prompt", prompt);
-
-      const response = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${openAI.apiKey}` }, body: form });
-      const payload = (await response.json().catch(() => ({}))) as EditPayload;
-      if (!response.ok) {
-        console.error("Owner image edit error", response.status, payload);
-        if (attempt === maxAttempts) return NextResponse.json({ error: payload.error?.message || "The owner photo could not be edited." }, { status: 502 });
-        retryFeedback = "The previous image generation failed technically. Produce a clean valid image on this attempt.";
-        continue;
-      }
-      const image = payload.data?.[0];
-      if (!image?.b64_json && !image?.url) {
-        if (attempt === maxAttempts) return NextResponse.json({ error: "The image editor returned no image." }, { status: 502 });
-        retryFeedback = "The previous attempt returned no usable image. Produce one valid campaign image.";
-        continue;
-      }
-      const imageDataUrl = image.b64_json ? `data:image/png;base64,${image.b64_json}` : image.url || "";
-      const attemptImageCost = estimateCost(model, payload.usage, quality, size !== "1024x1024");
-      if (typeof attemptImageCost === "number") totalImageCost += attemptImageCost;
-      totalInputTokens += payload.usage?.input_tokens || 0;
-      totalOutputTokens += payload.usage?.output_tokens || 0;
-
-      const checked = await validateScene({
-        apiKey: openAI.apiKey,
-        validatorModel,
-        ownerPhotoUrl,
-        productImageUrl,
-        generatedImageUrl: imageDataUrl,
-        productReferenceIncluded,
-        identityLock,
-        heroPriority,
-        interaction,
-        gaze,
-        expression,
-      });
-      const validatorCost = estimateTextCostUsd(validatorModel, checked.usage);
-      if (typeof validatorCost === "number") totalValidationCost += validatorCost;
-      totalInputTokens += checked.usage?.input_tokens || 0;
-      totalOutputTokens += checked.usage?.output_tokens || 0;
-      finalValidation = checked.validation;
-      finalImageDataUrl = imageDataUrl;
-
+    for (let attempt = 1; attempt <= sceneAttempts; attempt += 1) {
+      attemptsUsed += 1;
+      const result = await callImageEdit({ apiKey: openAI.apiKey, model, size, quality, images: productReference ? [owner, productReference] : [owner], prompt: [commonPrompt, retryFeedback ? `QC RETRY FEEDBACK — CORRECT EVERY ITEM: ${retryFeedback}` : ""].filter(Boolean).join("\n") });
+      const cost = estimateImageCost(model, result.usage, quality, size !== "1024x1024"); if (typeof cost === "number") totalImageCost += cost;
+      totalInputTokens += result.usage?.input_tokens || 0; totalOutputTokens += result.usage?.output_tokens || 0;
+      const checked = await validateScene({ apiKey: openAI.apiKey, validatorModel, ownerPhotoUrl, productImageUrl, generatedImageUrl: result.dataUrl, productReferenceIncluded, identityLock, heroPriority, interaction, gaze, expression });
+      const validatorCost = estimateTextCostUsd(validatorModel, checked.usage); if (typeof validatorCost === "number") totalValidationCost += validatorCost;
+      totalInputTokens += checked.usage?.input_tokens || 0; totalOutputTokens += checked.usage?.output_tokens || 0;
+      finalImageDataUrl = result.dataUrl; finalValidation = checked.validation;
       if (checked.validation.pass) break;
-      retryFeedback = checked.validation.reasons.length ? checked.validation.reasons.join(" | ") : "Identity, product prominence, or required interaction did not meet quality thresholds.";
+      retryFeedback = checked.validation.reasons.join(" | ") || "Improve identity fidelity, product prominence and requested interaction.";
+    }
+
+    let identityRepairUsed = false;
+    if (finalImageDataUrl && finalValidation && !finalValidation.pass && identityLock === "strong") {
+      const failedScene = await fetchImage(finalImageDataUrl);
+      const repairPrompt = [
+        "IDENTITY REPAIR PASS. The FIRST image is the current campaign scene. Preserve its successful composition, product placement, environment, pose, lighting and framing as closely as possible.",
+        "The SECOND image is the original owner identity reference and is the absolute source of truth for the person's face and appearance.",
+        productReferenceIncluded ? "The THIRD image is the exact product reference; preserve the exact product already present in the scene." : "",
+        "Repair the person so the face, head shape, baldness/hairline, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions match the SECOND image much more closely.",
+        "Do NOT redesign the scene. Do NOT change the product interaction unless needed to correct anatomy. Do NOT move the product out of hero prominence.",
+        finalValidation.reasons.length ? `The validator specifically found: ${finalValidation.reasons.join(" | ")}. Correct these issues.` : "",
+        "Keep the result photorealistic. Do not add text, logos, captions or graphic overlays."
+      ].filter(Boolean).join("\n");
+      attemptsUsed += 1; identityRepairUsed = true;
+      const repairImages = productReference ? [failedScene, owner, productReference] : [failedScene, owner];
+      const repaired = await callImageEdit({ apiKey: openAI.apiKey, model, size, quality, images: repairImages, prompt: repairPrompt });
+      const repairCost = estimateImageCost(model, repaired.usage, quality, size !== "1024x1024"); if (typeof repairCost === "number") totalImageCost += repairCost;
+      totalInputTokens += repaired.usage?.input_tokens || 0; totalOutputTokens += repaired.usage?.output_tokens || 0;
+      const checkedRepair = await validateScene({ apiKey: openAI.apiKey, validatorModel, ownerPhotoUrl, productImageUrl, generatedImageUrl: repaired.dataUrl, productReferenceIncluded, identityLock, heroPriority, interaction, gaze, expression });
+      const repairValidationCost = estimateTextCostUsd(validatorModel, checkedRepair.usage); if (typeof repairValidationCost === "number") totalValidationCost += repairValidationCost;
+      totalInputTokens += checkedRepair.usage?.input_tokens || 0; totalOutputTokens += checkedRepair.usage?.output_tokens || 0;
+      finalImageDataUrl = repaired.dataUrl; finalValidation = checkedRepair.validation;
     }
 
     if (!finalImageDataUrl || !finalValidation) return NextResponse.json({ error: "The intelligent scene could not be produced." }, { status: 502 });
+    const totalCost = totalImageCost + totalValidationCost;
+    await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, estimatedCostUsd: totalCost, metadata: { merchant, product, attemptsUsed, identityRepairUsed, passedValidation: finalValidation.pass, identityLock, heroPriority, productReferenceIncluded, validation: finalValidation } });
     if (!finalValidation.pass) {
-      await recordOpenAIUsage({
-        feature: "ads",
-        route: "/api/owner/social-ads/owner-edit",
-        model,
-        inputTokens: totalInputTokens,
-        outputTokens: totalOutputTokens,
-        estimatedCostUsd: totalImageCost + totalValidationCost,
-        metadata: { merchant, product, attemptsUsed, passedValidation: false, identityLock, heroPriority, productReferenceIncluded, validation: finalValidation },
-      });
-      return NextResponse.json({
-        error: `The AI tried ${attemptsUsed} time${attemptsUsed === 1 ? "" : "s"}, but the scene still did not meet the required identity/product quality. Nothing was accepted.`,
-        validation: finalValidation,
-        attemptsUsed,
-        estimatedCostUsd: totalImageCost + totalValidationCost,
-      }, { status: 422 });
+      return NextResponse.json({ error: `The AI used ${attemptsUsed} passes, including an identity-repair pass, but the result still did not meet the required quality. Nothing was accepted.`, validation: finalValidation, attemptsUsed, identityRepairUsed, estimatedCostUsd: totalCost }, { status: 422 });
     }
-
-    await recordOpenAIUsage({
-      feature: "ads",
-      route: "/api/owner/social-ads/owner-edit",
-      model,
-      inputTokens: totalInputTokens,
-      outputTokens: totalOutputTokens,
-      estimatedCostUsd: totalImageCost + totalValidationCost,
-      metadata: { merchant, product, gaze, expression, interaction, productReferenceIncluded, quality, size, creativeMode, refinement, identityLock, heroPriority, creativeProfile: profile.key, attemptsUsed, passedValidation: true, validation: finalValidation },
-    });
-
     return NextResponse.json({
-      imageDataUrl: finalImageDataUrl,
-      model,
-      estimatedCostUsd: totalImageCost + totalValidationCost,
-      imageGenerationCostUsd: totalImageCost,
-      validationCostUsd: totalValidationCost,
-      productReferenceIncluded,
-      creativeProfile: profile,
-      creativeMode,
-      refinement,
-      identityLock,
-      heroPriority,
-      attemptsUsed,
-      validation: finalValidation,
-      recommendedCopyZone: finalValidation.recommendedCopyZone,
-      mode: "validated-multi-pass-owner-product-scene",
+      imageDataUrl: finalImageDataUrl, model, estimatedCostUsd: totalCost, imageGenerationCostUsd: totalImageCost, validationCostUsd: totalValidationCost,
+      productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, identityLock, heroPriority, attemptsUsed, identityRepairUsed,
+      validation: finalValidation, recommendedCopyZone: finalValidation.recommendedCopyZone, mode: "validated-multi-pass-with-identity-repair"
     });
   } catch (error) {
     console.error("Owner image edit failed", error);

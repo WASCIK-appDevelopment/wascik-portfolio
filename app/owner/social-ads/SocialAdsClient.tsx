@@ -38,6 +38,7 @@ export default function SocialAdsClient() {
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState("");
   const [draft, setDraft] = useState<DraftSummary | null>(null);
+  const [pendingProduct, setPendingProduct] = useState<CatalogProduct | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function SocialAdsClient() {
           .map((item) => item.merchant === "WASCIK App Development" ? { ...item, image_url: null } : item)
           .sort((a, b) => `${a.merchant} ${a.title}`.localeCompare(`${b.merchant} ${b.title}`));
         setProducts(published);
-        if (draftResponse.ok && draftData.draft) setDraft(draftData.draft as DraftSummary);
+        setDraft(draftResponse.ok && draftData.draft ? draftData.draft as DraftSummary : null);
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : "Could not load Social & Ads.");
       } finally {
@@ -85,10 +86,9 @@ export default function SocialAdsClient() {
     return affiliateProducts.filter((item) => [item.merchant, item.title, item.category || ""].some((value) => value.toLowerCase().includes(query)));
   }, [affiliateProducts, search]);
 
-  async function startAd(item: CatalogProduct) {
+  async function openAd(item: CatalogProduct) {
     if (opening === item.id) return;
-    if (draft && !window.confirm(`Replace your current ad in progress (${draft.merchant || "Ad"} — ${draft.title || "current draft"}) with ${item.merchant} — ${item.title}?`)) return;
-
+    setPendingProduct(null);
     setOpening(item.id);
     setError("");
     const controller = new AbortController();
@@ -104,10 +104,7 @@ export default function SocialAdsClient() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not open the ad workspace.");
-
       setOpening("");
-      // Full navigation is deliberately used here because iOS preview sessions have
-      // occasionally left the client router in a stale interaction state.
       window.location.assign("/owner/social-ads/work-in-progress");
     } catch (reason) {
       setOpening("");
@@ -119,6 +116,17 @@ export default function SocialAdsClient() {
     } finally {
       window.clearTimeout(timeout);
     }
+  }
+
+  function startAd(item: CatalogProduct) {
+    if (opening === item.id) return;
+    const sameDraft = Boolean(draft && draft.merchant === item.merchant && draft.title === item.title);
+    if (draft && !sameDraft) {
+      setPendingProduct(item);
+      setError("");
+      return;
+    }
+    void openAd(item);
   }
 
   const affiliateCardStyle = {
@@ -153,7 +161,6 @@ export default function SocialAdsClient() {
     {loading ? <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, color: "#71dcff" }}>Loading WASCIK services…</section> : <WascikServicesSection services={wascikServices} opening={opening} onStart={startAd} />}
 
     <MyPhotoLibraryManager />
-
     <SavedAdLibrary />
 
     <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 17, padding: 15, background: "rgba(255,255,255,.025)", position: "relative", zIndex: 1 }}>
@@ -163,9 +170,21 @@ export default function SocialAdsClient() {
       {!loading && filteredAffiliate.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 9, marginTop: 13, maxHeight: 470, overflowY: "auto", WebkitOverflowScrolling: "touch", position: "relative", zIndex: 2 }}>
         {filteredAffiliate.map((item) => {
           const isOpening = opening === item.id;
-          return <button key={item.id} type="button" onClick={() => void startAd(item)} style={{ ...affiliateCardStyle, opacity: isOpening ? .65 : 1 }} disabled={isOpening} aria-busy={isOpening}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8, pointerEvents: "none" }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850, pointerEvents: "none" }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900, pointerEvents: "none" }}>{isOpening ? "Opening…" : item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11, pointerEvents: "none" }}>{item.category}</div> : null}</button>;
+          return <button key={item.id} type="button" onClick={() => startAd(item)} style={{ ...affiliateCardStyle, opacity: isOpening ? .65 : 1 }} disabled={isOpening} aria-busy={isOpening}>{item.image_url ? <img src={item.image_url} alt="" style={{ width: "100%", height: 105, objectFit: "contain", borderRadius: 9, background: "rgba(255,255,255,.04)", marginBottom: 8, pointerEvents: "none" }} /> : null}<div style={{ color: "#71dcff", fontSize: 11, fontWeight: 850, pointerEvents: "none" }}>{item.merchant}</div><div style={{ marginTop: 4, fontWeight: 900, pointerEvents: "none" }}>{isOpening ? "Opening…" : item.title}</div>{item.category ? <div style={{ marginTop: 4, color: "#91a8b7", fontSize: 11, pointerEvents: "none" }}>{item.category}</div> : null}</button>;
         })}
       </div> : null}
     </section>
+
+    {pendingProduct ? <div role="dialog" aria-modal="true" aria-label="Replace current ad in progress" onClick={() => setPendingProduct(null)} style={{ position: "fixed", inset: 0, zIndex: 1600, display: "grid", placeItems: "center", padding: 18, background: "rgba(0,0,0,.78)" }}>
+      <section onClick={(event) => event.stopPropagation()} style={{ width: "min(520px,100%)", borderRadius: 18, border: "1px solid rgba(255,215,111,.35)", background: "#07131d", padding: 17, color: "#eef8ff", boxShadow: "0 18px 60px rgba(0,0,0,.45)" }}>
+        <div style={{ color: "#ffd76f", fontSize: 11, fontWeight: 950, letterSpacing: ".11em" }}>REPLACE CURRENT AD?</div>
+        <h2 style={{ margin: "7px 0 0", fontSize: 20 }}>{pendingProduct.merchant} — {pendingProduct.title}</h2>
+        <p style={{ margin: "9px 0 0", color: "#a9bcc9", lineHeight: 1.5, fontSize: 13 }}>You already have {draft?.merchant || "an ad"} — {draft?.title || "current work"} in Ad Work in Progress. Starting this product will replace that current draft.</p>
+        <div style={{ display: "grid", gap: 9, marginTop: 15 }}>
+          <button type="button" onClick={() => void openAd(pendingProduct)} style={{ border: 0, borderRadius: 11, background: "#71dcff", color: "#031019", padding: "12px 14px", fontWeight: 950, fontSize: 15 }}>Use This Product</button>
+          <button type="button" onClick={() => setPendingProduct(null)} style={{ border: "1px solid rgba(255,255,255,.14)", borderRadius: 11, background: "rgba(255,255,255,.04)", color: "#dcecf5", padding: "11px 14px", fontWeight: 850 }}>Keep Current Ad</button>
+        </div>
+      </section>
+    </div> : null}
   </div>;
 }

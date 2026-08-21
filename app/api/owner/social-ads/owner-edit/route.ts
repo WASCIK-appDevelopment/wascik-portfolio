@@ -6,6 +6,7 @@ import { safeAffiliateImageUrl, verifyAffiliateImageSignature } from "../../../.
 
 const OWNER_HEADER = "x-wascik-owner-key";
 const DEFAULT_MODEL = "gpt-image-1-mini";
+const STRONG_IDENTITY_MODEL = "gpt-image-2";
 const AFFILIATE_IMAGE_PROXY_PATH = "/api/owner/affiliate-search/image";
 
 type EditPayload = {
@@ -177,7 +178,9 @@ export async function POST(request: Request) {
 
   const openAI = getOpenAIConfig();
   if (!openAI.configured || !openAI.apiKey) return NextResponse.json({ error: "OpenAI is not configured." }, { status: 503 });
-  const model = process.env.OPENAI_IMAGE_EDIT_MODEL?.trim() || DEFAULT_MODEL;
+  const normalModel = process.env.OPENAI_IMAGE_EDIT_MODEL?.trim() || DEFAULT_MODEL;
+  const strongIdentityModel = process.env.OPENAI_STRONG_IDENTITY_IMAGE_MODEL?.trim() || STRONG_IDENTITY_MODEL;
+  const model = identityLock === "strong" ? strongIdentityModel : normalModel;
   const validatorModel = process.env.OPENAI_IMAGE_VALIDATOR_MODEL?.trim() || openAI.model;
   const size = layout === "square" ? "1024x1024" : "1024x1536";
   const profile = resolveCreativeProfile(merchant, category, product);
@@ -189,7 +192,7 @@ export async function POST(request: Request) {
     const productReferenceIncluded = Boolean(productReference);
     const formatDirection = layout === "story" ? "Compose for a tall 9:16 social story frame." : layout === "square" ? "Compose for a square social campaign frame." : "Compose for a 4:5 portrait social advertisement.";
     const identityDirection = identityLock === "strong"
-      ? "IDENTITY LOCK — STRONG. The owner reference is non-negotiable. Preserve facial geometry, head shape, hairline/baldness, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions. Do not beautify, age, de-age, slim, bulk up, or redesign the face."
+      ? "IDENTITY LOCK — STRONG. The owner reference is non-negotiable. Preserve facial geometry, head shape, hairline/baldness, eyes, eyebrows, nose, mouth, jaw, facial hair, skin tone, apparent age, tattoos when visible, body build and proportions. Do not beautify, age, de-age, slim, bulk up, or redesign the face. Treat identity fidelity as the highest-priority requirement, even above scene complexity."
       : identityLock === "medium" ? "IDENTITY LOCK — MEDIUM. Preserve the person's recognizable face and major distinguishing features while allowing modest changes." : "IDENTITY LOCK — FLEXIBLE. Keep the person recognizably based on the owner reference while allowing broader art direction.";
     const heroDirection = heroPriority === "product"
       ? "HERO PRIORITY — PRODUCT. The exact product must be dominant, clearly recognizable, prominently sized and impossible to miss."
@@ -216,7 +219,7 @@ export async function POST(request: Request) {
     let finalImageDataUrl = "";
     let finalValidation: ValidationResult | null = null;
     let totalImageCost = 0; let totalValidationCost = 0; let totalInputTokens = 0; let totalOutputTokens = 0; let attemptsUsed = 0;
-    const sceneAttempts = identityLock === "strong" ? 2 : 2;
+    const sceneAttempts = 2;
 
     for (let attempt = 1; attempt <= sceneAttempts; attempt += 1) {
       attemptsUsed += 1;
@@ -256,14 +259,14 @@ export async function POST(request: Request) {
 
     if (!finalImageDataUrl || !finalValidation) return NextResponse.json({ error: "The intelligent scene could not be produced." }, { status: 502 });
     const totalCost = totalImageCost + totalValidationCost;
-    await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, estimatedCostUsd: totalCost, metadata: { merchant, product, attemptsUsed, identityRepairUsed, passedValidation: finalValidation.pass, identityLock, heroPriority, productReferenceIncluded, validation: finalValidation } });
+    await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/owner-edit", model, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, estimatedCostUsd: totalCost, metadata: { merchant, product, attemptsUsed, identityRepairUsed, passedValidation: finalValidation.pass, identityLock, heroPriority, productReferenceIncluded, validation: finalValidation, imageModel: model } });
     if (!finalValidation.pass) {
-      return NextResponse.json({ error: `The AI used ${attemptsUsed} passes, including an identity-repair pass, but the result still did not meet the required quality. Nothing was accepted.`, validation: finalValidation, attemptsUsed, identityRepairUsed, estimatedCostUsd: totalCost }, { status: 422 });
+      return NextResponse.json({ error: `The AI used ${attemptsUsed} passes, including an identity-repair pass, but the result still did not meet the required quality. Nothing was accepted.`, validation: finalValidation, attemptsUsed, identityRepairUsed, estimatedCostUsd: totalCost, model }, { status: 422 });
     }
     return NextResponse.json({
       imageDataUrl: finalImageDataUrl, model, estimatedCostUsd: totalCost, imageGenerationCostUsd: totalImageCost, validationCostUsd: totalValidationCost,
       productReferenceIncluded, creativeProfile: profile, creativeMode, refinement, identityLock, heroPriority, attemptsUsed, identityRepairUsed,
-      validation: finalValidation, recommendedCopyZone: finalValidation.recommendedCopyZone, mode: "validated-multi-pass-with-identity-repair"
+      validation: finalValidation, recommendedCopyZone: finalValidation.recommendedCopyZone, mode: identityLock === "strong" ? "high-fidelity-validated-strong-identity" : "validated-multi-pass-with-identity-repair"
     });
   } catch (error) {
     console.error("Owner image edit failed", error);

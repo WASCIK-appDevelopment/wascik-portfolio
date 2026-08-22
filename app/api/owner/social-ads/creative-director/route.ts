@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const userPrompt = clean(body.userPrompt, 3000);
   const hasOwnerPhoto = Boolean(body.hasOwnerPhoto);
   const hasProductImage = Boolean(body.hasProductImage);
-  if (!merchant || !product || !platform || !userPrompt) return NextResponse.json({ error: "Brand, product, platform, and your creative direction are required." }, { status: 400 });
+  if (!merchant || !product || !platform) return NextResponse.json({ error: "Brand, product, and platform are required." }, { status: 400 });
 
   const openAI = getOpenAIConfig();
   if (!openAI.configured || !openAI.apiKey) return NextResponse.json({ error: "OpenAI is not configured." }, { status: 503 });
@@ -39,16 +39,23 @@ export async function POST(request: Request) {
 
   const instructions = [
     "You are the private WASCIK Creative Director for social advertising.",
-    "The owner should be able to talk to you naturally the way they talk to ChatGPT. Convert their plain-English request into a precise production plan for the downstream image editor, compositor, and QC validator.",
+    "The owner should be able to talk to you naturally the way they talk to ChatGPT. Convert even a very short request into a complete production plan for the downstream image editor, compositor, and QC validator.",
+    "HOUSE DEFAULT: unless the owner explicitly asks for something else, make the ad polished, benefit-rich, mobile-readable, product-relevant, and conversion-oriented.",
+    "HOUSE DEFAULT: on-image copy should contain a short headline plus one compact support line containing TWO concrete benefit phrases separated by a centered dot (•) when that can be done truthfully from the supplied product/service context.",
+    "HOUSE DEFAULT: for Instagram, TikTok, or Threads, prefer LINK IN BIO as the image CTA when traffic is being directed through the profile. For other platforms choose a short action CTA such as SEE DETAILS, SHOP NOW, VIEW CATALOG, or LEARN MORE when appropriate.",
+    "HOUSE DEFAULT: protect faces and important product details from copy. Plan a clean external copy-safe zone rather than asking the image model to draw text into the photograph.",
+    "HOUSE DEFAULT: the generated SCENE itself must contain ZERO newly generated readable advertising text. Do not generate slogans, headlines, captions, UI labels, hologram words, signage, floating words, fake logos, badges, or call-to-action text inside the image scene. All ad copy is added later by the WASCIK compositor.",
+    "Always include a negative constraint that says: No newly generated readable text, slogans, UI labels, hologram labels, signage, floating words, badges, or CTA text inside the photographic scene.",
     "Honor the user's stated intent first. Do not invent prices, discounts, product specifications, guarantees, personal experience, or availability.",
-    "When an owner photo is supplied and the user asks to preserve them, choose strong identity lock and explicitly protect facial identity, body build, visible tattoos, clothing when requested, and recognizable appearance.",
+    "When an owner photo is supplied and the user asks to preserve them—or does not say otherwise—choose strong identity lock and explicitly protect facial identity, body build, visible tattoos, clothing when requested, and recognizable appearance.",
     "When a product image is supplied, preserve the exact product reference. If the user wants the product held, worn, sat on, used, or otherwise interacted with, make that a hard visible interaction requirement and keep the product prominent.",
     "Plan copy-safe space so headline/support text does not cover the person's face or the product's important details.",
-    "Keep visual text concise and campaign-ready. For Instagram, TikTok, or Threads, use LINK IN BIO when appropriate. For other platforms choose a short action CTA such as SEE DETAILS, SHOP NOW, VIEW CATALOG, or LEARN MORE when appropriate.",
     "Use the supplied brand/category creative profile as guidance, but do not let brand styling override explicit owner instructions.",
     "Return STRICT JSON ONLY with this exact shape: {\"creativeMode\":\"product|composite|lifestyle\",\"identityLock\":\"strong|medium|flexible\",\"heroPriority\":\"product|shared|owner\",\"gaze\":\"...\",\"expression\":\"...\",\"interaction\":\"...\",\"refinement\":\"balanced|premium|bold|minimal|lifestyle\",\"style\":\"clean-product|social|reel-cover|flyer\",\"layout\":\"square|portrait|story\",\"visualHook\":\"...\",\"visualSupportLine\":\"...\",\"visualCta\":\"...\",\"sceneBrief\":\"...\",\"negativeConstraints\":[\"...\"],\"directorSummary\":\"...\"}.",
-    "visualHook: 3-8 words, maximum 55 characters. visualSupportLine: one concise benefit/positioning line, maximum 90 characters. visualCta: 2-5 words, maximum 28 characters.",
-    "sceneBrief should be detailed enough that an image model can execute it without guessing which person/product is the hero, what must remain unchanged, and what interaction is required.",
+    "visualHook: 3-8 words, maximum 55 characters.",
+    "visualSupportLine: maximum 100 characters; default to two short truthful benefit phrases separated by • when useful.",
+    "visualCta: 2-5 words, maximum 28 characters.",
+    "sceneBrief should be detailed enough that an image model can execute it without guessing which person/product is the hero, what must remain unchanged, and what interaction is required. Explicitly state that the scene must remain text-free and that all marketing typography is added afterward.",
   ].join("\n");
 
   const input = {
@@ -59,7 +66,7 @@ export async function POST(request: Request) {
     ownerPhotoAvailable: hasOwnerPhoto,
     exactProductImageAvailable: hasProductImage,
     creativeProfile: { label: profile.label, mood: profile.mood, backgroundDirection: profile.backgroundDirection },
-    ownerRequest: userPrompt,
+    ownerRequest: userPrompt || "Create the strongest polished ad you recommend using the WASCIK house defaults.",
   };
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -74,6 +81,6 @@ export async function POST(request: Request) {
   try { plan = JSON.parse(raw) as Record<string, unknown>; } catch { return NextResponse.json({ error: "The Creative Director returned an invalid plan." }, { status: 502 }); }
 
   const cost = estimateTextCostUsd(openAI.model, payload.usage);
-  await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/creative-director", model: openAI.model, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0, estimatedCostUsd: cost, metadata: { merchant, product, platform, hasOwnerPhoto, hasProductImage, creativeProfile: profile.key } });
+  await recordOpenAIUsage({ feature: "ads", route: "/api/owner/social-ads/creative-director", model: openAI.model, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0, estimatedCostUsd: cost, metadata: { merchant, product, platform, hasOwnerPhoto, hasProductImage, creativeProfile: profile.key, usedHouseDefault: !userPrompt } });
   return NextResponse.json({ plan, apiUsage: { model: openAI.model, estimatedCostUsd: cost, inputTokens: payload.usage?.input_tokens || 0, outputTokens: payload.usage?.output_tokens || 0 } });
 }

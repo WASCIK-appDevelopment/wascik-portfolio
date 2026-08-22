@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AIAssistantDemo from "./AIAssistantDemo";
+import ReviewPanel from "./ReviewPanel";
 
 const portfolioServices = [
   { icon: "web", title: "Websites", copy: "Fast, responsive business websites with clear calls to action, polished layouts, and pages that work beautifully on phones." },
@@ -145,6 +146,8 @@ export function SummitSite({ mode = "sample" }: { mode?: PageMode }) {
               <a href="#contact">Let&apos;s talk →</a>
             </aside>
           </section>
+
+          <ReviewPanel />
 
           <section className="wascik-mission" aria-labelledby="mission-title">
             <p className="wascik-eyebrow">OUR MISSION</p>

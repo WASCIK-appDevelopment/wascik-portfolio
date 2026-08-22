@@ -5,6 +5,7 @@ import "./tech-background.css";
 import "./code-atmosphere.css";
 import "./representative-mobile.css";
 import HomepageAffiliateLink from "./HomepageAffiliateLink";
+import HomepageWebsiteOffer from "./HomepageWebsiteOffer";
 import PortfolioVisitTracker from "./PortfolioVisitTracker";
 import AffiliateClickAutoTracker from "./affiliate-services/AffiliateClickAutoTracker";
 import SitewideRepresentative from "./SitewideRepresentative";
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full">
         <PortfolioVisitTracker />
         <AffiliateClickAutoTracker />
+        <HomepageWebsiteOffer />
         {children}
         <SitewideRepresentative />
         <HomepageAffiliateLink />

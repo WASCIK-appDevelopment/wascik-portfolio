@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import SavedAdLibrary from "./SavedAdLibrary";
 import WascikServicesSection from "./WascikServicesSection";
 import MyPhotoLibraryManager from "./MyPhotoLibraryManager";
+import AffiliateBrandCampaigns from "./AffiliateBrandCampaigns";
 
 const SESSION_KEY = "wascik-owner-console-key";
 
@@ -107,9 +108,6 @@ export default function SocialAdsClient() {
 
       setOpening("");
       setDraft(data.draft ? data.draft as DraftSummary : { merchant: item.merchant, title: item.title });
-      // Keep navigation inside the Next.js application. A hard window.location
-      // navigation can escape a GitHub Codespaces forwarded-port preview and land
-      // on the Codespaces/GitHub host instead of the running app.
       router.push("/owner/social-ads/work-in-progress");
     } catch (reason) {
       setOpening("");
@@ -156,7 +154,7 @@ export default function SocialAdsClient() {
         <div>
           <div style={{ color: "#ffd76f", fontSize: 11, fontWeight: 950, letterSpacing: ".13em" }}>AD WORK IN PROGRESS</div>
           <strong style={{ display: "block", marginTop: 5, fontSize: 19 }}>{draft ? `${draft.merchant || "Ad"} — ${draft.title || "Current draft"}` : "No current ad draft"}</strong>
-          {draft ? <div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>{draft.platform || "Platform not chosen yet"}{draft.updated_at ? ` · saved ${new Date(draft.updated_at).toLocaleString()}` : ""}</div> : <div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>Choose any service or product below to start a persistent workspace.</div>}
+          {draft ? <div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>{draft.platform || "Platform not chosen yet"}{draft.updated_at ? ` · saved ${new Date(draft.updated_at).toLocaleString()}` : ""}</div> : <div style={{ marginTop: 5, color: "#aebeca", fontSize: 12 }}>Choose any service, brand campaign, or product below to start a persistent workspace.</div>}
         </div>
         <button type="button" disabled={!draft} onClick={() => router.push("/owner/social-ads/work-in-progress")} style={{ border: 0, borderRadius: 12, background: draft ? "#ffd76f" : "#39424a", color: draft ? "#07111d" : "#91a0aa", padding: "11px 14px", fontWeight: 950, cursor: draft ? "pointer" : "not-allowed" }}>{draft ? "Continue My Ad Work" : "Ad Work in Progress"}</button>
       </div>
@@ -165,12 +163,14 @@ export default function SocialAdsClient() {
 
     {loading ? <section style={{ border: "1px solid rgba(113,220,255,.28)", borderRadius: 17, padding: 15, color: "#71dcff" }}>Loading WASCIK services…</section> : <WascikServicesSection services={wascikServices} opening={opening} onStart={startAd} />}
 
+    {!loading ? <AffiliateBrandCampaigns products={affiliateProducts} opening={opening} onStart={startAd} /> : null}
+
     <MyPhotoLibraryManager />
     <SavedAdLibrary />
 
     <section style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 17, padding: 15, background: "rgba(255,255,255,.025)", position: "relative", zIndex: 1 }}>
-      <div><div style={{ color: "#8fa6b6", fontSize: 11, fontWeight: 950, letterSpacing: ".12em" }}>AFFILIATE ADVERTISING</div><h2 style={{ margin: "5px 0 0" }}>Affiliate products</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Search only when you want an affiliate product. Tapping one opens the dedicated ad workspace.</p></div>
-      <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search affiliate brand, product, or category" style={{ width: "100%", marginTop: 13, borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(3,10,18,.72)", color: "#eef8ff", padding: "11px 12px", fontSize: 16 }} />
+      <div><div style={{ color: "#8fa6b6", fontSize: 11, fontWeight: 950, letterSpacing: ".12em" }}>AFFILIATE ADVERTISING</div><h2 style={{ margin: "5px 0 0" }}>Affiliate products & events</h2><p style={{ margin: "6px 0 0", color: "#9fb5c5", lineHeight: 1.5 }}>Search when you want a specific affiliate product or TicketNetwork event. Tapping one opens the dedicated ad workspace.</p></div>
+      <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search affiliate brand, product, event, or category" style={{ width: "100%", marginTop: 13, borderRadius: 12, border: "1px solid rgba(255,255,255,.14)", background: "rgba(3,10,18,.72)", color: "#eef8ff", padding: "11px 12px", fontSize: 16 }} />
       {error ? <div style={{ marginTop: 10, color: "#ff9f9f", fontSize: 13 }}>{error}</div> : null}
       {!loading && filteredAffiliate.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 9, marginTop: 13, maxHeight: 470, overflowY: "auto", WebkitOverflowScrolling: "touch", position: "relative", zIndex: 2 }}>
         {filteredAffiliate.map((item) => {
@@ -184,9 +184,9 @@ export default function SocialAdsClient() {
       <section onClick={(event) => event.stopPropagation()} style={{ width: "min(520px,100%)", borderRadius: 18, border: "1px solid rgba(255,215,111,.35)", background: "#07131d", padding: 17, color: "#eef8ff", boxShadow: "0 18px 60px rgba(0,0,0,.45)" }}>
         <div style={{ color: "#ffd76f", fontSize: 11, fontWeight: 950, letterSpacing: ".11em" }}>REPLACE CURRENT AD?</div>
         <h2 style={{ margin: "7px 0 0", fontSize: 20 }}>{pendingProduct.merchant} — {pendingProduct.title}</h2>
-        <p style={{ margin: "9px 0 0", color: "#a9bcc9", lineHeight: 1.5, fontSize: 13 }}>You already have {draft?.merchant || "an ad"} — {draft?.title || "current work"} in Ad Work in Progress. Starting this product will replace that current draft.</p>
+        <p style={{ margin: "9px 0 0", color: "#a9bcc9", lineHeight: 1.5, fontSize: 13 }}>You already have {draft?.merchant || "an ad"} — {draft?.title || "current work"} in Ad Work in Progress. Starting this selection will replace that current draft.</p>
         <div style={{ display: "grid", gap: 9, marginTop: 15 }}>
-          <button type="button" onClick={() => void openAd(pendingProduct)} style={{ border: 0, borderRadius: 11, background: "#71dcff", color: "#031019", padding: "12px 14px", fontWeight: 950, fontSize: 15 }}>Use This Product</button>
+          <button type="button" onClick={() => void openAd(pendingProduct)} style={{ border: 0, borderRadius: 11, background: "#71dcff", color: "#031019", padding: "12px 14px", fontWeight: 950, fontSize: 15 }}>Use This Selection</button>
           <button type="button" onClick={() => setPendingProduct(null)} style={{ border: "1px solid rgba(255,255,255,.14)", borderRadius: 11, background: "rgba(255,255,255,.04)", color: "#dcecf5", padding: "11px 14px", fontWeight: 850 }}>Keep Current Ad</button>
         </div>
       </section>

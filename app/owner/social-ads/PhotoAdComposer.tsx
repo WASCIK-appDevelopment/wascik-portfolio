@@ -1,1 +1,1 @@
-export { default } from "./PhotoAdComposerV5";
+export { default } from "./PhotoAdComposerV6";

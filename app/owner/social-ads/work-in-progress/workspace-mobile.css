@@ -1,0 +1,60 @@
+.adWorkspaceShell,
+.adWorkspaceShell * {
+  box-sizing: border-box;
+}
+
+.adWorkspaceShell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.adWorkspaceShell > *,
+.adWorkspaceShell section,
+.adWorkspaceShell div,
+.adWorkspaceShell label {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.adWorkspaceShell img,
+.adWorkspaceShell canvas,
+.adWorkspaceShell video,
+.adWorkspaceShell audio {
+  max-width: 100%;
+}
+
+.adWorkspaceShell button,
+.adWorkspaceShell input,
+.adWorkspaceShell select,
+.adWorkspaceShell textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.adWorkspaceShell button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.adWorkspaceShell input,
+.adWorkspaceShell textarea,
+.adWorkspaceShell select {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .adWorkspaceShell [style*="grid-template-columns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .adWorkspaceShell [style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  .adWorkspaceShell [style*="display: flex"] > button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}

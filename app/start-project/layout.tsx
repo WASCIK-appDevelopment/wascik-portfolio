@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import FunnelEventTracker from "./FunnelEventTracker";
 
 export const metadata: Metadata = {
   title: "Affordable Small-Business Website Development in Little Rock",
@@ -27,5 +28,10 @@ export default function StartProjectLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return (
+    <>
+      <FunnelEventTracker />
+      {children}
+    </>
+  );
 }
